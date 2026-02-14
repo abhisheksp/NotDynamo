@@ -1,0 +1,9 @@
+{
+  "gate": "G1",
+  "status": "PASS",
+  "timestamp_utc": "2026-02-14T13:41:48Z",
+  "tests_command": "./gradlew clean :storage-rocksdb:test :node:test :it:test",
+  "bench_command": "./gradlew :bench:run --args=\"--scenario single-node-sanity --operations 50000 --keyspace 5000\"",
+  "test_log": "/tmp/notdynamo-g1-test.log",
+  "bench_log": "/tmp/notdynamo-g1-bench.log"
+}

@@ -4,4 +4,5 @@ plugins {
 
 dependencies {
     testImplementation(project(":node"))
+    testImplementation(project(":storage-rocksdb"))
 }
