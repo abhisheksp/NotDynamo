@@ -1,0 +1,11 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: notdynamo-lease-rolebinding
+subjects:
+  - kind: ServiceAccount
+    name: notdynamo-sa
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: notdynamo-lease-role

@@ -1,0 +1,16 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: notdynamo
+resources:
+  - namespace.yaml
+  - serviceaccount.yaml
+  - role.yaml
+  - rolebinding.yaml
+  - configmap.yaml
+  - service-data-headless.yaml
+  - service-data.yaml
+  - statefulset-data.yaml
+  - pdb-data.yaml
+  - deployment-control-plane.yaml
+  - service-control-plane.yaml
+  - pdb-control-plane.yaml

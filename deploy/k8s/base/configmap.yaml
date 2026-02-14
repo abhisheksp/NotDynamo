@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: notdynamo-config
+data:
+  notdynamo.yaml: |
+    cluster:
+      shardCount: 2048
+      virtualNodesPerShard: 256
+    node:
+      grpcPort: 9090
+      httpPort: 8080
+    read:
+      eventualFreshnessMillis: 1000

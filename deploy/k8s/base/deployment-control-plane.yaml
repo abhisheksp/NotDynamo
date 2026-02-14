@@ -1,0 +1,37 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: notdynamo-control-plane
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: notdynamo-control-plane
+  template:
+    metadata:
+      labels:
+        app: notdynamo-control-plane
+    spec:
+      serviceAccountName: notdynamo-sa
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: topology.kubernetes.io/zone
+          whenUnsatisfiable: DoNotSchedule
+          labelSelector:
+            matchLabels:
+              app: notdynamo-control-plane
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: topology.kubernetes.io/zone
+                    operator: Exists
+      containers:
+        - name: control-plane
+          image: ghcr.io/notdynamo/notdynamo:dev
+          imagePullPolicy: IfNotPresent
+          command: ["/bin/sh", "-c", "echo notdynamo control-plane placeholder && sleep 3600"]
+          ports:
+            - name: grpc
+              containerPort: 9090

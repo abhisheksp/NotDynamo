@@ -1,0 +1,10 @@
+{
+  "gate": "G7",
+  "status": "PASS",
+  "timestamp_utc": "2026-02-14T14:21:34Z",
+  "integration_tests": "./gradlew :it:test --tests io.notdynamo.it.K8sLeaseLeaderElectionIT --tests io.notdynamo.it.KubernetesManifestIT",
+  "drill_command": "./scripts/k8s/drill-node-drain.sh --dry-run --node dummy-node --namespace notdynamo",
+  "integration_log": "/tmp/notdynamo-g7-it.log",
+  "drill_log": "/tmp/notdynamo-g7-drill.log",
+  "notes": "Kubernetes manifests, lease-based leader election, and dry-run disruption drill validated"
+}
