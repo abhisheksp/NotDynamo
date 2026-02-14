@@ -18,6 +18,9 @@ public final class InMemoryNodeRpcClient implements NodeRpcClient {
     private final AtomicLong getForwardedCalls = new AtomicLong();
     private final AtomicLong putForwardedCalls = new AtomicLong();
     private final AtomicLong deleteForwardedCalls = new AtomicLong();
+    private final ConcurrentHashMap<String, AtomicLong> getCallsByNode = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String, AtomicLong> putCallsByNode = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String, AtomicLong> deleteCallsByNode = new ConcurrentHashMap<>();
 
     public void register(String nodeId, KvServiceHandler handler) {
         handlersByNodeId.put(validateNodeId(nodeId), Objects.requireNonNull(handler, "handler must not be null"));
@@ -29,9 +32,11 @@ public final class InMemoryNodeRpcClient implements NodeRpcClient {
 
     @Override
     public GetResponse get(String nodeId, GetRequest request) {
+        String validatedNodeId = validateNodeId(nodeId);
         getForwardedCalls.incrementAndGet();
+        getCallsByNode.computeIfAbsent(validatedNodeId, ignored -> new AtomicLong()).incrementAndGet();
 
-        KvServiceHandler handler = handlersByNodeId.get(validateNodeId(nodeId));
+        KvServiceHandler handler = handlersByNodeId.get(validatedNodeId);
         if (handler == null) {
             return GetResponse.newBuilder().setError(unavailable("no handler for node " + nodeId)).build();
         }
@@ -47,9 +52,11 @@ public final class InMemoryNodeRpcClient implements NodeRpcClient {
 
     @Override
     public PutResponse put(String nodeId, PutRequest request) {
+        String validatedNodeId = validateNodeId(nodeId);
         putForwardedCalls.incrementAndGet();
+        putCallsByNode.computeIfAbsent(validatedNodeId, ignored -> new AtomicLong()).incrementAndGet();
 
-        KvServiceHandler handler = handlersByNodeId.get(validateNodeId(nodeId));
+        KvServiceHandler handler = handlersByNodeId.get(validatedNodeId);
         if (handler == null) {
             return PutResponse.newBuilder().setError(unavailable("no handler for node " + nodeId)).build();
         }
@@ -65,9 +72,11 @@ public final class InMemoryNodeRpcClient implements NodeRpcClient {
 
     @Override
     public DeleteResponse delete(String nodeId, DeleteRequest request) {
+        String validatedNodeId = validateNodeId(nodeId);
         deleteForwardedCalls.incrementAndGet();
+        deleteCallsByNode.computeIfAbsent(validatedNodeId, ignored -> new AtomicLong()).incrementAndGet();
 
-        KvServiceHandler handler = handlersByNodeId.get(validateNodeId(nodeId));
+        KvServiceHandler handler = handlersByNodeId.get(validatedNodeId);
         if (handler == null) {
             return DeleteResponse.newBuilder().setError(unavailable("no handler for node " + nodeId)).build();
         }
@@ -91,6 +100,18 @@ public final class InMemoryNodeRpcClient implements NodeRpcClient {
 
     public long deleteForwardedCalls() {
         return deleteForwardedCalls.get();
+    }
+
+    public long getForwardedCallsTo(String nodeId) {
+        return getCallsByNode.getOrDefault(validateNodeId(nodeId), new AtomicLong()).get();
+    }
+
+    public long putForwardedCallsTo(String nodeId) {
+        return putCallsByNode.getOrDefault(validateNodeId(nodeId), new AtomicLong()).get();
+    }
+
+    public long deleteForwardedCallsTo(String nodeId) {
+        return deleteCallsByNode.getOrDefault(validateNodeId(nodeId), new AtomicLong()).get();
     }
 
     private static String validateNodeId(String nodeId) {

@@ -1,0 +1,12 @@
+{
+  "gate": "G5",
+  "status": "PASS",
+  "timestamp_utc": "2026-02-14T14:12:19Z",
+  "control_plane_tests": "./gradlew :control-plane:test --tests io.notdynamo.controlplane.ReplicaPartitionMapTest",
+  "node_tests": "./gradlew :node:test --tests io.notdynamo.node.cluster.FreshReplicaPickerTest",
+  "integration_tests": "./gradlew :it:test --tests io.notdynamo.it.EventualReadFreshnessIT",
+  "control_plane_log": "/tmp/notdynamo-g5-control-plane.log",
+  "node_log": "/tmp/notdynamo-g5-node.log",
+  "integration_log": "/tmp/notdynamo-g5-it.log",
+  "notes": "Replica placement, fresh follower selection, and leader fallback behavior validated"
+}
