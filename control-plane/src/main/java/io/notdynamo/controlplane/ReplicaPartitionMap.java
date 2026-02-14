@@ -87,6 +87,22 @@ public final class ReplicaPartitionMap {
         return replicas;
     }
 
+    public ReplicaPartitionMap withUpdatedShardReplicas(
+        int shardId,
+        List<String> updatedReplicas,
+        PartitionMapVersion nextVersion
+    ) {
+        if (shardId < 0 || shardId >= shardCount()) {
+            throw new IllegalArgumentException("unknown shard " + shardId);
+        }
+        Objects.requireNonNull(updatedReplicas, "updatedReplicas must not be null");
+        Objects.requireNonNull(nextVersion, "nextVersion must not be null");
+
+        Map<Integer, List<String>> nextReplicaMap = new LinkedHashMap<>(replicasByShard);
+        nextReplicaMap.put(shardId, List.copyOf(updatedReplicas));
+        return new ReplicaPartitionMap(leaderMap.withVersion(nextVersion), nextReplicaMap);
+    }
+
     private static List<String> normalizeReplicas(List<String> replicas) {
         LinkedHashSet<String> normalized = new LinkedHashSet<>();
         for (String replica : replicas) {

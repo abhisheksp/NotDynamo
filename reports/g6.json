@@ -1,0 +1,10 @@
+{
+  "gate": "G6",
+  "status": "PASS",
+  "timestamp_utc": "2026-02-14T14:17:14Z",
+  "control_plane_tests": "./gradlew :control-plane:test --tests io.notdynamo.controlplane.rebalance.RebalancePlannerTest --tests io.notdynamo.controlplane.rebalance.RebalanceThrottlerTest",
+  "integration_tests": "./gradlew :it:test --tests io.notdynamo.it.LearnerSyncIT --tests io.notdynamo.it.ReplicaMoveRollbackIT --tests io.notdynamo.it.RebalanceThrottlingIT",
+  "control_plane_log": "/tmp/notdynamo-g6-control-plane.log",
+  "integration_log": "/tmp/notdynamo-g6-it.log",
+  "notes": "Planner balance, learner sync lifecycle, rollback safety, and SLO throttling validated"
+}
