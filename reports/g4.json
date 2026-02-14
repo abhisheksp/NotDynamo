@@ -1,0 +1,8 @@
+{
+  "gate": "G4",
+  "status": "PASS",
+  "timestamp_utc": "2026-02-14T14:08:08Z",
+  "raft_tests": "./gradlew :raft-ratis:test --tests io.notdynamo.raft.QuorumWriteIT --tests io.notdynamo.raft.LeaderFailoverIT --tests io.notdynamo.raft.PartitionSafetyIT --tests io.notdynamo.raft.SnapshotCompactionIT",
+  "raft_test_log": "/tmp/notdynamo-g4-raft.log",
+  "notes": "Quorum commit, leader failover, minority safety, and compaction behavior validated"
+}
