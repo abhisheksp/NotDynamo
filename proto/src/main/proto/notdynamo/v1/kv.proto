@@ -1,0 +1,70 @@
+syntax = "proto3";
+
+package notdynamo.v1;
+
+option java_multiple_files = true;
+option java_package = "io.notdynamo.proto.v1";
+option java_outer_classname = "KvProto";
+
+enum StatusCode {
+  STATUS_CODE_UNSPECIFIED = 0;
+  STATUS_CODE_OK = 1;
+  STATUS_CODE_NOT_FOUND = 2;
+  STATUS_CODE_INVALID_ARGUMENT = 3;
+  STATUS_CODE_UNAVAILABLE = 4;
+  STATUS_CODE_TIMEOUT = 5;
+  STATUS_CODE_INTERNAL = 6;
+}
+
+message Error {
+  StatusCode code = 1;
+  string message = 2;
+}
+
+message GetRequest {
+  bytes key = 1;
+}
+
+message GetResponse {
+  bytes value = 1;
+  uint64 version = 2;
+  bool found = 3;
+  Error error = 4;
+}
+
+message PutRequest {
+  bytes key = 1;
+  bytes value = 2;
+}
+
+message PutResponse {
+  uint64 version = 1;
+  Error error = 2;
+}
+
+message DeleteRequest {
+  bytes key = 1;
+}
+
+message DeleteResponse {
+  uint64 version = 1;
+  Error error = 2;
+}
+
+message HealthRequest {}
+
+message HealthResponse {
+  string node_id = 1;
+  bool ready = 2;
+  string partition_map_epoch = 3;
+}
+
+service KvService {
+  rpc Get(GetRequest) returns (GetResponse);
+  rpc Put(PutRequest) returns (PutResponse);
+  rpc Delete(DeleteRequest) returns (DeleteResponse);
+}
+
+service NodeHealthService {
+  rpc Health(HealthRequest) returns (HealthResponse);
+}
