@@ -1,0 +1,24 @@
+groups:
+  - name: notdynamo-slo-rules
+    rules:
+      - alert: NotDynamoReadP99High
+        expr: notdynamo_request_latency_ms_max{operation="get"} > 20
+        for: 10m
+        labels:
+          severity: page
+        annotations:
+          summary: NotDynamo GET p99 is above 20ms.
+      - alert: NotDynamoReplicationLagHigh
+        expr: max(notdynamo_replication_lag_ms) > 1000
+        for: 5m
+        labels:
+          severity: page
+        annotations:
+          summary: Replication lag p99 budget exceeded.
+      - alert: NotDynamoElectionChurnHigh
+        expr: increase(notdynamo_elections_total[5m]) > 10
+        for: 5m
+        labels:
+          severity: warn
+        annotations:
+          summary: Raft election churn is elevated.

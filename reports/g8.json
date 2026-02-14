@@ -1,0 +1,12 @@
+{
+  "gate": "G8",
+  "status": "PASS",
+  "timestamp_utc": "2026-02-14T14:24:07Z",
+  "node_tests": "./gradlew :node:test --tests io.notdynamo.node.observability.TelemetryPropagationTest --tests io.notdynamo.node.observability.PrometheusMetricsExportTest",
+  "control_plane_tests": "./gradlew :control-plane:test --tests io.notdynamo.controlplane.observability.AlertRuleEvaluatorTest",
+  "alert_validation": "./scripts/ops/test-alerts.sh",
+  "node_test_log": "/tmp/notdynamo-g8-node.log",
+  "control_plane_test_log": "/tmp/notdynamo-g8-control-plane.log",
+  "alert_log": "/tmp/notdynamo-g8-alerts.log",
+  "notes": "Telemetry propagation, metrics export, and alert rule/runbook coverage validated"
+}
