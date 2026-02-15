@@ -1,0 +1,10 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - ../../base
+patches:
+  - path: patch-local-data.yaml
+  - path: patch-local-control-plane.yaml
+  - path: patch-local-service-data.yaml
+  - path: patch-local-service-control-plane.yaml
+  - path: patch-local-scheduling.yaml

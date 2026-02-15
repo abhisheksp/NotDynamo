@@ -33,21 +33,49 @@ spec:
         - name: node
           image: ghcr.io/notdynamo/notdynamo:dev
           imagePullPolicy: IfNotPresent
-          command: ["/bin/sh", "-c", "echo notdynamo data node placeholder && sleep 3600"]
+          command: ["/bin/sh", "-c", "exec /opt/notdynamo/bin/node"]
           ports:
             - name: grpc
               containerPort: 9090
             - name: http
               containerPort: 8080
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            timeoutSeconds: 2
+            failureThreshold: 6
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            initialDelaySeconds: 15
+            periodSeconds: 10
+            timeoutSeconds: 2
+            failureThreshold: 6
           env:
             - name: POD_NAME
               valueFrom:
                 fieldRef:
                   fieldPath: metadata.name
-            - name: POD_NAMESPACE
+            - name: NOTDYNAMO_NODE_ID
               valueFrom:
                 fieldRef:
-                  fieldPath: metadata.namespace
+                  fieldPath: metadata.name
+            - name: NOTDYNAMO_HOST
+              value: "0.0.0.0"
+            - name: NOTDYNAMO_GRPC_PORT
+              value: "9090"
+            - name: NOTDYNAMO_HTTP_PORT
+              value: "8080"
+            - name: NOTDYNAMO_SHARD_COUNT
+              value: "2048"
+            - name: NOTDYNAMO_VIRTUAL_NODES_PER_SHARD
+              value: "256"
+            - name: NOTDYNAMO_DATA_DIR
+              value: "/var/lib/notdynamo"
           volumeMounts:
             - name: data
               mountPath: /var/lib/notdynamo

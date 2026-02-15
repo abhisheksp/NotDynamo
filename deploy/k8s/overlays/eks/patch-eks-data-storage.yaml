@@ -1,0 +1,10 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: notdynamo-data
+spec:
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        storageClassName: gp3

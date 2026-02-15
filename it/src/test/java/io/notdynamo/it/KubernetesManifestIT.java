@@ -19,17 +19,23 @@ class KubernetesManifestIT {
     void deploymentManifestsArePresentAndParseable() throws IOException {
         Path repoRoot = findRepoRoot();
         Path baseDir = repoRoot.resolve("deploy/k8s/base");
-        Path overlayDir = repoRoot.resolve("deploy/k8s/overlays/dev");
+        Path overlayDevDir = repoRoot.resolve("deploy/k8s/overlays/dev");
+        Path overlayLocalDir = repoRoot.resolve("deploy/k8s/overlays/local");
+        Path overlayEksDir = repoRoot.resolve("deploy/k8s/overlays/eks");
 
         assertTrue(Files.exists(baseDir.resolve("statefulset-data.yaml")));
         assertTrue(Files.exists(baseDir.resolve("service-data-headless.yaml")));
         assertTrue(Files.exists(baseDir.resolve("deployment-control-plane.yaml")));
         assertTrue(Files.exists(baseDir.resolve("role.yaml")));
-        assertTrue(Files.exists(overlayDir.resolve("kustomization.yaml")));
+        assertTrue(Files.exists(overlayDevDir.resolve("kustomization.yaml")));
+        assertTrue(Files.exists(overlayLocalDir.resolve("kustomization.yaml")));
+        assertTrue(Files.exists(overlayEksDir.resolve("kustomization.yaml")));
 
         List<Path> yamlFiles = new ArrayList<>();
         yamlFiles.addAll(listYamlFiles(baseDir));
-        yamlFiles.addAll(listYamlFiles(overlayDir));
+        yamlFiles.addAll(listYamlFiles(overlayDevDir));
+        yamlFiles.addAll(listYamlFiles(overlayLocalDir));
+        yamlFiles.addAll(listYamlFiles(overlayEksDir));
 
         Yaml yaml = new Yaml();
         for (Path yamlFile : yamlFiles) {
