@@ -1,0 +1,30 @@
+{
+  "benchmark": "local_container_scaling",
+  "status": "PASS",
+  "timestamp_utc": "2026-02-15T07:26:54Z",
+  "machine": {
+    "logical_cpus": 12,
+    "physical_cpus": 12
+  },
+  "scenario": "hotkey-zipf",
+  "operations_per_container": 20000,
+  "keyspace": 5000,
+  "threads_per_container": 2,
+  "zipf_theta": 0.900000,
+  "java_opts_per_container": "-Xms256m -Xmx256m",
+  "container_counts": "1,2,4,8,12,16",
+  "recommended_container_count": 16,
+  "max_aggregate_throughput_rps": 11085587.400000,
+  "ninety_percent_of_max_rps": 9977028.660000,
+  "csv_report": "reports/benchmarks/local/hotkey_zipf.csv",
+  "logs_root": "reports/benchmarks/local/hotkey_zipf_logs",
+  "build_log": "/tmp/notdynamo-local-scaling-build.log",
+  "results": [
+    {"containers": 1, "aggregate_throughput_rps": 709123.470000, "max_container_p99_ms": 0.038000, "throughput_per_container_rps": 709123.470000, "log_dir": "reports/benchmarks/local/hotkey_zipf_logs/containers-1"},
+    {"containers": 2, "aggregate_throughput_rps": 1335941.490000, "max_container_p99_ms": 0.039000, "throughput_per_container_rps": 667970.745000, "log_dir": "reports/benchmarks/local/hotkey_zipf_logs/containers-2"},
+    {"containers": 4, "aggregate_throughput_rps": 2857258.330000, "max_container_p99_ms": 0.037000, "throughput_per_container_rps": 714314.582500, "log_dir": "reports/benchmarks/local/hotkey_zipf_logs/containers-4"},
+    {"containers": 8, "aggregate_throughput_rps": 5589481.920000, "max_container_p99_ms": 0.037000, "throughput_per_container_rps": 698685.240000, "log_dir": "reports/benchmarks/local/hotkey_zipf_logs/containers-8"},
+    {"containers": 12, "aggregate_throughput_rps": 8490785.910000, "max_container_p99_ms": 0.039000, "throughput_per_container_rps": 707565.492500, "log_dir": "reports/benchmarks/local/hotkey_zipf_logs/containers-12"},
+    {"containers": 16, "aggregate_throughput_rps": 11085587.400000, "max_container_p99_ms": 0.046000, "throughput_per_container_rps": 692849.212500, "log_dir": "reports/benchmarks/local/hotkey_zipf_logs/containers-16"}
+  ]
+}

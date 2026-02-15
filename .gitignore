@@ -21,4 +21,13 @@ hs_err_pid*
 
 # Bench/reports generated artifacts
 reports/generated/
+reports/local_container_scaling_*.csv
+reports/local_container_scaling_*.json
+reports/local_container_scaling_*_logs/
+reports/local_container_scaling_latest.json
+reports/g9.json
+reports/g9_tuning.json
+reports/g9_az_failure.json
+reports/benchmarks/local/*_logs/
+reports/benchmarks/local/latest_*.json
 tmp/

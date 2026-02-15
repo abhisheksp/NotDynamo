@@ -1,0 +1,30 @@
+{
+  "benchmark": "local_container_scaling",
+  "status": "PASS",
+  "timestamp_utc": "2026-02-15T07:17:28Z",
+  "machine": {
+    "logical_cpus": 12,
+    "physical_cpus": 12
+  },
+  "scenario": "cluster-read",
+  "operations_per_container": 20000,
+  "keyspace": 5000,
+  "threads_per_container": 2,
+  "zipf_theta": 0.900000,
+  "java_opts_per_container": "-Xms256m -Xmx256m",
+  "container_counts": "1,2,4,8,12,16",
+  "recommended_container_count": 16,
+  "max_aggregate_throughput_rps": 11364456.970000,
+  "ninety_percent_of_max_rps": 10228011.273000,
+  "csv_report": "reports/benchmarks/local/cluster_read.csv",
+  "logs_root": "reports/benchmarks/local/cluster_read_logs",
+  "build_log": "/tmp/notdynamo-local-scaling-build.log",
+  "results": [
+    {"containers": 1, "aggregate_throughput_rps": 727190.090000, "max_container_p99_ms": 0.043000, "throughput_per_container_rps": 727190.090000, "log_dir": "reports/benchmarks/local/cluster_read_logs/containers-1"},
+    {"containers": 2, "aggregate_throughput_rps": 1448971.070000, "max_container_p99_ms": 0.040000, "throughput_per_container_rps": 724485.535000, "log_dir": "reports/benchmarks/local/cluster_read_logs/containers-2"},
+    {"containers": 4, "aggregate_throughput_rps": 2908043.190000, "max_container_p99_ms": 0.041000, "throughput_per_container_rps": 727010.797500, "log_dir": "reports/benchmarks/local/cluster_read_logs/containers-4"},
+    {"containers": 8, "aggregate_throughput_rps": 5682356.050000, "max_container_p99_ms": 0.049000, "throughput_per_container_rps": 710294.506250, "log_dir": "reports/benchmarks/local/cluster_read_logs/containers-8"},
+    {"containers": 12, "aggregate_throughput_rps": 8605537.220000, "max_container_p99_ms": 0.046000, "throughput_per_container_rps": 717128.101667, "log_dir": "reports/benchmarks/local/cluster_read_logs/containers-12"},
+    {"containers": 16, "aggregate_throughput_rps": 11364456.970000, "max_container_p99_ms": 0.049000, "throughput_per_container_rps": 710278.560625, "log_dir": "reports/benchmarks/local/cluster_read_logs/containers-16"}
+  ]
+}

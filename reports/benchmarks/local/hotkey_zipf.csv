@@ -1,0 +1,7 @@
+containers,aggregate_throughput_rps,max_container_p99_ms,throughput_per_container_rps,log_dir
+1,709123.470000,0.038000,709123.470000,reports/benchmarks/local/hotkey_zipf_logs/containers-1
+2,1335941.490000,0.039000,667970.745000,reports/benchmarks/local/hotkey_zipf_logs/containers-2
+4,2857258.330000,0.037000,714314.582500,reports/benchmarks/local/hotkey_zipf_logs/containers-4
+8,5589481.920000,0.037000,698685.240000,reports/benchmarks/local/hotkey_zipf_logs/containers-8
+12,8490785.910000,0.039000,707565.492500,reports/benchmarks/local/hotkey_zipf_logs/containers-12
+16,11085587.400000,0.046000,692849.212500,reports/benchmarks/local/hotkey_zipf_logs/containers-16

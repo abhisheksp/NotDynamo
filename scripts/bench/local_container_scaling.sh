@@ -12,6 +12,8 @@ THREADS_PER_CONTAINER=2
 ZIPF_THETA=0.9
 CONTAINER_COUNTS=""
 JAVA_OPTS_PER_CONTAINER="-Xms256m -Xmx256m"
+OUTPUT_PREFIX=""
+LATEST_JSON_FILE=""
 
 usage() {
   cat <<'USAGE'
@@ -25,6 +27,8 @@ Options:
   --containers <csv>              Container counts, e.g. 1,2,4,6
   --zipf-theta <n>                Zipf theta when --scenario hotkey-zipf (default: 0.9)
   --java-opts <str>               BENCH_OPTS for each process (default: "-Xms256m -Xmx256m")
+  --output-prefix <path>          Writes <path>.csv, <path>.json, <path>_logs
+  --latest-json <path>            Override latest report symlink/copy target
   --help                          Show this help message
 USAGE
 }
@@ -71,6 +75,17 @@ to_decimal() {
   awk -v value="$1" 'BEGIN { printf "%.6f", value }'
 }
 
+to_repo_relative() {
+  local path="$1"
+  if [[ "$path" == "$ROOT_DIR/"* ]]; then
+    echo "${path#"$ROOT_DIR/"}"
+  elif [[ "$path" == "$ROOT_DIR" ]]; then
+    echo "."
+  else
+    echo "$path"
+  fi
+}
+
 while (( $# > 0 )); do
   case "$1" in
     --scenario)
@@ -99,6 +114,14 @@ while (( $# > 0 )); do
       ;;
     --java-opts)
       JAVA_OPTS_PER_CONTAINER="$2"
+      shift 2
+      ;;
+    --output-prefix)
+      OUTPUT_PREFIX="$2"
+      shift 2
+      ;;
+    --latest-json)
+      LATEST_JSON_FILE="$2"
       shift 2
       ;;
     --help)
@@ -159,14 +182,33 @@ fi
 
 TIMESTAMP_UTC="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 TIMESTAMP_TAG="$(date -u +%Y%m%dT%H%M%SZ)"
-CSV_FILE="$REPORT_DIR/local_container_scaling_${TIMESTAMP_TAG}.csv"
-JSON_FILE="$REPORT_DIR/local_container_scaling_${TIMESTAMP_TAG}.json"
-LATEST_JSON_FILE="$REPORT_DIR/local_container_scaling_latest.json"
-RUN_LOG_ROOT="$REPORT_DIR/local_container_scaling_${TIMESTAMP_TAG}_logs"
+
+if [[ -n "$OUTPUT_PREFIX" ]]; then
+  CSV_FILE="${OUTPUT_PREFIX}.csv"
+  JSON_FILE="${OUTPUT_PREFIX}.json"
+  RUN_LOG_ROOT="${OUTPUT_PREFIX}_logs"
+else
+  CSV_FILE="$REPORT_DIR/local_container_scaling_${TIMESTAMP_TAG}.csv"
+  JSON_FILE="$REPORT_DIR/local_container_scaling_${TIMESTAMP_TAG}.json"
+  RUN_LOG_ROOT="$REPORT_DIR/local_container_scaling_${TIMESTAMP_TAG}_logs"
+fi
+
+if [[ -z "$LATEST_JSON_FILE" ]]; then
+  LATEST_JSON_FILE="$REPORT_DIR/local_container_scaling_latest.json"
+fi
 
 declare -a RESULT_LINES=()
 declare -a HUMAN_LINES=()
+mkdir -p "$(dirname "$CSV_FILE")"
+mkdir -p "$(dirname "$JSON_FILE")"
+mkdir -p "$(dirname "$LATEST_JSON_FILE")"
 mkdir -p "$RUN_LOG_ROOT"
+
+CSV_FILE_OUT="$(to_repo_relative "$CSV_FILE")"
+JSON_FILE_OUT="$(to_repo_relative "$JSON_FILE")"
+LATEST_JSON_FILE_OUT="$(to_repo_relative "$LATEST_JSON_FILE")"
+RUN_LOG_ROOT_OUT="$(to_repo_relative "$RUN_LOG_ROOT")"
+BUILD_LOG_OUT="$(to_repo_relative "$BUILD_LOG")"
 
 echo "containers,aggregate_throughput_rps,max_container_p99_ms,throughput_per_container_rps,log_dir" >"$CSV_FILE"
 
@@ -222,9 +264,10 @@ for count in "${CONTAINER_COUNTS_ARRAY[@]}"; do
   done
 
   throughput_per_container="$(awk -v total="$aggregate_throughput" -v c="$count" 'BEGIN { printf "%.6f", total / c }')"
-  RESULT_LINES+=("$count,$aggregate_throughput,$max_p99,$throughput_per_container,$run_dir")
+  run_dir_out="$(to_repo_relative "$run_dir")"
+  RESULT_LINES+=("$count,$aggregate_throughput,$max_p99,$throughput_per_container,$run_dir_out")
   HUMAN_LINES+=("containers=$count aggregate_tps=$aggregate_throughput max_p99_ms=$max_p99 per_container_tps=$throughput_per_container")
-  echo "$count,$aggregate_throughput,$max_p99,$throughput_per_container,$run_dir" >>"$CSV_FILE"
+  echo "$count,$aggregate_throughput,$max_p99,$throughput_per_container,$run_dir_out" >>"$CSV_FILE"
   echo "completed sweep: containers=$count aggregate_tps=$aggregate_throughput max_p99_ms=$max_p99"
 done
 
@@ -267,9 +310,9 @@ fi
   echo "  \"recommended_container_count\": $recommended_containers,"
   echo "  \"max_aggregate_throughput_rps\": $(to_decimal "$max_throughput"),"
   echo "  \"ninety_percent_of_max_rps\": $(to_decimal "$ninety_percent_of_max"),"
-  echo "  \"csv_report\": \"$CSV_FILE\","
-  echo "  \"logs_root\": \"$RUN_LOG_ROOT\","
-  echo "  \"build_log\": \"$BUILD_LOG\","
+  echo "  \"csv_report\": \"$CSV_FILE_OUT\","
+  echo "  \"logs_root\": \"$RUN_LOG_ROOT_OUT\","
+  echo "  \"build_log\": \"$BUILD_LOG_OUT\","
   echo "  \"results\": ["
   for i in "${!RESULT_LINES[@]}"; do
     IFS=',' read -r containers throughput max_p99 per_container_tps log_dir <<<"${RESULT_LINES[$i]}"
@@ -286,8 +329,8 @@ fi
 cp "$JSON_FILE" "$LATEST_JSON_FILE"
 
 echo "Local container scaling benchmark complete."
-echo "JSON report: $JSON_FILE"
-echo "CSV report: $CSV_FILE"
+echo "JSON report: $JSON_FILE_OUT"
+echo "CSV report: $CSV_FILE_OUT"
 for line in "${HUMAN_LINES[@]}"; do
   echo "$line"
 done

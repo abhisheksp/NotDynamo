@@ -1,0 +1,7 @@
+containers,aggregate_throughput_rps,max_container_p99_ms,throughput_per_container_rps,log_dir
+1,727190.090000,0.043000,727190.090000,reports/benchmarks/local/cluster_read_logs/containers-1
+2,1448971.070000,0.040000,724485.535000,reports/benchmarks/local/cluster_read_logs/containers-2
+4,2908043.190000,0.041000,727010.797500,reports/benchmarks/local/cluster_read_logs/containers-4
+8,5682356.050000,0.049000,710294.506250,reports/benchmarks/local/cluster_read_logs/containers-8
+12,8605537.220000,0.046000,717128.101667,reports/benchmarks/local/cluster_read_logs/containers-12
+16,11364456.970000,0.049000,710278.560625,reports/benchmarks/local/cluster_read_logs/containers-16

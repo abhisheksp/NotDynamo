@@ -1,0 +1,27 @@
+{
+  "benchmark_suite": "local_canonical_profile",
+  "status": "PASS",
+  "timestamp_utc": "2026-02-15T07:35:52Z",
+  "profile_file": "scripts/bench/profiles/local_canonical_v1.env",
+  "profile_name": "local-canonical-v1",
+  "profile": {
+    "container_counts": "1,2,4,8,12,16",
+    "operations_per_container": "20000",
+    "keyspace": "5000",
+    "threads_per_container": "2",
+    "zipf_theta": "0.9",
+    "java_opts_per_container": "-Xms256m -Xmx256m"
+  },
+  "reports": {
+    "cluster_read_json": "reports/benchmarks/local/cluster_read.json",
+    "cluster_read_csv": "reports/benchmarks/local/cluster_read.csv",
+    "hotkey_zipf_json": "reports/benchmarks/local/hotkey_zipf.json",
+    "hotkey_zipf_csv": "reports/benchmarks/local/hotkey_zipf.csv"
+  },
+  "highlights": {
+    "cluster_read_max_aggregate_throughput_rps": "11364456.970000",
+    "cluster_read_recommended_container_count": "16",
+    "hotkey_zipf_max_aggregate_throughput_rps": "11085587.400000",
+    "hotkey_zipf_recommended_container_count": "16"
+  }
+}
