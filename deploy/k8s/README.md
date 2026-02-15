@@ -27,3 +27,14 @@ docker build -t notdynamo:dev .
 ```
 
 For local clusters (kind/minikube), load the image into the cluster before applying manifests.
+
+## Local Utility Scripts
+
+Use the helper scripts in `scripts/local/` for quick iteration:
+
+```bash
+./scripts/local/kind_up.sh --workers 2
+./scripts/local/kind_deploy.sh --data-replicas 3
+./scripts/local/kind_smoke.sh
+./scripts/local/kind_down.sh
+```
