@@ -1,20 +1,22 @@
 {
   "gate": "G18",
   "status": "PASS",
-  "timestamp_utc": "2026-02-17T17:52:45Z",
+  "timestamp_utc": "2026-02-17T19:31:55Z",
   "child_gates": {
     "G10": "PASS",
     "G11": "PASS",
     "G12": "PASS",
     "G13": "PASS",
-    "G14": "PASS"
+    "G14": "PASS",
+    "G15": "PASS"
   },
   "commands": [
     "./scripts/verify/g10.sh",
     "./scripts/verify/g11.sh",
     "./scripts/verify/g12.sh",
     "./scripts/verify/g13.sh",
-    "./scripts/verify/g14.sh"
+    "./scripts/verify/g14.sh",
+    "./scripts/verify/g15.sh"
   ],
-  "notes": "Aggregate correctness gate before benchmark-focused optimization"
+  "notes": "Aggregate correctness gate before benchmark-focused optimization, including raft write-path coverage"
 }

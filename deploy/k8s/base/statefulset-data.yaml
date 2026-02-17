@@ -89,7 +89,7 @@ spec:
             - name: NOTDYNAMO_RPC_TIMEOUT_MS
               value: "750"
             - name: NOTDYNAMO_WRITE_POLICY
-              value: "leader-quorum"
+              value: "raft"
             - name: NOTDYNAMO_WRITE_QUORUM_ACKS
               value: "2"
             - name: NOTDYNAMO_CLUSTER_SIZE

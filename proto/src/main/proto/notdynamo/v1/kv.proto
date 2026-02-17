@@ -73,3 +73,53 @@ service ReplicaApplyService {
   rpc ApplyPut(PutRequest) returns (PutResponse);
   rpc ApplyDelete(DeleteRequest) returns (DeleteResponse);
 }
+
+enum RaftOperationType {
+  RAFT_OPERATION_TYPE_UNSPECIFIED = 0;
+  RAFT_OPERATION_TYPE_PUT = 1;
+  RAFT_OPERATION_TYPE_DELETE = 2;
+}
+
+message RaftEntry {
+  uint64 term = 1;
+  uint64 index = 2;
+  RaftOperationType operation_type = 3;
+  bytes key = 4;
+  bytes value = 5;
+}
+
+message RaftVoteRequest {
+  string group_id = 1;
+  string candidate_id = 2;
+  uint64 term = 3;
+  uint64 last_log_index = 4;
+  uint64 last_log_term = 5;
+}
+
+message RaftVoteResponse {
+  uint64 term = 1;
+  bool vote_granted = 2;
+  string leader_id = 3;
+}
+
+message RaftAppendEntriesRequest {
+  string group_id = 1;
+  string leader_id = 2;
+  uint64 term = 3;
+  uint64 prev_log_index = 4;
+  uint64 prev_log_term = 5;
+  repeated RaftEntry entries = 6;
+  uint64 leader_commit = 7;
+}
+
+message RaftAppendEntriesResponse {
+  uint64 term = 1;
+  bool success = 2;
+  uint64 match_index = 3;
+  string leader_id = 4;
+}
+
+service RaftConsensusService {
+  rpc RequestVote(RaftVoteRequest) returns (RaftVoteResponse);
+  rpc AppendEntries(RaftAppendEntriesRequest) returns (RaftAppendEntriesResponse);
+}

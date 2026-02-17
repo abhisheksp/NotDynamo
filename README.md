@@ -159,7 +159,7 @@ Notes:
 
 - End-to-end local and EKS deploy flows are operational.
 - Runtime now supports partitioned request routing across nodes using gRPC node-to-node forwarding.
-- Runtime now supports leader-quorum writes (`quorum=2`) with internal replica-apply RPC.
+- Runtime now supports raft-backed quorum writes (`rf=3`, majority ack) with internal vote/append RPC.
 - Control-plane deployment now runs an executable process with `/healthz` and `/v1/partition-map` endpoints.
 - New verification gates `G10` to `G14` validate distributed routing, failure-drill scripts, quorum writes, and control-plane runtime.
 - `G18` provides one aggregate correctness gate command before benchmark-focused optimization.

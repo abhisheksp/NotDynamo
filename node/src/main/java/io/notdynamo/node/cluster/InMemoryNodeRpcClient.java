@@ -9,6 +9,11 @@ import io.notdynamo.proto.v1.GetResponse;
 import io.notdynamo.proto.v1.KvServiceGrpc;
 import io.notdynamo.proto.v1.PutRequest;
 import io.notdynamo.proto.v1.PutResponse;
+import io.notdynamo.proto.v1.RaftAppendEntriesRequest;
+import io.notdynamo.proto.v1.RaftAppendEntriesResponse;
+import io.notdynamo.proto.v1.RaftConsensusServiceGrpc;
+import io.notdynamo.proto.v1.RaftVoteRequest;
+import io.notdynamo.proto.v1.RaftVoteResponse;
 import io.notdynamo.proto.v1.StatusCode;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
@@ -17,6 +22,8 @@ import java.util.concurrent.atomic.AtomicLong;
 public final class InMemoryNodeRpcClient implements NodeRpcClient {
     private final ConcurrentHashMap<String, KvServiceGrpc.KvServiceImplBase> handlersByNodeId = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<String, KvServiceHandler> replicaApplyHandlersByNodeId = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String, RaftConsensusServiceGrpc.RaftConsensusServiceImplBase> raftHandlersByNodeId =
+        new ConcurrentHashMap<>();
     private final AtomicLong getForwardedCalls = new AtomicLong();
     private final AtomicLong putForwardedCalls = new AtomicLong();
     private final AtomicLong deleteForwardedCalls = new AtomicLong();
@@ -40,10 +47,15 @@ public final class InMemoryNodeRpcClient implements NodeRpcClient {
         );
     }
 
+    public void registerRaftConsensus(String nodeId, RaftConsensusServiceGrpc.RaftConsensusServiceImplBase handler) {
+        raftHandlersByNodeId.put(validateNodeId(nodeId), Objects.requireNonNull(handler, "handler must not be null"));
+    }
+
     public void unregister(String nodeId) {
         String validatedNodeId = validateNodeId(nodeId);
         handlersByNodeId.remove(validatedNodeId);
         replicaApplyHandlersByNodeId.remove(validatedNodeId);
+        raftHandlersByNodeId.remove(validatedNodeId);
     }
 
     @Override
@@ -134,6 +146,56 @@ public final class InMemoryNodeRpcClient implements NodeRpcClient {
         localHandler.delete(request, observer);
         if (observer.error() != null || observer.value() == null || !observer.completed()) {
             return DeleteResponse.newBuilder().setError(internal("replica delete failed for node " + nodeId)).build();
+        }
+        return observer.value();
+    }
+
+    @Override
+    public RaftVoteResponse requestVote(String nodeId, RaftVoteRequest request) {
+        String validatedNodeId = validateNodeId(nodeId);
+        RaftConsensusServiceGrpc.RaftConsensusServiceImplBase handler = raftHandlersByNodeId.get(validatedNodeId);
+        if (handler == null) {
+            return RaftVoteResponse.newBuilder()
+                .setTerm(request.getTerm())
+                .setVoteGranted(false)
+                .setLeaderId("")
+                .build();
+        }
+
+        SyncResponseObserver<RaftVoteResponse> observer = new SyncResponseObserver<>();
+        handler.requestVote(request, observer);
+        if (observer.error() != null || observer.value() == null || !observer.completed()) {
+            return RaftVoteResponse.newBuilder()
+                .setTerm(request.getTerm())
+                .setVoteGranted(false)
+                .setLeaderId("")
+                .build();
+        }
+        return observer.value();
+    }
+
+    @Override
+    public RaftAppendEntriesResponse appendEntries(String nodeId, RaftAppendEntriesRequest request) {
+        String validatedNodeId = validateNodeId(nodeId);
+        RaftConsensusServiceGrpc.RaftConsensusServiceImplBase handler = raftHandlersByNodeId.get(validatedNodeId);
+        if (handler == null) {
+            return RaftAppendEntriesResponse.newBuilder()
+                .setTerm(request.getTerm())
+                .setSuccess(false)
+                .setMatchIndex(0)
+                .setLeaderId("")
+                .build();
+        }
+
+        SyncResponseObserver<RaftAppendEntriesResponse> observer = new SyncResponseObserver<>();
+        handler.appendEntries(request, observer);
+        if (observer.error() != null || observer.value() == null || !observer.completed()) {
+            return RaftAppendEntriesResponse.newBuilder()
+                .setTerm(request.getTerm())
+                .setSuccess(false)
+                .setMatchIndex(0)
+                .setLeaderId("")
+                .build();
         }
         return observer.value();
     }

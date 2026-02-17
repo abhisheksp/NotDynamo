@@ -255,7 +255,7 @@ kubectl -n "$NAMESPACE" set env statefulset/notdynamo-data \
   NOTDYNAMO_NAMESPACE="$NAMESPACE" \
   NOTDYNAMO_RUNTIME_MODE="partitioned" \
   NOTDYNAMO_RPC_MODE="grpc" \
-  NOTDYNAMO_WRITE_POLICY="leader-quorum" \
+  NOTDYNAMO_WRITE_POLICY="raft" \
   NOTDYNAMO_WRITE_QUORUM_ACKS="2" >/dev/null
 kubectl -n "$NAMESPACE" set env deployment/notdynamo-control-plane \
   NOTDYNAMO_CLUSTER_SIZE="$DATA_REPLICAS" \

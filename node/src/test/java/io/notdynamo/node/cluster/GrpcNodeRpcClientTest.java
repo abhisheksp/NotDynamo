@@ -15,6 +15,12 @@ import io.notdynamo.proto.v1.GetRequest;
 import io.notdynamo.proto.v1.GetResponse;
 import io.notdynamo.proto.v1.PutRequest;
 import io.notdynamo.proto.v1.PutResponse;
+import io.notdynamo.proto.v1.RaftAppendEntriesRequest;
+import io.notdynamo.proto.v1.RaftAppendEntriesResponse;
+import io.notdynamo.proto.v1.RaftConsensusServiceGrpc;
+import io.notdynamo.proto.v1.RaftOperationType;
+import io.notdynamo.proto.v1.RaftVoteRequest;
+import io.notdynamo.proto.v1.RaftVoteResponse;
 import io.notdynamo.proto.v1.StatusCode;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
@@ -31,9 +37,41 @@ class GrpcNodeRpcClientTest {
         NodeConfig config = new NodeConfig("node-a", "127.0.0.1", 9090, 8080, tempDir.resolve("node-a"));
 
         try (NodeServer node = NodeServer.openSharded(config, 32, 64)) {
+            RaftConsensusServiceGrpc.RaftConsensusServiceImplBase raftService =
+                new RaftConsensusServiceGrpc.RaftConsensusServiceImplBase() {
+                    @Override
+                    public void requestVote(RaftVoteRequest request, io.grpc.stub.StreamObserver<RaftVoteResponse> responseObserver) {
+                        responseObserver.onNext(
+                            RaftVoteResponse.newBuilder()
+                                .setTerm(request.getTerm() + 1)
+                                .setVoteGranted(true)
+                                .setLeaderId("node-a")
+                                .build()
+                        );
+                        responseObserver.onCompleted();
+                    }
+
+                    @Override
+                    public void appendEntries(
+                        RaftAppendEntriesRequest request,
+                        io.grpc.stub.StreamObserver<RaftAppendEntriesResponse> responseObserver
+                    ) {
+                        responseObserver.onNext(
+                            RaftAppendEntriesResponse.newBuilder()
+                                .setTerm(request.getTerm())
+                                .setSuccess(true)
+                                .setMatchIndex(request.getPrevLogIndex() + request.getEntriesCount())
+                                .setLeaderId("node-a")
+                                .build()
+                        );
+                        responseObserver.onCompleted();
+                    }
+                };
+
             Server grpcServer = NettyServerBuilder.forPort(0)
                 .addService(node.kvService())
                 .addService(new ReplicaApplyServiceHandler(node.kvService()))
+                .addService(raftService)
                 .build()
                 .start();
             int port = grpcServer.getPort();
@@ -70,6 +108,43 @@ class GrpcNodeRpcClientTest {
                     DeleteRequest.newBuilder().setKey(ByteString.copyFromUtf8("replica-key")).build()
                 );
                 assertFalse(replicaDelete.hasError());
+
+                RaftVoteResponse vote = rpc.requestVote(
+                    "node-a",
+                    RaftVoteRequest.newBuilder()
+                        .setGroupId("shard-1")
+                        .setCandidateId("node-b")
+                        .setTerm(7)
+                        .setLastLogIndex(10)
+                        .setLastLogTerm(7)
+                        .build()
+                );
+                assertTrue(vote.getVoteGranted());
+                assertEquals(8L, vote.getTerm());
+                assertEquals("node-a", vote.getLeaderId());
+
+                RaftAppendEntriesResponse append = rpc.appendEntries(
+                    "node-a",
+                    RaftAppendEntriesRequest.newBuilder()
+                        .setGroupId("shard-1")
+                        .setLeaderId("node-a")
+                        .setTerm(8)
+                        .setPrevLogIndex(10)
+                        .setPrevLogTerm(7)
+                        .setLeaderCommit(10)
+                        .addEntries(
+                            io.notdynamo.proto.v1.RaftEntry.newBuilder()
+                                .setTerm(8)
+                                .setIndex(11)
+                                .setOperationType(RaftOperationType.RAFT_OPERATION_TYPE_PUT)
+                                .setKey(ByteString.copyFromUtf8("k1"))
+                                .setValue(ByteString.copyFromUtf8("v1"))
+                                .build()
+                        )
+                        .build()
+                );
+                assertTrue(append.getSuccess());
+                assertEquals(11L, append.getMatchIndex());
             } finally {
                 grpcServer.shutdownNow();
                 grpcServer.awaitTermination(5, TimeUnit.SECONDS);
@@ -90,6 +165,22 @@ class GrpcNodeRpcClientTest {
 
             assertTrue(put.hasError());
             assertEquals(StatusCode.STATUS_CODE_UNAVAILABLE, put.getError().getCode());
+
+            RaftVoteResponse vote = rpc.requestVote(
+                "missing-node",
+                RaftVoteRequest.newBuilder()
+                    .setGroupId("shard-1")
+                    .setCandidateId("candidate")
+                    .setTerm(3)
+                    .build()
+            );
+            assertFalse(vote.getVoteGranted());
+
+            RaftAppendEntriesResponse append = rpc.appendEntries(
+                "missing-node",
+                RaftAppendEntriesRequest.newBuilder().setGroupId("shard-1").setLeaderId("candidate").setTerm(3).build()
+            );
+            assertFalse(append.getSuccess());
         }
     }
 }

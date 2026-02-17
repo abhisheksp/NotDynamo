@@ -13,6 +13,7 @@ pushd "$ROOT_DIR" >/dev/null
 ./scripts/verify/g12.sh
 ./scripts/verify/g13.sh
 ./scripts/verify/g14.sh
+./scripts/verify/g15.sh
 popd >/dev/null
 
 read_status() {
@@ -25,9 +26,10 @@ G11_STATUS="$(read_status "$REPORT_DIR/g11.json")"
 G12_STATUS="$(read_status "$REPORT_DIR/g12.json")"
 G13_STATUS="$(read_status "$REPORT_DIR/g13.json")"
 G14_STATUS="$(read_status "$REPORT_DIR/g14.json")"
+G15_STATUS="$(read_status "$REPORT_DIR/g15.json")"
 
 AGG_STATUS="PASS"
-for status in "$G10_STATUS" "$G11_STATUS" "$G12_STATUS" "$G13_STATUS" "$G14_STATUS"; do
+for status in "$G10_STATUS" "$G11_STATUS" "$G12_STATUS" "$G13_STATUS" "$G14_STATUS" "$G15_STATUS"; do
   if [[ "$status" != "PASS" ]]; then
     AGG_STATUS="FAIL"
     break
@@ -44,16 +46,18 @@ cat >"$REPORT_FILE" <<JSON
     "G11": "$G11_STATUS",
     "G12": "$G12_STATUS",
     "G13": "$G13_STATUS",
-    "G14": "$G14_STATUS"
+    "G14": "$G14_STATUS",
+    "G15": "$G15_STATUS"
   },
   "commands": [
     "./scripts/verify/g10.sh",
     "./scripts/verify/g11.sh",
     "./scripts/verify/g12.sh",
     "./scripts/verify/g13.sh",
-    "./scripts/verify/g14.sh"
+    "./scripts/verify/g14.sh",
+    "./scripts/verify/g15.sh"
   ],
-  "notes": "Aggregate correctness gate before benchmark-focused optimization"
+  "notes": "Aggregate correctness gate before benchmark-focused optimization, including raft write-path coverage"
 }
 JSON
 

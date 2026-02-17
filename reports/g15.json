@@ -1,0 +1,10 @@
+{
+  "gate": "G15",
+  "status": "PASS",
+  "timestamp_utc": "2026-02-17T19:31:55Z",
+  "node_tests": "./gradlew :node:test --tests io.notdynamo.node.cluster.GrpcNodeRpcClientTest",
+  "integration_tests": "./gradlew :it:test --tests io.notdynamo.it.RaftRoutingIT",
+  "node_log": "/tmp/notdynamo-g15-node.log",
+  "integration_log": "/tmp/notdynamo-g15-it.log",
+  "notes": "Raft vote/append RPC transport, leader failover election, and quorum-commit routing validated"
+}

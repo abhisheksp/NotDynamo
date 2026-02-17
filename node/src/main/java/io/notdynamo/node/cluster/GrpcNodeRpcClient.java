@@ -12,6 +12,11 @@ import io.notdynamo.proto.v1.GetResponse;
 import io.notdynamo.proto.v1.KvServiceGrpc;
 import io.notdynamo.proto.v1.PutRequest;
 import io.notdynamo.proto.v1.PutResponse;
+import io.notdynamo.proto.v1.RaftAppendEntriesRequest;
+import io.notdynamo.proto.v1.RaftAppendEntriesResponse;
+import io.notdynamo.proto.v1.RaftConsensusServiceGrpc;
+import io.notdynamo.proto.v1.RaftVoteRequest;
+import io.notdynamo.proto.v1.RaftVoteResponse;
 import io.notdynamo.proto.v1.ReplicaApplyServiceGrpc;
 import io.notdynamo.proto.v1.StatusCode;
 import java.util.Objects;
@@ -25,6 +30,8 @@ public final class GrpcNodeRpcClient implements NodeRpcClient {
     private final ConcurrentHashMap<String, ManagedChannel> channelsByNodeId = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<String, KvServiceGrpc.KvServiceBlockingStub> stubsByNodeId = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<String, ReplicaApplyServiceGrpc.ReplicaApplyServiceBlockingStub> replicaStubsByNodeId =
+        new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String, RaftConsensusServiceGrpc.RaftConsensusServiceBlockingStub> raftStubsByNodeId =
         new ConcurrentHashMap<>();
 
     public GrpcNodeRpcClient(Function<String, String> targetResolver, long timeoutMillis) {
@@ -96,6 +103,48 @@ public final class GrpcNodeRpcClient implements NodeRpcClient {
     }
 
     @Override
+    public RaftVoteResponse requestVote(String nodeId, RaftVoteRequest request) {
+        String validatedNodeId = validateNodeId(nodeId);
+        try {
+            return raftStubFor(validatedNodeId).withDeadlineAfter(timeoutMillis, TimeUnit.MILLISECONDS).requestVote(request);
+        } catch (StatusRuntimeException e) {
+            return RaftVoteResponse.newBuilder()
+                .setTerm(request.getTerm())
+                .setVoteGranted(false)
+                .setLeaderId("")
+                .build();
+        } catch (RuntimeException e) {
+            return RaftVoteResponse.newBuilder()
+                .setTerm(request.getTerm())
+                .setVoteGranted(false)
+                .setLeaderId("")
+                .build();
+        }
+    }
+
+    @Override
+    public RaftAppendEntriesResponse appendEntries(String nodeId, RaftAppendEntriesRequest request) {
+        String validatedNodeId = validateNodeId(nodeId);
+        try {
+            return raftStubFor(validatedNodeId).withDeadlineAfter(timeoutMillis, TimeUnit.MILLISECONDS).appendEntries(request);
+        } catch (StatusRuntimeException e) {
+            return RaftAppendEntriesResponse.newBuilder()
+                .setTerm(request.getTerm())
+                .setSuccess(false)
+                .setMatchIndex(0)
+                .setLeaderId("")
+                .build();
+        } catch (RuntimeException e) {
+            return RaftAppendEntriesResponse.newBuilder()
+                .setTerm(request.getTerm())
+                .setSuccess(false)
+                .setMatchIndex(0)
+                .setLeaderId("")
+                .build();
+        }
+    }
+
+    @Override
     public void close() {
         for (ManagedChannel channel : channelsByNodeId.values()) {
             channel.shutdownNow();
@@ -103,6 +152,7 @@ public final class GrpcNodeRpcClient implements NodeRpcClient {
         channelsByNodeId.clear();
         stubsByNodeId.clear();
         replicaStubsByNodeId.clear();
+        raftStubsByNodeId.clear();
     }
 
     private KvServiceGrpc.KvServiceBlockingStub stubFor(String nodeId) {
@@ -113,6 +163,13 @@ public final class GrpcNodeRpcClient implements NodeRpcClient {
         return replicaStubsByNodeId.computeIfAbsent(
             nodeId,
             id -> ReplicaApplyServiceGrpc.newBlockingStub(channelFor(id))
+        );
+    }
+
+    private RaftConsensusServiceGrpc.RaftConsensusServiceBlockingStub raftStubFor(String nodeId) {
+        return raftStubsByNodeId.computeIfAbsent(
+            nodeId,
+            id -> RaftConsensusServiceGrpc.newBlockingStub(channelFor(id))
         );
     }
 

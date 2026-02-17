@@ -11,6 +11,9 @@ import io.notdynamo.node.cluster.NodeRpcClient;
 import io.notdynamo.node.cluster.PartitionMapCache;
 import io.notdynamo.node.cluster.PartitionedKvRouter;
 import io.notdynamo.node.cluster.PartitionedKvServiceHandler;
+import io.notdynamo.node.cluster.RaftConsensusServiceHandler;
+import io.notdynamo.node.cluster.RaftKvRouter;
+import io.notdynamo.node.cluster.RaftKvServiceHandler;
 import io.notdynamo.node.cluster.ReplicaApplyServiceHandler;
 import io.notdynamo.node.cluster.ReplicaQuorumKvRouter;
 import io.notdynamo.node.cluster.ReplicaQuorumKvServiceHandler;
@@ -40,42 +43,63 @@ public final class NodeMain {
         NodeRpcClient rpcClient = null;
         try (NodeServer nodeServer = NodeServer.openSharded(config, settings.shardCount, settings.virtualNodesPerShard)) {
             KvServiceGrpc.KvServiceImplBase kvApi = nodeServer.kvService();
+            RaftConsensusServiceHandler raftConsensusApi = null;
             Supplier<String> partitionMapEpochSupplier = () -> "0";
 
             if (settings.runtimeMode == RuntimeMode.PARTITIONED) {
                 ClusterPartitionMap partitionMap = settings.partitionMap();
                 PartitionMapCache partitionMapCache = new PartitionMapCache(partitionMap);
                 rpcClient = createRpcClient(settings);
-                if (settings.writePolicy == WritePolicy.LEADER_QUORUM) {
-                    ReplicaPartitionMap replicaMap = settings.replicaMap(partitionMap);
-                    ReplicaQuorumKvRouter router = new ReplicaQuorumKvRouter(
-                        config.nodeId(),
-                        nodeServer.kvService(),
-                        rpcClient,
-                        replicaMap,
-                        settings.writeQuorumAcks
-                    );
-                    kvApi = new ReplicaQuorumKvServiceHandler(router);
-                } else {
-                    PartitionedKvRouter router = new PartitionedKvRouter(
-                        config.nodeId(),
-                        nodeServer.kvService(),
-                        rpcClient,
-                        partitionMapCache
-                    );
-                    kvApi = new PartitionedKvServiceHandler(router);
+                switch (settings.writePolicy) {
+                    case LEADER_QUORUM -> {
+                        ReplicaPartitionMap replicaMap = settings.replicaMap(partitionMap);
+                        ReplicaQuorumKvRouter router = new ReplicaQuorumKvRouter(
+                            config.nodeId(),
+                            nodeServer.kvService(),
+                            rpcClient,
+                            replicaMap,
+                            settings.writeQuorumAcks
+                        );
+                        kvApi = new ReplicaQuorumKvServiceHandler(router);
+                    }
+                    case RAFT -> {
+                        ReplicaPartitionMap replicaMap = settings.replicaMap(partitionMap);
+                        RaftKvRouter router = new RaftKvRouter(config.nodeId(), nodeServer.kvService(), rpcClient, replicaMap);
+                        kvApi = new RaftKvServiceHandler(router);
+                        raftConsensusApi = new RaftConsensusServiceHandler(router);
+                    }
+                    case SINGLE_OWNER -> {
+                        PartitionedKvRouter router = new PartitionedKvRouter(
+                            config.nodeId(),
+                            nodeServer.kvService(),
+                            rpcClient,
+                            partitionMapCache
+                        );
+                        kvApi = new PartitionedKvServiceHandler(router);
+                    }
                 }
                 partitionMapEpochSupplier = () -> String.valueOf(partitionMapCache.current().version().epoch());
+            }
+
+            if (rpcClient instanceof InMemoryNodeRpcClient inMemoryRpcClient) {
+                inMemoryRpcClient.register(config.nodeId(), kvApi);
+                inMemoryRpcClient.registerReplicaApply(config.nodeId(), nodeServer.kvService());
+                if (raftConsensusApi != null) {
+                    inMemoryRpcClient.registerRaftConsensus(config.nodeId(), raftConsensusApi);
+                }
             }
 
             NodeHealthServiceHandler healthService = new NodeHealthServiceHandler(config.nodeId(), () -> true, partitionMapEpochSupplier);
             ReplicaApplyServiceHandler replicaApplyService = new ReplicaApplyServiceHandler(nodeServer.kvService());
 
-            Server grpcServer = NettyServerBuilder.forPort(config.grpcPort())
+            NettyServerBuilder grpcBuilder = NettyServerBuilder.forPort(config.grpcPort())
                 .addService(kvApi)
                 .addService(replicaApplyService)
-                .addService(healthService)
-                .build();
+                .addService(healthService);
+            if (raftConsensusApi != null) {
+                grpcBuilder.addService(raftConsensusApi);
+            }
+            Server grpcServer = grpcBuilder.build();
 
             HttpBridgeServer httpBridge = HttpBridgeServer.open(config.nodeId(), config.httpPort(), kvApi);
             NodeRpcClient rpcClientForShutdown = rpcClient;
@@ -173,7 +197,8 @@ public final class NodeMain {
 
     private enum WritePolicy {
         SINGLE_OWNER,
-        LEADER_QUORUM;
+        LEADER_QUORUM,
+        RAFT;
 
         private static WritePolicy parse(String value) {
             if (value == null || value.isBlank()) {
@@ -182,6 +207,7 @@ public final class NodeMain {
             return switch (value.trim().toLowerCase(Locale.ROOT)) {
                 case "single-owner", "single_owner", "single" -> SINGLE_OWNER;
                 case "leader-quorum", "leader_quorum", "quorum" -> LEADER_QUORUM;
+                case "raft" -> RAFT;
                 default -> throw new IllegalArgumentException("unsupported NOTDYNAMO_WRITE_POLICY: " + value);
             };
         }
@@ -313,6 +339,9 @@ public final class NodeMain {
                 throw new IllegalArgumentException(
                     "cluster node count must be >= write quorum acks for leader-quorum policy"
                 );
+            }
+            if (writePolicy == WritePolicy.RAFT && clusterNodeIds.size() < 3) {
+                throw new IllegalArgumentException("raft policy requires at least 3 nodes");
             }
 
             return new RuntimeSettings(
