@@ -60,11 +60,15 @@ class KubernetesManifestIT {
     @Test
     void drillScriptSupportsDryRunMode() throws IOException, InterruptedException {
         Path repoRoot = findRepoRoot();
-        Path script = repoRoot.resolve("scripts/k8s/drill-node-drain.sh");
-        assertTrue(Files.exists(script));
+        Path drainScript = repoRoot.resolve("scripts/k8s/drill-node-drain.sh");
+        Path podDeleteScript = repoRoot.resolve("scripts/k8s/drill-pod-delete.sh");
+        Path localFailureScript = repoRoot.resolve("scripts/local/kind_failure_pod_restart.sh");
+        assertTrue(Files.exists(drainScript));
+        assertTrue(Files.exists(podDeleteScript));
+        assertTrue(Files.exists(localFailureScript));
 
-        Process process = new ProcessBuilder(
-            script.toString(),
+        Process drainProcess = new ProcessBuilder(
+            drainScript.toString(),
             "--dry-run",
             "--node",
             "dummy-node",
@@ -74,12 +78,44 @@ class KubernetesManifestIT {
             .redirectErrorStream(true)
             .start();
 
-        String output = new String(process.getInputStream().readAllBytes(), StandardCharsets.UTF_8);
-        int exitCode = process.waitFor();
+        String drainOutput = new String(drainProcess.getInputStream().readAllBytes(), StandardCharsets.UTF_8);
+        int drainExitCode = drainProcess.waitFor();
 
-        assertEquals(0, exitCode);
-        assertTrue(output.contains("DRY_RUN:"));
-        assertFalse(output.isBlank());
+        assertEquals(0, drainExitCode);
+        assertTrue(drainOutput.contains("DRY_RUN:"));
+        assertFalse(drainOutput.isBlank());
+
+        Process podDeleteProcess = new ProcessBuilder(
+            podDeleteScript.toString(),
+            "--dry-run",
+            "--namespace",
+            "notdynamo"
+        )
+            .redirectErrorStream(true)
+            .start();
+
+        String podDeleteOutput = new String(podDeleteProcess.getInputStream().readAllBytes(), StandardCharsets.UTF_8);
+        int podDeleteExitCode = podDeleteProcess.waitFor();
+
+        assertEquals(0, podDeleteExitCode);
+        assertTrue(podDeleteOutput.contains("DRY_RUN:"));
+        assertFalse(podDeleteOutput.isBlank());
+
+        Process localFailureProcess = new ProcessBuilder(
+            localFailureScript.toString(),
+            "--dry-run",
+            "--namespace",
+            "notdynamo"
+        )
+            .redirectErrorStream(true)
+            .start();
+
+        String localFailureOutput = new String(localFailureProcess.getInputStream().readAllBytes(), StandardCharsets.UTF_8);
+        int localFailureExitCode = localFailureProcess.waitFor();
+
+        assertEquals(0, localFailureExitCode);
+        assertTrue(localFailureOutput.contains("DRY_RUN:"));
+        assertFalse(localFailureOutput.isBlank());
     }
 
     private static Path findRepoRoot() {

@@ -30,7 +30,7 @@ if [[ -z "$NODE_NAME" ]]; then
   NODE_NAME="node-placeholder"
 fi
 
-CMD="kubectl drain $NODE_NAME --ignore-daemonsets --delete-emptydir-data --grace-period=30 --namespace $NAMESPACE"
+CMD="kubectl drain $NODE_NAME --ignore-daemonsets --delete-emptydir-data --grace-period=30"
 
 if [[ "$DRY_RUN" == "true" ]]; then
   echo "DRY_RUN: $CMD"

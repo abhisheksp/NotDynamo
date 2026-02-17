@@ -26,6 +26,8 @@ Milestone branches:
 - `codex/e7-k8s`: Kubernetes manifests and lease election integration
 - `codex/e8-observability`: metrics + SLO/alerting primitives
 - `codex/e9-performance`: local/cloud benchmark tooling, EKS workflows, reports
+- `codex/e10-runtime-router-bootstrap`: router-first runtime activation + gRPC node transport
+- `codex/e11-failure-drills`: Kubernetes failure drill scripts and verification gate extensions
 
 Default branch `main` always points to the latest completed task state.
 
@@ -90,6 +92,8 @@ Use kind + docker/finch for iterative development and smoke tests.
 ./scripts/local/kind_up.sh --workers 2 --provider nerdctl
 ./scripts/local/kind_deploy.sh --data-replicas 3 --provider nerdctl
 ./scripts/local/kind_smoke.sh --namespace notdynamo
+./scripts/local/kind_cross_node_smoke.sh --namespace notdynamo
+./scripts/local/kind_failure_pod_restart.sh --namespace notdynamo --failed-pod notdynamo-data-0
 ```
 
 ### EKS
@@ -146,6 +150,8 @@ Notes:
 ## Current Status
 
 - End-to-end local and EKS deploy flows are operational.
+- Runtime now supports partitioned request routing across nodes using gRPC node-to-node forwarding.
+- New verification gates `G10` and `G11` validate live gRPC routing behavior and failure-drill scripts.
 - Automated setup/teardown scripts include cost-control safeguards.
 - Benchmark harness and human-readable reports are source-controlled.
 
