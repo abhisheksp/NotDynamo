@@ -16,6 +16,12 @@ API_PUBLIC_CIDR="${EKS_PUBLIC_CIDR:-}"
 EBS_CSI_ADDON_NAME="aws-ebs-csi-driver"
 EBS_CSI_IAM_ROLE_NAME="${CLUSTER_NAME}-ebs-csi-role"
 EBS_CSI_POLICY_ARN="arn:aws:iam::aws:policy/service-role/AmazonEBSCSIDriverPolicy"
+MAX_DAILY_COST_USD="${NOTDYNAMO_MAX_DAILY_COST_USD:-20}"
+ALLOW_OVER_BUDGET="false"
+NODE_HOURLY_USD=""
+EKS_CONTROL_PLANE_HOURLY_USD="0.10"
+EBS_GP3_GB_MONTH_USD="0.08"
+NODE_VOLUME_GIB=80
 
 usage() {
   cat <<'USAGE'
@@ -35,6 +41,9 @@ Options:
   --public-api                Leave API endpoint publicly reachable (not recommended)
   --private-api-only          Disable public API endpoint (requires VPC/VPN access)
   --public-cidr <cidr>        Allowed public API CIDR when restricted mode (default: caller-ip/32)
+  --max-daily-usd <amount>    Max allowed estimated daily AWS cost (default: 20)
+  --node-hourly-usd <amount>  Override node instance hourly price estimate
+  --allow-over-budget         Bypass budget guard (requires explicit user approval)
   --help                      Show this help message
 USAGE
 }
@@ -85,6 +94,18 @@ while (( $# > 0 )); do
       API_PUBLIC_CIDR="$2"
       shift 2
       ;;
+    --max-daily-usd)
+      MAX_DAILY_COST_USD="$2"
+      shift 2
+      ;;
+    --node-hourly-usd)
+      NODE_HOURLY_USD="$2"
+      shift 2
+      ;;
+    --allow-over-budget)
+      ALLOW_OVER_BUDGET="true"
+      shift
+      ;;
     --help)
       usage
       exit 0
@@ -109,6 +130,19 @@ if (( NODES_MIN > NODES_MAX )); then
 fi
 if (( NODES < NODES_MIN || NODES > NODES_MAX )); then
   echo "--nodes must be between --nodes-min and --nodes-max" >&2
+  exit 1
+fi
+
+is_positive_number() {
+  awk -v value="$1" 'BEGIN { exit !(value ~ /^[0-9]+([.][0-9]+)?$/ && value > 0) }'
+}
+
+if ! is_positive_number "$MAX_DAILY_COST_USD"; then
+  echo "--max-daily-usd must be a positive number" >&2
+  exit 1
+fi
+if [[ -n "$NODE_HOURLY_USD" ]] && ! is_positive_number "$NODE_HOURLY_USD"; then
+  echo "--node-hourly-usd must be a positive number" >&2
   exit 1
 fi
 
@@ -255,6 +289,61 @@ resolve_public_cidr() {
   echo "${ip}/32"
 }
 
+resolve_node_hourly_usd() {
+  if [[ -n "$NODE_HOURLY_USD" ]]; then
+    echo "$NODE_HOURLY_USD"
+    return
+  fi
+
+  case "$NODE_TYPE" in
+    t3.medium) echo "0.0416" ;;
+    t3.large) echo "0.0832" ;;
+    t3.xlarge) echo "0.1664" ;;
+    t3a.medium) echo "0.0376" ;;
+    t3a.large) echo "0.0752" ;;
+    m6i.large) echo "0.0960" ;;
+    m6i.xlarge) echo "0.1920" ;;
+    c6i.large) echo "0.0850" ;;
+    c6i.xlarge) echo "0.1700" ;;
+    *) echo "" ;;
+  esac
+}
+
+estimate_and_enforce_budget() {
+  local node_hourly
+  node_hourly="$(resolve_node_hourly_usd)"
+  if [[ -z "$node_hourly" ]]; then
+    echo "unable to estimate hourly price for node type '$NODE_TYPE'." >&2
+    echo "provide --node-hourly-usd <amount> to continue safely." >&2
+    exit 1
+  fi
+
+  local hourly_cap
+  local node_hourly_total
+  local ebs_hourly_total
+  local estimated_hourly
+  local estimated_daily
+
+  hourly_cap="$(awk -v daily="$MAX_DAILY_COST_USD" 'BEGIN { printf "%.6f", daily / 24.0 }')"
+  node_hourly_total="$(awk -v price="$node_hourly" -v n="$NODES_MAX" 'BEGIN { printf "%.6f", price * n }')"
+  ebs_hourly_total="$(awk -v n="$NODES_MAX" -v gib="$NODE_VOLUME_GIB" -v rate="$EBS_GP3_GB_MONTH_USD" 'BEGIN { printf "%.6f", (n * gib * rate) / 730.0 }')"
+  estimated_hourly="$(awk -v cp="$EKS_CONTROL_PLANE_HOURLY_USD" -v nodes="$node_hourly_total" -v ebs="$ebs_hourly_total" 'BEGIN { printf "%.6f", cp + nodes + ebs }')"
+  estimated_daily="$(awk -v hourly="$estimated_hourly" 'BEGIN { printf "%.6f", hourly * 24.0 }')"
+
+  echo "estimated max hourly cost (using nodes-max=$NODES_MAX): \$${estimated_hourly}/hour"
+  echo "estimated max daily cost: \$${estimated_daily}/day (budget cap: \$${MAX_DAILY_COST_USD}/day)"
+
+  if awk -v est="$estimated_hourly" -v cap="$hourly_cap" 'BEGIN { exit !(est > cap) }'; then
+    if [[ "$ALLOW_OVER_BUDGET" != "true" ]]; then
+      echo "estimated cost exceeds configured budget cap." >&2
+      echo "refusing to create cluster without explicit override." >&2
+      echo "if you have explicit approval, re-run with --allow-over-budget." >&2
+      exit 1
+    fi
+    echo "warning: budget cap exceeded, proceeding because --allow-over-budget was provided."
+  fi
+}
+
 require_bin aws
 require_bin eksctl
 require_bin kubectl
@@ -267,6 +356,8 @@ if ! aws sts get-caller-identity >/dev/null 2>&1; then
   echo "Run: aws configure" >&2
   exit 1
 fi
+
+estimate_and_enforce_budget
 
 if cluster_exists; then
   echo "EKS cluster '$CLUSTER_NAME' already exists in region '$REGION'"
@@ -296,7 +387,7 @@ trap 'rm -f "$CONFIG_FILE"' EXIT
   echo "    desiredCapacity: $NODES"
   echo "    minSize: $NODES_MIN"
   echo "    maxSize: $NODES_MAX"
-  echo "    volumeSize: 80"
+  echo "    volumeSize: $NODE_VOLUME_GIB"
 
   if [[ "$API_ENDPOINT_MODE" == "public" ]]; then
     echo

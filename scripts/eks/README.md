@@ -49,6 +49,24 @@ You can override API endpoint mode:
 ./scripts/eks/eks_up.sh --public-cidr 203.0.113.10/32
 ```
 
+## Cost guardrails
+
+- `eks_up.sh` enforces a budget guard by default: `--max-daily-usd 20`.
+- Estimated max cost is calculated using:
+  - EKS control-plane hourly cost
+  - `nodes-max` x node hourly estimate
+  - gp3 EBS estimate for node root volumes
+- If estimated cost exceeds the cap, cluster creation is blocked unless you pass `--allow-over-budget`.
+
+Example:
+
+```bash
+./scripts/eks/eks_up.sh \
+  --name notdynamo-eks \
+  --region us-west-2 \
+  --max-daily-usd 20
+```
+
 ## Typical EKS Session
 
 ```bash

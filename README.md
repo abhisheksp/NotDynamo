@@ -33,6 +33,7 @@ Milestone branches:
 - `codex/e14-leader-quorum-replication`: leader-quorum write path and internal replica-apply service
 - `codex/e15-control-plane-runtime`: replace placeholder control-plane with a real runtime process
 - `codex/e16-node-drain-recovery-drill`: node-level local recovery drill and validation updates
+- `codex/e17-eks-cost-guardrails`: enforce default EKS budget cap during cluster creation
 
 Default branch `main` always points to the latest completed task state.
 
@@ -160,6 +161,7 @@ Notes:
 - Control-plane deployment now runs an executable process with `/healthz` and `/v1/partition-map` endpoints.
 - New verification gates `G10` to `G14` validate distributed routing, failure-drill scripts, quorum writes, and control-plane runtime.
 - Local failure drills now include pod restart and node drain recovery paths.
+- EKS provisioning now enforces a default `$20/day` budget cap unless explicitly overridden.
 - Automated setup/teardown scripts include cost-control safeguards.
 - Benchmark harness and human-readable reports are source-controlled.
 
