@@ -51,6 +51,10 @@ public final class NodeServer implements AutoCloseable {
         return kvService;
     }
 
+    public KeyValueStore keyValueStore() {
+        return keyValueStore;
+    }
+
     @Override
     public void close() {
         keyValueStore.close();

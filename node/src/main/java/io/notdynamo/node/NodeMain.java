@@ -11,14 +11,16 @@ import io.notdynamo.node.cluster.NodeRpcClient;
 import io.notdynamo.node.cluster.PartitionMapCache;
 import io.notdynamo.node.cluster.PartitionedKvRouter;
 import io.notdynamo.node.cluster.PartitionedKvServiceHandler;
-import io.notdynamo.node.cluster.RaftConsensusServiceHandler;
-import io.notdynamo.node.cluster.RaftKvRouter;
-import io.notdynamo.node.cluster.RaftKvServiceHandler;
+import io.notdynamo.node.cluster.RatisKvRouter;
+import io.notdynamo.node.cluster.RatisKvServiceHandler;
 import io.notdynamo.node.cluster.ReplicaApplyServiceHandler;
 import io.notdynamo.node.cluster.ReplicaQuorumKvRouter;
 import io.notdynamo.node.cluster.ReplicaQuorumKvServiceHandler;
 import io.notdynamo.node.http.HttpBridgeServer;
 import io.notdynamo.proto.v1.KvServiceGrpc;
+import io.notdynamo.ratis.ConsensusEngine;
+import io.notdynamo.ratis.RatisConsensusEngine;
+import io.notdynamo.ratis.RatisConsensusEngineConfig;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -41,9 +43,9 @@ public final class NodeMain {
         Files.createDirectories(config.dataDir());
 
         NodeRpcClient rpcClient = null;
+        ConsensusEngine consensusEngine = null;
         try (NodeServer nodeServer = NodeServer.openSharded(config, settings.shardCount, settings.virtualNodesPerShard)) {
             KvServiceGrpc.KvServiceImplBase kvApi = nodeServer.kvService();
-            RaftConsensusServiceHandler raftConsensusApi = null;
             Supplier<String> partitionMapEpochSupplier = () -> "0";
 
             if (settings.runtimeMode == RuntimeMode.PARTITIONED) {
@@ -64,9 +66,23 @@ public final class NodeMain {
                     }
                     case RAFT -> {
                         ReplicaPartitionMap replicaMap = settings.replicaMap(partitionMap);
-                        RaftKvRouter router = new RaftKvRouter(config.nodeId(), nodeServer.kvService(), rpcClient, replicaMap);
-                        kvApi = new RaftKvServiceHandler(router);
-                        raftConsensusApi = new RaftConsensusServiceHandler(router);
+                        RatisConsensusEngineConfig consensusConfig = new RatisConsensusEngineConfig(
+                            config.nodeId(),
+                            settings.clusterNodeIds,
+                            settings::ratisTargetForNode,
+                            config.dataDir().resolve("ratis"),
+                            settings.ratisGroupName,
+                            settings.ratisRequestTimeoutMillis
+                        );
+                        consensusEngine = RatisConsensusEngine.open(consensusConfig, nodeServer.keyValueStore());
+                        RatisKvRouter router = new RatisKvRouter(
+                            config.nodeId(),
+                            nodeServer.kvService(),
+                            rpcClient,
+                            replicaMap,
+                            consensusEngine
+                        );
+                        kvApi = new RatisKvServiceHandler(router);
                     }
                     case SINGLE_OWNER -> {
                         PartitionedKvRouter router = new PartitionedKvRouter(
@@ -84,25 +100,20 @@ public final class NodeMain {
             if (rpcClient instanceof InMemoryNodeRpcClient inMemoryRpcClient) {
                 inMemoryRpcClient.register(config.nodeId(), kvApi);
                 inMemoryRpcClient.registerReplicaApply(config.nodeId(), nodeServer.kvService());
-                if (raftConsensusApi != null) {
-                    inMemoryRpcClient.registerRaftConsensus(config.nodeId(), raftConsensusApi);
-                }
             }
 
             NodeHealthServiceHandler healthService = new NodeHealthServiceHandler(config.nodeId(), () -> true, partitionMapEpochSupplier);
             ReplicaApplyServiceHandler replicaApplyService = new ReplicaApplyServiceHandler(nodeServer.kvService());
 
-            NettyServerBuilder grpcBuilder = NettyServerBuilder.forPort(config.grpcPort())
+            Server grpcServer = NettyServerBuilder.forPort(config.grpcPort())
                 .addService(kvApi)
                 .addService(replicaApplyService)
-                .addService(healthService);
-            if (raftConsensusApi != null) {
-                grpcBuilder.addService(raftConsensusApi);
-            }
-            Server grpcServer = grpcBuilder.build();
+                .addService(healthService)
+                .build();
 
             HttpBridgeServer httpBridge = HttpBridgeServer.open(config.nodeId(), config.httpPort(), kvApi);
             NodeRpcClient rpcClientForShutdown = rpcClient;
+            ConsensusEngine consensusEngineForShutdown = consensusEngine;
             CountDownLatch shutdownLatch = new CountDownLatch(1);
 
             Runtime.getRuntime().addShutdownHook(new Thread(() -> {
@@ -114,6 +125,7 @@ public final class NodeMain {
                     Thread.currentThread().interrupt();
                 } finally {
                     closeQuietly(rpcClientForShutdown);
+                    closeQuietly(consensusEngineForShutdown);
                     shutdownLatch.countDown();
                 }
             }));
@@ -127,6 +139,7 @@ public final class NodeMain {
             shutdownLatch.await(1, TimeUnit.SECONDS);
         } finally {
             closeQuietly(rpcClient);
+            closeQuietly(consensusEngine);
         }
     }
 
@@ -148,6 +161,17 @@ public final class NodeMain {
         }
     }
 
+    private static void closeQuietly(ConsensusEngine consensusEngine) {
+        if (consensusEngine == null) {
+            return;
+        }
+        try {
+            consensusEngine.close();
+        } catch (RuntimeException e) {
+            System.err.println("failed to close consensus engine: " + e.getMessage());
+        }
+    }
+
     private static void logStartup(NodeConfig config, RuntimeSettings settings) {
         System.out.println("notdynamo.node.started=true");
         System.out.println("node_id=" + config.nodeId());
@@ -160,6 +184,9 @@ public final class NodeMain {
         System.out.println("write_policy=" + settings.writePolicy);
         System.out.println("write_quorum_acks=" + settings.writeQuorumAcks);
         System.out.println("rpc_mode=" + settings.rpcMode);
+        System.out.println("ratis_group_name=" + settings.ratisGroupName);
+        System.out.println("ratis_port=" + settings.ratisPort);
+        System.out.println("ratis_request_timeout_ms=" + settings.ratisRequestTimeoutMillis);
         System.out.println("cluster_nodes=" + String.join(",", settings.clusterNodeIds));
     }
 
@@ -207,7 +234,7 @@ public final class NodeMain {
             return switch (value.trim().toLowerCase(Locale.ROOT)) {
                 case "single-owner", "single_owner", "single" -> SINGLE_OWNER;
                 case "leader-quorum", "leader_quorum", "quorum" -> LEADER_QUORUM;
-                case "raft" -> RAFT;
+                case "raft", "ratis" -> RAFT;
                 default -> throw new IllegalArgumentException("unsupported NOTDYNAMO_WRITE_POLICY: " + value);
             };
         }
@@ -230,6 +257,10 @@ public final class NodeMain {
         private static final String NAMESPACE_ENV = "NOTDYNAMO_NAMESPACE";
         private static final String RPC_ADDRESS_TEMPLATE_ENV = "NOTDYNAMO_RPC_ADDRESS_TEMPLATE";
         private static final String RPC_TIMEOUT_MS_ENV = "NOTDYNAMO_RPC_TIMEOUT_MS";
+        private static final String RATIS_PORT_ENV = "NOTDYNAMO_RATIS_PORT";
+        private static final String RATIS_GROUP_NAME_ENV = "NOTDYNAMO_RATIS_GROUP_NAME";
+        private static final String RATIS_ADDRESS_TEMPLATE_ENV = "NOTDYNAMO_RATIS_ADDRESS_TEMPLATE";
+        private static final String RATIS_REQUEST_TIMEOUT_MS_ENV = "NOTDYNAMO_RATIS_REQUEST_TIMEOUT_MS";
         private static final String WRITE_POLICY_ENV = "NOTDYNAMO_WRITE_POLICY";
         private static final String WRITE_QUORUM_ACKS_ENV = "NOTDYNAMO_WRITE_QUORUM_ACKS";
 
@@ -245,6 +276,10 @@ public final class NodeMain {
         private final List<String> clusterNodeIds;
         private final String rpcAddressTemplate;
         private final long rpcTimeoutMillis;
+        private final int ratisPort;
+        private final String ratisGroupName;
+        private final String ratisAddressTemplate;
+        private final long ratisRequestTimeoutMillis;
         private final WritePolicy writePolicy;
         private final int writeQuorumAcks;
 
@@ -261,6 +296,10 @@ public final class NodeMain {
             List<String> clusterNodeIds,
             String rpcAddressTemplate,
             long rpcTimeoutMillis,
+            int ratisPort,
+            String ratisGroupName,
+            String ratisAddressTemplate,
+            long ratisRequestTimeoutMillis,
             WritePolicy writePolicy,
             int writeQuorumAcks
         ) {
@@ -276,6 +315,10 @@ public final class NodeMain {
             this.clusterNodeIds = clusterNodeIds;
             this.rpcAddressTemplate = rpcAddressTemplate;
             this.rpcTimeoutMillis = rpcTimeoutMillis;
+            this.ratisPort = ratisPort;
+            this.ratisGroupName = ratisGroupName;
+            this.ratisAddressTemplate = ratisAddressTemplate;
+            this.ratisRequestTimeoutMillis = ratisRequestTimeoutMillis;
             this.writePolicy = writePolicy;
             this.writeQuorumAcks = writeQuorumAcks;
         }
@@ -289,6 +332,13 @@ public final class NodeMain {
             int shardCount = parseInt(env.get(SHARD_COUNT_ENV), 64, SHARD_COUNT_ENV);
             int virtualNodesPerShard = parseInt(env.get(VNODES_ENV), 256, VNODES_ENV);
             long rpcTimeoutMillis = parseLong(env.get(RPC_TIMEOUT_MS_ENV), 750L, RPC_TIMEOUT_MS_ENV);
+            int ratisPort = parseInt(env.get(RATIS_PORT_ENV), 10090, RATIS_PORT_ENV);
+            long ratisRequestTimeoutMillis = parseLong(
+                env.get(RATIS_REQUEST_TIMEOUT_MS_ENV),
+                2000L,
+                RATIS_REQUEST_TIMEOUT_MS_ENV
+            );
+            String ratisGroupName = env.getOrDefault(RATIS_GROUP_NAME_ENV, "notdynamo-main");
 
             if (shardCount <= 0) {
                 throw new IllegalArgumentException("NOTDYNAMO_SHARD_COUNT must be > 0");
@@ -298,6 +348,15 @@ public final class NodeMain {
             }
             if (rpcTimeoutMillis <= 0) {
                 throw new IllegalArgumentException("NOTDYNAMO_RPC_TIMEOUT_MS must be > 0");
+            }
+            if (ratisPort <= 0 || ratisPort > 65535) {
+                throw new IllegalArgumentException("NOTDYNAMO_RATIS_PORT must be in range 1..65535");
+            }
+            if (ratisRequestTimeoutMillis <= 0) {
+                throw new IllegalArgumentException("NOTDYNAMO_RATIS_REQUEST_TIMEOUT_MS must be > 0");
+            }
+            if (ratisGroupName.isBlank()) {
+                throw new IllegalArgumentException("NOTDYNAMO_RATIS_GROUP_NAME must not be blank");
             }
 
             List<String> clusterNodeIds = parseClusterNodeIds(env.get(CLUSTER_NODE_IDS_ENV));
@@ -322,6 +381,7 @@ public final class NodeMain {
             String namespace = env.getOrDefault(NAMESPACE_ENV, "notdynamo");
             String defaultTemplate = "%s." + headlessService + "." + namespace + ".svc.cluster.local";
             String rpcAddressTemplate = env.getOrDefault(RPC_ADDRESS_TEMPLATE_ENV, defaultTemplate);
+            String ratisAddressTemplate = env.getOrDefault(RATIS_ADDRESS_TEMPLATE_ENV, defaultTemplate);
 
             String runtimeModeValue = env.get(RUNTIME_MODE_ENV);
             RuntimeMode runtimeMode = RuntimeMode.parse(
@@ -357,6 +417,10 @@ public final class NodeMain {
                 clusterNodeIds,
                 rpcAddressTemplate,
                 rpcTimeoutMillis,
+                ratisPort,
+                ratisGroupName,
+                ratisAddressTemplate,
+                ratisRequestTimeoutMillis,
                 writePolicy,
                 writeQuorumAcks
             );
@@ -391,6 +455,26 @@ public final class NodeMain {
 
             if (!target.contains(":")) {
                 target = target + ":" + grpcPort;
+            }
+            return target;
+        }
+
+        private String ratisTargetForNode(String nodeId) {
+            if (nodeId == null || nodeId.isBlank()) {
+                throw new IllegalArgumentException("nodeId must not be blank");
+            }
+
+            String target;
+            if (ratisAddressTemplate.contains("%s") && ratisAddressTemplate.contains("%d")) {
+                target = String.format(ratisAddressTemplate, nodeId, ratisPort);
+            } else if (ratisAddressTemplate.contains("%s")) {
+                target = String.format(ratisAddressTemplate, nodeId);
+            } else {
+                target = ratisAddressTemplate;
+            }
+
+            if (!target.contains(":")) {
+                target = target + ":" + ratisPort;
             }
             return target;
         }

@@ -40,6 +40,8 @@ spec:
               containerPort: 9090
             - name: http
               containerPort: 8080
+            - name: ratis
+              containerPort: 10090
           startupProbe:
             httpGet:
               path: /healthz
@@ -88,6 +90,12 @@ spec:
               value: "grpc"
             - name: NOTDYNAMO_RPC_TIMEOUT_MS
               value: "750"
+            - name: NOTDYNAMO_RATIS_PORT
+              value: "10090"
+            - name: NOTDYNAMO_RATIS_GROUP_NAME
+              value: "notdynamo-main"
+            - name: NOTDYNAMO_RATIS_REQUEST_TIMEOUT_MS
+              value: "2000"
             - name: NOTDYNAMO_WRITE_POLICY
               value: "raft"
             - name: NOTDYNAMO_WRITE_QUORUM_ACKS

@@ -8,6 +8,7 @@ dependencies {
     implementation(project(":proto"))
     implementation(project(":storage-rocksdb"))
     implementation(project(":control-plane"))
+    implementation(project(":raft-ratis"))
     implementation("io.grpc:grpc-netty-shaded:$grpcVersion")
 }
 

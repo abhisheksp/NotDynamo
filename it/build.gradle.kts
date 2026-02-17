@@ -7,5 +7,6 @@ dependencies {
     testImplementation(project(":proto"))
     testImplementation(project(":storage-rocksdb"))
     testImplementation(project(":control-plane"))
+    testImplementation(project(":raft-ratis"))
     testImplementation("org.yaml:snakeyaml:2.2")
 }

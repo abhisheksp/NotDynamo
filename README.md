@@ -36,6 +36,7 @@ Milestone branches:
 - `codex/e17-eks-cost-guardrails`: enforce default EKS budget cap during cluster creation
 - `codex/e18-aggregate-correctness-gate`: aggregate pre-benchmark correctness gate (`G18`)
 - `codex/e19-gated-benchmark-runner`: benchmark wrapper that runs `G18` before E2E profile
+- `codex/e20-true-raft-integration`: runtime consensus migration to Apache Ratis with router integration verification
 
 Default branch `main` always points to the latest completed task state.
 
@@ -159,9 +160,10 @@ Notes:
 
 - End-to-end local and EKS deploy flows are operational.
 - Runtime now supports partitioned request routing across nodes using gRPC node-to-node forwarding.
-- Runtime now supports raft-backed quorum writes (`rf=3`, majority ack) with internal vote/append RPC.
+- Runtime now supports raft-backed quorum writes (`rf=3`, majority ack) using Apache Ratis.
 - Control-plane deployment now runs an executable process with `/healthz` and `/v1/partition-map` endpoints.
 - New verification gates `G10` to `G14` validate distributed routing, failure-drill scripts, quorum writes, and control-plane runtime.
+- `G15` validates Apache Ratis consensus plus Ratis-backed router integration.
 - `G18` provides one aggregate correctness gate command before benchmark-focused optimization.
 - `run_gated_e2e_http_profile.sh` runs `G18` automatically before benchmark execution.
 - Local failure drills now include pod restart and node drain recovery paths.

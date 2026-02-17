@@ -57,7 +57,7 @@ cat >"$REPORT_FILE" <<JSON
     "./scripts/verify/g14.sh",
     "./scripts/verify/g15.sh"
   ],
-  "notes": "Aggregate correctness gate before benchmark-focused optimization, including raft write-path coverage"
+  "notes": "Aggregate correctness gate before benchmark-focused optimization, including Apache Ratis write-path coverage"
 }
 JSON
 
