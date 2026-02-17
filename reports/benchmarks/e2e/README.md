@@ -7,6 +7,11 @@ This folder stores end-to-end HTTP benchmark results for NotDynamo.
 - Local/port-forward runner: `scripts/bench/run_e2e_http_profile.sh`
 - EKS runner: `scripts/eks/eks_bench_http.sh`
 
+Each report now includes category metadata:
+
+- `external-client-port-forward`
+- `in-cluster-job` (when generated through in-cluster wrappers)
+
 ## Suggested usage
 
 Keep canonical benchmark snapshots in source control only when you intentionally want to baseline a release.

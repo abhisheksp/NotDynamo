@@ -1,7 +1,7 @@
 {
   "gate": "G12",
   "status": "PASS",
-  "timestamp_utc": "2026-02-17T21:52:13Z",
+  "timestamp_utc": "2026-02-17T22:22:07Z",
   "integration_tests": "./gradlew :it:test --tests io.notdynamo.it.LiveGrpcRoutingIT --tests io.notdynamo.it.LiveHttpRoutingIT",
   "integration_log": "/tmp/notdynamo-g12-it.log",
   "notes": "Distributed HTTP->gRPC routing path validated across live multi-node servers"

@@ -233,7 +233,7 @@ fi
 
 if [[ -z "$OUTPUT_FILE" ]]; then
   TIMESTAMP_TAG="$(date -u +%Y%m%dT%H%M%SZ)"
-  OUTPUT_FILE="$ROOT_DIR/reports/benchmarks/aws/e2e_http_${TIMESTAMP_TAG}.json"
+  OUTPUT_FILE="$ROOT_DIR/reports/benchmarks/aws/e2e_http_external_${TIMESTAMP_TAG}.json"
 fi
 if [[ -z "$HUMAN_REPORT_FILE" ]]; then
   if [[ "$OUTPUT_FILE" == *.json ]]; then
@@ -247,6 +247,8 @@ mkdir -p "$(dirname "$HUMAN_REPORT_FILE")"
 
 "$ROOT_DIR/scripts/bench/run_e2e_http_profile.sh" \
   --base-url "$BASE_URL" \
+  --category "external-client-port-forward" \
+  --context "eks:$CLUSTER_NAME/$NAMESPACE/$SERVICE_NAME" \
   --operations "$OPERATIONS" \
   --keyspace "$KEYSPACE" \
   --threads "$THREADS" \
@@ -260,6 +262,13 @@ mkdir -p "$(dirname "$HUMAN_REPORT_FILE")"
   --output-file "$OUTPUT_FILE" \
   --human-report-file "$HUMAN_REPORT_FILE"
 
+EXTERNAL_LATEST_JSON="$(dirname "$OUTPUT_FILE")/e2e_http_external_latest.json"
+EXTERNAL_LATEST_MD="$(dirname "$HUMAN_REPORT_FILE")/e2e_http_external_latest.md"
+cp "$OUTPUT_FILE" "$EXTERNAL_LATEST_JSON"
+cp "$HUMAN_REPORT_FILE" "$EXTERNAL_LATEST_MD"
+
 echo "EKS E2E benchmark complete."
 echo "JSON report: $OUTPUT_FILE"
 echo "Human report: $HUMAN_REPORT_FILE"
+echo "External latest JSON: $EXTERNAL_LATEST_JSON"
+echo "External latest human report: $EXTERNAL_LATEST_MD"

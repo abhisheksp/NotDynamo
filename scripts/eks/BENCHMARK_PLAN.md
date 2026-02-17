@@ -2,7 +2,13 @@
 
 ## Objective
 
-Validate end-to-end service performance first (HTTP client -> NotDynamo API), then expand to larger AWS benchmark runs.
+Cover benchmark categories that map to real deployment paths, with machine-readable + human-readable reports per run.
+
+Categories:
+
+1. External client via `kubectl port-forward` (workstation-driven E2E)
+2. In-cluster benchmark job (pod-driven E2E over cluster network)
+3. Optional external load balancer path (future hardening/perf phase)
 
 ## Phase 1: EKS Correctness + Smoke (now)
 
@@ -20,7 +26,9 @@ Validate end-to-end service performance first (HTTP client -> NotDynamo API), th
 ./scripts/eks/eks_down.sh --name notdynamo-eks --region us-west-2
 ```
 
-## Phase 2: E2E Benchmark (now)
+## Phase 2: E2E Benchmark Categories (now)
+
+### Category A: External client via port-forward
 
 Run networked E2E benchmark against EKS through `kubectl port-forward` (private service).
 
@@ -30,33 +38,62 @@ Run networked E2E benchmark against EKS through `kubectl port-forward` (private 
 ./scripts/eks/eks_bench_http.sh --name notdynamo-eks --region us-west-2
 ```
 
-For local or port-forwarded benchmark loops where you want correctness gating first:
+For loops where you want correctness gating first:
 
 ```bash
 ./scripts/bench/run_gated_e2e_http_profile.sh --base-url http://127.0.0.1:18080
 ```
 
 Artifacts:
-- `reports/benchmarks/aws/e2e_http_*.json`
-- `reports/benchmarks/aws/e2e_http_*.md`
+- `reports/benchmarks/aws/e2e_http_external_*.json`
+- `reports/benchmarks/aws/e2e_http_external_*.md`
 - `/tmp/notdynamo-e2e-http-*.log`
+
+### Category B: In-cluster benchmark job
+
+Run benchmark workers as Kubernetes Job pods inside EKS to remove workstation/port-forward bottlenecks.
+
+```bash
+./scripts/eks/eks_bench_job_up.sh --name notdynamo-eks --region us-west-2
+```
+
+Cleanup benchmark jobs:
+
+```bash
+./scripts/eks/eks_bench_job_down.sh --name notdynamo-eks --region us-west-2
+```
+
+Artifacts:
+- `reports/benchmarks/aws/e2e_http_incluster_*.json`
+- `reports/benchmarks/aws/e2e_http_incluster_*.md`
+- `reports/benchmarks/aws/incluster_runs/<job-name>/*.log`
+
+### Category Matrix Runner
+
+Run both categories and get one summary:
+
+```bash
+./scripts/eks/eks_bench_matrix.sh --name notdynamo-eks --region us-west-2
+```
+
+Artifacts:
+- `reports/benchmarks/aws/benchmark_matrix_*.json`
+- `reports/benchmarks/aws/benchmark_matrix_*.md`
 
 ## Phase 3: Scale AWS Benchmarking (later)
 
-Current E2E benchmark client runs from your workstation via API server port-forward. It is correct for functional E2E and small/medium throughput. For higher throughput, move benchmark workers into the cluster network.
+Both workstation-driven and in-cluster benchmark paths are available. The next step is to scale in-cluster worker cardinality and improve tail-latency aggregation quality for larger runs.
 
 ### Required additions
 
-1. Add in-cluster benchmark job runner:
-   - `scripts/eks/eks_bench_job_up.sh`
-   - `scripts/eks/eks_bench_job_down.sh`
-2. Package benchmark client image and run N parallel benchmark pods.
-3. Aggregate pod metrics into one report under `reports/benchmarks/aws/`.
+1. Increase in-cluster worker count and parameter sweeps for horizontal scaling envelopes.
+2. Add optional load-balancer path benchmark if needed for external-network SLO characterization.
+3. Add richer aggregation (per-pod latency histograms, percentile merge) for larger runs.
 
 ## Acceptance criteria for AWS benchmark phase
 
 1. No public data endpoint is required.
-2. Benchmarks can run entirely within VPC/cluster network (job mode).
+2. Benchmarks can run entirely within VPC/cluster network (in-cluster job mode).
 3. One-command setup/deploy/smoke/bench/teardown workflow.
 4. Cost controls:
    - cluster teardown command always executed at end,

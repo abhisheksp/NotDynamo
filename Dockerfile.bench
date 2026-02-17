@@ -1,0 +1,12 @@
+FROM eclipse-temurin:17-jdk AS build
+
+WORKDIR /workspace
+COPY . .
+RUN ./gradlew :bench:installDist --no-daemon
+
+FROM eclipse-temurin:17-jre
+
+WORKDIR /opt/notdynamo-bench
+COPY --from=build /workspace/bench/build/install/bench/ /opt/notdynamo-bench/
+
+ENTRYPOINT ["/opt/notdynamo-bench/bin/bench"]

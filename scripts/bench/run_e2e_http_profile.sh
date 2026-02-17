@@ -17,6 +17,8 @@ CONNECT_TIMEOUT_MS=3000
 REQUEST_TIMEOUT_MS=5000
 OUTPUT_FILE=""
 HUMAN_REPORT_FILE=""
+BENCHMARK_CATEGORY="unspecified"
+BENCHMARK_CONTEXT=""
 
 usage() {
   cat <<'USAGE'
@@ -36,6 +38,8 @@ Options:
   --preload <true|false>      Preload keyspace before benchmark (default: true)
   --connect-timeout-ms <n>    HTTP connect timeout (default: 3000)
   --request-timeout-ms <n>    Per-request timeout (default: 5000)
+  --category <name>           Benchmark category label (default: unspecified)
+  --context <label>           Optional benchmark context label
   --output-file <path>        Output JSON file (default: reports/benchmarks/e2e/e2e_http_<timestamp>.json)
   --human-report-file <path>  Human-readable Markdown report path (default: <output-file>.md)
   --help                      Show this help message
@@ -86,6 +90,14 @@ while (( $# > 0 )); do
       ;;
     --request-timeout-ms)
       REQUEST_TIMEOUT_MS="$2"
+      shift 2
+      ;;
+    --category)
+      BENCHMARK_CATEGORY="$2"
+      shift 2
+      ;;
+    --context)
+      BENCHMARK_CONTEXT="$2"
       shift 2
       ;;
     --output-file)
@@ -197,6 +209,8 @@ cat >"$OUTPUT_FILE" <<JSON
   "status": "$RUN_STATUS",
   "timestamp_utc": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
   "scenario": "$SCENARIO",
+  "category": "$BENCHMARK_CATEGORY",
+  "context": "$BENCHMARK_CONTEXT",
   "base_url": "$BASE_URL",
   "config": {
     "operations": "$OPERATIONS",
@@ -239,6 +253,10 @@ JSON
   echo "- Status: **$RUN_STATUS**"
   echo "- Timestamp (UTC): $(date -u +%Y-%m-%dT%H:%M:%SZ)"
   echo "- Scenario: \`$SCENARIO\`"
+  echo "- Category: \`$BENCHMARK_CATEGORY\`"
+  if [[ -n "$BENCHMARK_CONTEXT" ]]; then
+    echo "- Context: \`$BENCHMARK_CONTEXT\`"
+  fi
   echo "- Endpoint: \`$BASE_URL\`"
   echo
   echo "## Configuration"

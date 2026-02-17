@@ -105,7 +105,20 @@ cd /Users/abhishek/workspace/projects/kivi2/NotDynamo
   --read-ratio 0.90 \
   --preload false
 
-# 5) Teardown when done (stop billing)
+# 5) Run in-cluster E2E benchmark job (recommended for higher-signal perf)
+./scripts/eks/eks_bench_job_up.sh \
+  --name notdynamo-eks \
+  --region us-west-2 \
+  --operations 200000 \
+  --parallelism 4 \
+  --completions 4
+
+# Optional: run both categories and get one matrix summary
+./scripts/eks/eks_bench_matrix.sh \
+  --name notdynamo-eks \
+  --region us-west-2
+
+# 6) Teardown when done (stop billing)
 ./scripts/eks/eks_down.sh \
   --name notdynamo-eks \
   --region us-west-2
@@ -133,6 +146,9 @@ Delete ECR repo too:
 
 - `eks_down.sh` deletes app namespace, EKS cluster, and by default performs best-effort cleanup of orphaned EBS volumes tagged to the cluster.
 - `eks_bench_http.sh` runs end-to-end HTTP benchmark without exposing a public data endpoint.
+- `eks_bench_job_up.sh` runs in-cluster benchmark workers and writes aggregated reports.
+- `eks_bench_job_down.sh` removes benchmark jobs created for in-cluster benchmarking.
+- `eks_bench_matrix.sh` runs both benchmark categories and emits one summary report.
 - `eks_bench_http.sh` defaults to `--preload true`; use `--preload false` for faster smoke-level benchmark iteration.
 - each benchmark run writes both JSON and human-readable Markdown reports.
 - Benchmark roadmap: `scripts/eks/BENCHMARK_PLAN.md`.

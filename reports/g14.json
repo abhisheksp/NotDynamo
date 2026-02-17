@@ -1,7 +1,7 @@
 {
   "gate": "G14",
   "status": "PASS",
-  "timestamp_utc": "2026-02-17T21:52:41Z",
+  "timestamp_utc": "2026-02-17T22:22:34Z",
   "control_plane_tests": "./gradlew :control-plane:test --tests io.notdynamo.controlplane.ControlPlaneMainIT",
   "integration_tests": "./gradlew :it:test --tests io.notdynamo.it.KubernetesManifestIT",
   "control_plane_log": "/tmp/notdynamo-g14-control-plane.log",

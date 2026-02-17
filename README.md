@@ -114,6 +114,8 @@ Use scripted lifecycle for cost-controlled create/deploy/bench/teardown.
 ./scripts/eks/eks_deploy.sh --name notdynamo-eks --region us-west-2 --provider nerdctl
 ./scripts/eks/eks_smoke.sh --name notdynamo-eks --region us-west-2
 ./scripts/eks/eks_bench_http.sh --name notdynamo-eks --region us-west-2 --operations 10000 --threads 16 --read-ratio 0.90 --preload false
+./scripts/eks/eks_bench_job_up.sh --name notdynamo-eks --region us-west-2 --operations 10000 --parallelism 4 --completions 4 --preload false
+./scripts/eks/eks_bench_matrix.sh --name notdynamo-eks --region us-west-2 --operations 10000 --preload false
 ./scripts/eks/eks_down.sh --name notdynamo-eks --region us-west-2 --delete-ecr-repo
 ```
 
@@ -124,6 +126,12 @@ Security defaults:
 - EKS API endpoint is restricted by CIDR by default
 
 ## Benchmark Snapshot (Latest)
+
+Benchmark categories currently supported on EKS:
+
+- External client via port-forward: `scripts/eks/eks_bench_http.sh`
+- In-cluster benchmark job: `scripts/eks/eks_bench_job_up.sh`
+- Category matrix summary: `scripts/eks/eks_bench_matrix.sh`
 
 Latest end-to-end benchmark report:
 
