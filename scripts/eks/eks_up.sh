@@ -129,6 +129,49 @@ cluster_exists() {
   aws eks describe-cluster --name "$CLUSTER_NAME" --region "$REGION" >/dev/null 2>&1
 }
 
+wait_for_nodegroup_ready() {
+  local stack_name="eksctl-${CLUSTER_NAME}-nodegroup-${NODEGROUP_NAME}"
+  local status=""
+  local attempts=0
+  local max_attempts=60
+
+  echo "waiting for nodegroup stack '$stack_name' to become ready..."
+  while (( attempts < max_attempts )); do
+    status="$(aws cloudformation describe-stacks \
+      --stack-name "$stack_name" \
+      --region "$REGION" \
+      --query 'Stacks[0].StackStatus' \
+      --output text 2>/dev/null || true)"
+
+    case "$status" in
+      CREATE_COMPLETE|UPDATE_COMPLETE)
+        echo "nodegroup stack is ready ($status)."
+        return 0
+        ;;
+      CREATE_IN_PROGRESS|UPDATE_IN_PROGRESS|UPDATE_COMPLETE_CLEANUP_IN_PROGRESS|"")
+        sleep 15
+        ;;
+      *FAILED*|*ROLLBACK*)
+        echo "nodegroup stack entered failure state: $status" >&2
+        aws cloudformation describe-stack-events \
+          --stack-name "$stack_name" \
+          --region "$REGION" \
+          --max-items 20 \
+          --output table || true
+        return 1
+        ;;
+      *)
+        sleep 15
+        ;;
+    esac
+
+    attempts=$((attempts + 1))
+  done
+
+  echo "timed out waiting for nodegroup stack '$stack_name'." >&2
+  return 1
+}
+
 resolve_public_cidr() {
   if [[ -n "$API_PUBLIC_CIDR" ]]; then
     echo "$API_PUBLIC_CIDR"
@@ -179,10 +222,6 @@ trap 'rm -f "$CONFIG_FILE"' EXIT
     echo "  version: \"$K8S_VERSION\""
   fi
   echo
-  echo "tags:"
-  echo "  project: notdynamo"
-  echo "  lifecycle: ephemeral"
-  echo
   echo "managedNodeGroups:"
   echo "  - name: $NODEGROUP_NAME"
   echo "    instanceType: $NODE_TYPE"
@@ -216,6 +255,11 @@ trap 'rm -f "$CONFIG_FILE"' EXIT
 } >"$CONFIG_FILE"
 
 eksctl create cluster -f "$CONFIG_FILE"
+wait_for_nodegroup_ready
+aws eks wait nodegroup-active \
+  --cluster-name "$CLUSTER_NAME" \
+  --nodegroup-name "$NODEGROUP_NAME" \
+  --region "$REGION"
 aws eks update-kubeconfig --name "$CLUSTER_NAME" --region "$REGION" >/dev/null
 
 kubectl get nodes -o wide
