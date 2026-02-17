@@ -20,6 +20,15 @@ kubectl apply -k deploy/k8s/overlays/local
 kubectl apply -k deploy/k8s/overlays/eks
 ```
 
+For an end-to-end EKS lifecycle (create/deploy/smoke/teardown), use:
+
+```bash
+./scripts/eks/eks_up.sh
+./scripts/eks/eks_deploy.sh --provider nerdctl
+./scripts/eks/eks_smoke.sh
+./scripts/eks/eks_down.sh
+```
+
 ## Build Runtime Image
 
 ```bash
@@ -38,3 +47,5 @@ Use the helper scripts in `scripts/local/` for quick iteration:
 ./scripts/local/kind_smoke.sh
 ./scripts/local/kind_down.sh
 ```
+
+EKS helper scripts are documented in `scripts/eks/README.md`.
