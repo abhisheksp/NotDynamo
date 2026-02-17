@@ -110,6 +110,15 @@ resolve_provider() {
   fi
 }
 
+make_tmp_file() {
+  local label="$1"
+  if mktemp --version >/dev/null 2>&1; then
+    mktemp "/tmp/${label}.XXXXXX"
+  else
+    mktemp -t "$label"
+  fi
+}
+
 require_bin kind
 require_bin kubectl
 
@@ -130,7 +139,7 @@ if [[ "$EFFECTIVE_PROVIDER" == "nerdctl" ]]; then
   export KIND_EXPERIMENTAL_PROVIDER=nerdctl
 fi
 
-CONFIG_FILE="$(mktemp /tmp/notdynamo-kind-config-XXXXXX.yaml)"
+CONFIG_FILE="$(make_tmp_file notdynamo-kind-config)"
 trap 'rm -f "$CONFIG_FILE"' EXIT
 
 {

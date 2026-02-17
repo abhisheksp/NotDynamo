@@ -5,8 +5,8 @@ metadata:
 spec:
   template:
     spec:
-      topologySpreadConstraints: []
-      affinity: {}
+      topologySpreadConstraints: null
+      affinity: null
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -15,5 +15,5 @@ metadata:
 spec:
   template:
     spec:
-      topologySpreadConstraints: []
-      affinity: {}
+      topologySpreadConstraints: null
+      affinity: null

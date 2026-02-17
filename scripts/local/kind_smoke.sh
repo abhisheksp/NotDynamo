@@ -63,6 +63,12 @@ if ! command -v kubectl >/dev/null 2>&1; then
   exit 1
 fi
 
+if ! kubectl get namespace "$NAMESPACE" >/dev/null 2>&1; then
+  echo "namespace '$NAMESPACE' does not exist." >&2
+  echo "Run ./scripts/local/kind_deploy.sh first." >&2
+  exit 1
+fi
+
 PORT_FORWARD_LOG="/tmp/notdynamo-port-forward.log"
 kubectl -n "$NAMESPACE" port-forward svc/notdynamo-data "${LOCAL_PORT}:8080" >"$PORT_FORWARD_LOG" 2>&1 &
 PF_PID=$!

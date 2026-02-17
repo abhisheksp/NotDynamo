@@ -10,6 +10,7 @@ DATA_REPLICAS=3
 CONTROL_PLANE_REPLICAS=1
 PROVIDER="${KIND_PROVIDER:-auto}"
 SKIP_BUILD=0
+TMP_ARCHIVE=""
 
 usage() {
   cat <<'USAGE'
@@ -117,25 +118,39 @@ resolve_provider() {
   fi
 }
 
+make_tmp_file() {
+  local label="$1"
+  if mktemp --version >/dev/null 2>&1; then
+    mktemp "/tmp/${label}.XXXXXX"
+  else
+    mktemp -t "$label"
+  fi
+}
+
+cleanup() {
+  if [[ -n "$TMP_ARCHIVE" && -f "$TMP_ARCHIVE" ]]; then
+    rm -f "$TMP_ARCHIVE"
+  fi
+}
+trap cleanup EXIT
+
 build_and_load_image() {
   local effective_provider="$1"
-  local archive
-  archive="$(mktemp /tmp/notdynamo-image-XXXXXX.tar)"
-  trap 'rm -f "$archive"' EXIT
+  TMP_ARCHIVE="$(make_tmp_file notdynamo-image)"
 
   if [[ "$effective_provider" == "docker" ]]; then
     require_bin docker
     docker build -t "$IMAGE" "$ROOT_DIR"
-    docker save -o "$archive" "$IMAGE"
+    docker save -o "$TMP_ARCHIVE" "$IMAGE"
   else
     ensure_nerdctl_path
     require_bin finch
     finch build -t "$IMAGE" "$ROOT_DIR"
-    finch save "$IMAGE" -o "$archive"
+    finch save "$IMAGE" -o "$TMP_ARCHIVE"
     export KIND_EXPERIMENTAL_PROVIDER=nerdctl
   fi
 
-  kind load image-archive "$archive" --name "$CLUSTER_NAME"
+  kind load image-archive "$TMP_ARCHIVE" --name "$CLUSTER_NAME"
 }
 
 require_bin kind
@@ -157,6 +172,10 @@ if (( SKIP_BUILD == 0 )); then
 fi
 
 kubectl apply -k "$ROOT_DIR/deploy/k8s/overlays/local"
+if ! kubectl get namespace "$NAMESPACE" >/dev/null 2>&1; then
+  echo "namespace '$NAMESPACE' was not created by manifest apply" >&2
+  exit 1
+fi
 kubectl -n "$NAMESPACE" scale statefulset notdynamo-data --replicas="$DATA_REPLICAS"
 kubectl -n "$NAMESPACE" scale deployment notdynamo-control-plane --replicas="$CONTROL_PLANE_REPLICAS"
 
