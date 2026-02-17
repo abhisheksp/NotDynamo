@@ -160,6 +160,7 @@ Notes:
 - Runtime now supports leader-quorum writes (`quorum=2`) with internal replica-apply RPC.
 - Control-plane deployment now runs an executable process with `/healthz` and `/v1/partition-map` endpoints.
 - New verification gates `G10` to `G14` validate distributed routing, failure-drill scripts, quorum writes, and control-plane runtime.
+- `G18` provides one aggregate correctness gate command before benchmark-focused optimization.
 - Local failure drills now include pod restart and node drain recovery paths.
 - EKS provisioning now enforces a default `$20/day` budget cap unless explicitly overridden.
 - Automated setup/teardown scripts include cost-control safeguards.
