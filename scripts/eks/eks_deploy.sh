@@ -9,6 +9,7 @@ NAMESPACE="notdynamo"
 IMAGE_REPO="notdynamo/notdynamo"
 IMAGE_TAG="dev-$(date -u +%Y%m%dT%H%M%SZ)"
 IMAGE=""
+IMAGE_PLATFORM="linux/amd64"
 DATA_REPLICAS=3
 CONTROL_PLANE_REPLICAS=1
 PROVIDER="${IMAGE_PROVIDER:-auto}"
@@ -27,6 +28,7 @@ Options:
   --image <image-ref>           Full image reference to deploy (skips ECR build/push)
   --image-repo <repo>           ECR repo path (default: notdynamo/notdynamo)
   --image-tag <tag>             Image tag (default: dev-<utc timestamp>)
+  --platform <platform>         Image platform for build (default: linux/amd64)
   --data-replicas <n>           Data pod replicas (default: 3)
   --control-plane-replicas <n>  Control-plane replicas (default: 1)
   --provider <auto|docker|nerdctl>
@@ -60,6 +62,10 @@ while (( $# > 0 )); do
       ;;
     --image-tag)
       IMAGE_TAG="$2"
+      shift 2
+      ;;
+    --platform)
+      IMAGE_PLATFORM="$2"
       shift 2
       ;;
     --data-replicas)
@@ -161,15 +167,16 @@ ecr_login() {
 build_and_push() {
   local provider="$1"
   local image_ref="$2"
+  local platform="$3"
 
   if [[ "$provider" == "docker" ]]; then
     require_bin docker
-    docker build -t "$image_ref" "$ROOT_DIR"
+    docker build --platform "$platform" -t "$image_ref" "$ROOT_DIR"
     docker push "$image_ref"
   else
     ensure_nerdctl_path
     require_bin finch
-    finch build -t "$image_ref" "$ROOT_DIR"
+    finch build --platform "$platform" -t "$image_ref" "$ROOT_DIR"
     finch push "$image_ref"
   fi
 }
@@ -210,7 +217,7 @@ if (( SKIP_BUILD == 0 )) && [[ -z "$IMAGE" ]]; then
   fi
 
   ecr_login "$EFFECTIVE_PROVIDER" "$REGISTRY"
-  build_and_push "$EFFECTIVE_PROVIDER" "$IMAGE"
+  build_and_push "$EFFECTIVE_PROVIDER" "$IMAGE" "$IMAGE_PLATFORM"
 fi
 
 kubectl apply -k "$ROOT_DIR/deploy/k8s/overlays/eks"
