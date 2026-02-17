@@ -76,8 +76,13 @@ cd /Users/abhishek/workspace/projects/kivi2/NotDynamo
   --name notdynamo-eks \
   --region us-west-2
 
-# 4) Run local benchmark profile (separate from AWS)
-./scripts/bench/run_local_canonical_profile.sh
+# 4) Run E2E benchmark against EKS service (via port-forward)
+./scripts/eks/eks_bench_http.sh \
+  --name notdynamo-eks \
+  --region us-west-2 \
+  --operations 200000 \
+  --threads 32 \
+  --read-ratio 0.90
 
 # 5) Teardown when done (stop billing)
 ./scripts/eks/eks_down.sh \
@@ -106,4 +111,5 @@ Delete ECR repo too:
 ```
 
 - `eks_down.sh` deletes app namespace, EKS cluster, and by default performs best-effort cleanup of orphaned EBS volumes tagged to the cluster.
+- `eks_bench_http.sh` runs end-to-end HTTP benchmark without exposing a public data endpoint.
 - Benchmark roadmap: `scripts/eks/BENCHMARK_PLAN.md`.
