@@ -8,6 +8,7 @@ IT_LOG="/tmp/notdynamo-g11-it.log"
 DRAIN_LOG="/tmp/notdynamo-g11-drain.log"
 POD_DELETE_LOG="/tmp/notdynamo-g11-pod-delete.log"
 LOCAL_FAILURE_LOG="/tmp/notdynamo-g11-local-failure.log"
+LOCAL_NODE_DRAIN_LOG="/tmp/notdynamo-g11-local-node-drain.log"
 
 mkdir -p "$REPORT_DIR"
 
@@ -20,6 +21,7 @@ pushd "$ROOT_DIR" >/dev/null
 ./scripts/k8s/drill-node-drain.sh --dry-run --node dummy-node --namespace notdynamo >"$DRAIN_LOG"
 ./scripts/k8s/drill-pod-delete.sh --dry-run --namespace notdynamo >"$POD_DELETE_LOG"
 ./scripts/local/kind_failure_pod_restart.sh --dry-run --namespace notdynamo >"$LOCAL_FAILURE_LOG"
+./scripts/local/kind_failure_node_drain.sh --dry-run --namespace notdynamo >"$LOCAL_NODE_DRAIN_LOG"
 popd >/dev/null
 
 cat >"$REPORT_FILE" <<JSON
@@ -31,10 +33,12 @@ cat >"$REPORT_FILE" <<JSON
   "drain_dry_run_command": "./scripts/k8s/drill-node-drain.sh --dry-run --node dummy-node --namespace notdynamo",
   "pod_delete_dry_run_command": "./scripts/k8s/drill-pod-delete.sh --dry-run --namespace notdynamo",
   "local_failure_dry_run_command": "./scripts/local/kind_failure_pod_restart.sh --dry-run --namespace notdynamo",
+  "local_node_drain_dry_run_command": "./scripts/local/kind_failure_node_drain.sh --dry-run --namespace notdynamo",
   "integration_log": "$IT_LOG",
   "drain_log": "$DRAIN_LOG",
   "pod_delete_log": "$POD_DELETE_LOG",
   "local_failure_log": "$LOCAL_FAILURE_LOG",
+  "local_node_drain_log": "$LOCAL_NODE_DRAIN_LOG",
   "notes": "Live gRPC routing path and failure-drill script coverage validated"
 }
 JSON

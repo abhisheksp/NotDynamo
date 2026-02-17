@@ -19,6 +19,9 @@ These scripts provide a simple local test loop for NotDynamo on kind.
 
 # Failure drill: delete one data pod and verify recovery with another cross-node smoke
 ./scripts/local/kind_failure_pod_restart.sh --namespace notdynamo --failed-pod notdynamo-data-0
+
+# Failure drill: drain one Kubernetes node and verify cluster recovery
+./scripts/local/kind_failure_node_drain.sh --namespace notdynamo
 ```
 
 ## Teardown
@@ -34,3 +37,4 @@ These scripts provide a simple local test loop for NotDynamo on kind.
 - Current smoke path uses HTTP bridge at `/v1/kv/{key}`.
 - `kind_cross_node_smoke.sh` directly forwards to two different pods to validate cross-node request routing.
 - `kind_failure_pod_restart.sh` provides a simple pod-failure and recovery drill on local Kubernetes.
+- `kind_failure_node_drain.sh` provides a node-drain and recovery drill on local Kubernetes.

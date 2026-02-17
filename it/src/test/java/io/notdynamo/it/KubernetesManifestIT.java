@@ -63,9 +63,11 @@ class KubernetesManifestIT {
         Path drainScript = repoRoot.resolve("scripts/k8s/drill-node-drain.sh");
         Path podDeleteScript = repoRoot.resolve("scripts/k8s/drill-pod-delete.sh");
         Path localFailureScript = repoRoot.resolve("scripts/local/kind_failure_pod_restart.sh");
+        Path localNodeDrainScript = repoRoot.resolve("scripts/local/kind_failure_node_drain.sh");
         assertTrue(Files.exists(drainScript));
         assertTrue(Files.exists(podDeleteScript));
         assertTrue(Files.exists(localFailureScript));
+        assertTrue(Files.exists(localNodeDrainScript));
 
         Process drainProcess = new ProcessBuilder(
             drainScript.toString(),
@@ -116,6 +118,22 @@ class KubernetesManifestIT {
         assertEquals(0, localFailureExitCode);
         assertTrue(localFailureOutput.contains("DRY_RUN:"));
         assertFalse(localFailureOutput.isBlank());
+
+        Process localNodeDrainProcess = new ProcessBuilder(
+            localNodeDrainScript.toString(),
+            "--dry-run",
+            "--namespace",
+            "notdynamo"
+        )
+            .redirectErrorStream(true)
+            .start();
+
+        String localNodeDrainOutput = new String(localNodeDrainProcess.getInputStream().readAllBytes(), StandardCharsets.UTF_8);
+        int localNodeDrainExitCode = localNodeDrainProcess.waitFor();
+
+        assertEquals(0, localNodeDrainExitCode);
+        assertTrue(localNodeDrainOutput.contains("DRY_RUN:"));
+        assertFalse(localNodeDrainOutput.isBlank());
     }
 
     private static Path findRepoRoot() {
