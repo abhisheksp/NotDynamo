@@ -7,10 +7,15 @@ import io.notdynamo.proto.v1.GetResponse;
 import io.notdynamo.proto.v1.PutRequest;
 import io.notdynamo.proto.v1.PutResponse;
 
-public interface NodeRpcClient {
+public interface NodeRpcClient extends AutoCloseable {
     GetResponse get(String nodeId, GetRequest request);
 
     PutResponse put(String nodeId, PutRequest request);
 
     DeleteResponse delete(String nodeId, DeleteRequest request);
+
+    @Override
+    default void close() {
+        // no-op by default
+    }
 }

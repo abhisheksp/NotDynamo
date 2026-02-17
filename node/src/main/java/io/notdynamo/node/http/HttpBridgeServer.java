@@ -4,7 +4,7 @@ import com.google.protobuf.ByteString;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpServer;
 import io.grpc.stub.StreamObserver;
-import io.notdynamo.node.KvServiceHandler;
+import io.notdynamo.proto.v1.KvServiceGrpc;
 import io.notdynamo.proto.v1.DeleteRequest;
 import io.notdynamo.proto.v1.DeleteResponse;
 import io.notdynamo.proto.v1.GetRequest;
@@ -26,15 +26,15 @@ public final class HttpBridgeServer implements AutoCloseable {
 
     private final String nodeId;
     private final HttpServer server;
-    private final KvServiceHandler kvService;
+    private final KvServiceGrpc.KvServiceImplBase kvService;
 
-    private HttpBridgeServer(String nodeId, HttpServer server, KvServiceHandler kvService) {
+    private HttpBridgeServer(String nodeId, HttpServer server, KvServiceGrpc.KvServiceImplBase kvService) {
         this.nodeId = Objects.requireNonNull(nodeId, "nodeId must not be null");
         this.server = Objects.requireNonNull(server, "server must not be null");
         this.kvService = Objects.requireNonNull(kvService, "kvService must not be null");
     }
 
-    public static HttpBridgeServer open(String nodeId, int port, KvServiceHandler kvService) {
+    public static HttpBridgeServer open(String nodeId, int port, KvServiceGrpc.KvServiceImplBase kvService) {
         try {
             HttpServer httpServer = HttpServer.create(new InetSocketAddress(port), 0);
             HttpBridgeServer bridge = new HttpBridgeServer(nodeId, httpServer, kvService);

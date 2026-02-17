@@ -250,6 +250,11 @@ kubectl -n "$NAMESPACE" set image deployment/notdynamo-control-plane control-pla
 
 kubectl -n "$NAMESPACE" scale statefulset notdynamo-data --replicas="$DATA_REPLICAS"
 kubectl -n "$NAMESPACE" scale deployment notdynamo-control-plane --replicas="$CONTROL_PLANE_REPLICAS"
+kubectl -n "$NAMESPACE" set env statefulset/notdynamo-data \
+  NOTDYNAMO_CLUSTER_SIZE="$DATA_REPLICAS" \
+  NOTDYNAMO_NAMESPACE="$NAMESPACE" \
+  NOTDYNAMO_RUNTIME_MODE="partitioned" \
+  NOTDYNAMO_RPC_MODE="grpc" >/dev/null
 
 kubectl -n "$NAMESPACE" rollout status statefulset/notdynamo-data --timeout=1200s
 kubectl -n "$NAMESPACE" rollout status deployment/notdynamo-control-plane --timeout=1200s

@@ -178,6 +178,11 @@ if ! kubectl get namespace "$NAMESPACE" >/dev/null 2>&1; then
 fi
 kubectl -n "$NAMESPACE" scale statefulset notdynamo-data --replicas="$DATA_REPLICAS"
 kubectl -n "$NAMESPACE" scale deployment notdynamo-control-plane --replicas="$CONTROL_PLANE_REPLICAS"
+kubectl -n "$NAMESPACE" set env statefulset/notdynamo-data \
+  NOTDYNAMO_CLUSTER_SIZE="$DATA_REPLICAS" \
+  NOTDYNAMO_NAMESPACE="$NAMESPACE" \
+  NOTDYNAMO_RUNTIME_MODE="partitioned" \
+  NOTDYNAMO_RPC_MODE="grpc" >/dev/null
 
 kubectl -n "$NAMESPACE" rollout status statefulset/notdynamo-data --timeout=300s
 kubectl -n "$NAMESPACE" rollout status deployment/notdynamo-control-plane --timeout=300s

@@ -82,6 +82,20 @@ spec:
               value: "2048"
             - name: NOTDYNAMO_VIRTUAL_NODES_PER_SHARD
               value: "256"
+            - name: NOTDYNAMO_RUNTIME_MODE
+              value: "partitioned"
+            - name: NOTDYNAMO_RPC_MODE
+              value: "grpc"
+            - name: NOTDYNAMO_RPC_TIMEOUT_MS
+              value: "750"
+            - name: NOTDYNAMO_CLUSTER_SIZE
+              value: "3"
+            - name: NOTDYNAMO_STATEFULSET_NAME
+              value: "notdynamo-data"
+            - name: NOTDYNAMO_HEADLESS_SERVICE
+              value: "notdynamo-data-headless"
+            - name: NOTDYNAMO_NAMESPACE
+              value: "notdynamo"
             - name: NOTDYNAMO_DATA_DIR
               value: "/var/lib/notdynamo"
           volumeMounts:
