@@ -22,6 +22,7 @@ PRELOAD=true
 CONNECT_TIMEOUT_MS=3000
 REQUEST_TIMEOUT_MS=5000
 OUTPUT_FILE=""
+HUMAN_REPORT_FILE=""
 
 usage() {
   cat <<'USAGE'
@@ -50,6 +51,7 @@ Benchmark options:
   --connect-timeout-ms <n>     HTTP connect timeout (default: 3000)
   --request-timeout-ms <n>     Per-request timeout (default: 5000)
   --output-file <path>         Benchmark report file path
+  --human-report-file <path>   Human-readable Markdown report file path
   --help                       Show this help message
 USAGE
 }
@@ -126,6 +128,10 @@ while (( $# > 0 )); do
       ;;
     --output-file)
       OUTPUT_FILE="$2"
+      shift 2
+      ;;
+    --human-report-file)
+      HUMAN_REPORT_FILE="$2"
       shift 2
       ;;
     --help)
@@ -229,7 +235,15 @@ if [[ -z "$OUTPUT_FILE" ]]; then
   TIMESTAMP_TAG="$(date -u +%Y%m%dT%H%M%SZ)"
   OUTPUT_FILE="$ROOT_DIR/reports/benchmarks/aws/e2e_http_${TIMESTAMP_TAG}.json"
 fi
+if [[ -z "$HUMAN_REPORT_FILE" ]]; then
+  if [[ "$OUTPUT_FILE" == *.json ]]; then
+    HUMAN_REPORT_FILE="${OUTPUT_FILE%.json}.md"
+  else
+    HUMAN_REPORT_FILE="${OUTPUT_FILE}.md"
+  fi
+fi
 mkdir -p "$(dirname "$OUTPUT_FILE")"
+mkdir -p "$(dirname "$HUMAN_REPORT_FILE")"
 
 "$ROOT_DIR/scripts/bench/run_e2e_http_profile.sh" \
   --base-url "$BASE_URL" \
@@ -243,7 +257,9 @@ mkdir -p "$(dirname "$OUTPUT_FILE")"
   --preload "$PRELOAD" \
   --connect-timeout-ms "$CONNECT_TIMEOUT_MS" \
   --request-timeout-ms "$REQUEST_TIMEOUT_MS" \
-  --output-file "$OUTPUT_FILE"
+  --output-file "$OUTPUT_FILE" \
+  --human-report-file "$HUMAN_REPORT_FILE"
 
 echo "EKS E2E benchmark complete."
-echo "Report: $OUTPUT_FILE"
+echo "JSON report: $OUTPUT_FILE"
+echo "Human report: $HUMAN_REPORT_FILE"

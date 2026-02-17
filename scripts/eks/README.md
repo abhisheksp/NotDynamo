@@ -112,4 +112,5 @@ Delete ECR repo too:
 
 - `eks_down.sh` deletes app namespace, EKS cluster, and by default performs best-effort cleanup of orphaned EBS volumes tagged to the cluster.
 - `eks_bench_http.sh` runs end-to-end HTTP benchmark without exposing a public data endpoint.
+- each benchmark run writes both JSON and human-readable Markdown reports.
 - Benchmark roadmap: `scripts/eks/BENCHMARK_PLAN.md`.

@@ -32,6 +32,7 @@ Run networked E2E benchmark against EKS through `kubectl port-forward` (private 
 
 Artifacts:
 - `reports/benchmarks/aws/e2e_http_*.json`
+- `reports/benchmarks/aws/e2e_http_*.md`
 - `/tmp/notdynamo-e2e-http-*.log`
 
 ## Phase 3: Scale AWS Benchmarking (later)

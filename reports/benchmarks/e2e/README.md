@@ -13,4 +13,7 @@ Keep canonical benchmark snapshots in source control only when you intentionally
 
 Generated files typically follow:
 
-- `e2e_http_<timestamp>.json`
+- `e2e_http_<timestamp>.json` (machine-readable)
+- `e2e_http_<timestamp>.md` (human-readable)
+- `e2e_http_latest.json`
+- `e2e_http_latest.md`
