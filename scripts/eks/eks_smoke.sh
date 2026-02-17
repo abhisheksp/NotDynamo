@@ -8,7 +8,8 @@ REGION="${AWS_REGION:-us-west-2}"
 NAMESPACE="notdynamo"
 SERVICE_NAME="notdynamo-data"
 SERVICE_PORT=8080
-TIMEOUT_SEC=900
+LOCAL_PORT=18080
+TIMEOUT_SEC=300
 KEY="demo-key"
 VALUE="hello-notdynamo-eks"
 
@@ -16,7 +17,7 @@ usage() {
   cat <<'USAGE'
 Usage: eks_smoke.sh [options]
 
-Runs smoke test against NotDynamo on EKS LoadBalancer endpoint.
+Runs smoke test against NotDynamo on EKS by port-forwarding to the cluster service.
 
 Options:
   --name <cluster-name>   EKS cluster name (default: notdynamo-eks)
@@ -24,7 +25,8 @@ Options:
   --namespace <ns>        Namespace (default: notdynamo)
   --service <name>        Service name (default: notdynamo-data)
   --port <n>              Service port (default: 8080)
-  --timeout-sec <n>       Endpoint wait timeout (default: 900)
+  --local-port <n>        Local port for port-forward (default: 18080)
+  --timeout-sec <n>       Port-forward wait timeout (default: 300)
   --key <key>             Smoke key (default: demo-key)
   --value <value>         Smoke value (default: hello-notdynamo-eks)
   --help                  Show this help message
@@ -53,6 +55,10 @@ while (( $# > 0 )); do
       SERVICE_PORT="$2"
       shift 2
       ;;
+    --local-port)
+      LOCAL_PORT="$2"
+      shift 2
+      ;;
     --timeout-sec)
       TIMEOUT_SEC="$2"
       shift 2
@@ -77,9 +83,9 @@ while (( $# > 0 )); do
   esac
 done
 
-for n in "$SERVICE_PORT" "$TIMEOUT_SEC"; do
+for n in "$SERVICE_PORT" "$LOCAL_PORT" "$TIMEOUT_SEC"; do
   if [[ ! "$n" =~ ^[0-9]+$ ]] || (( n <= 0 )); then
-    echo "--port and --timeout-sec must be positive integers" >&2
+    echo "--port, --local-port, and --timeout-sec must be positive integers" >&2
     exit 1
   fi
 done
@@ -129,34 +135,31 @@ if ! kubectl -n "$NAMESPACE" get service "$SERVICE_NAME" >/dev/null 2>&1; then
   exit 1
 fi
 
-DEADLINE=$((SECONDS + TIMEOUT_SEC))
-ENDPOINT=""
-while (( SECONDS < DEADLINE )); do
-  ENDPOINT="$(kubectl -n "$NAMESPACE" get svc "$SERVICE_NAME" -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')"
-  if [[ -n "$ENDPOINT" ]]; then
-    break
+PORT_FORWARD_LOG="/tmp/notdynamo-eks-port-forward.log"
+kubectl -n "$NAMESPACE" port-forward "service/${SERVICE_NAME}" "${LOCAL_PORT}:${SERVICE_PORT}" >"$PORT_FORWARD_LOG" 2>&1 &
+PF_PID=$!
+
+cleanup() {
+  if kill -0 "$PF_PID" >/dev/null 2>&1; then
+    kill "$PF_PID" >/dev/null 2>&1 || true
+    wait "$PF_PID" >/dev/null 2>&1 || true
   fi
-  sleep 5
-done
+}
+trap cleanup EXIT
 
-if [[ -z "$ENDPOINT" ]]; then
-  echo "LoadBalancer hostname not assigned within ${TIMEOUT_SEC}s" >&2
-  kubectl -n "$NAMESPACE" get svc "$SERVICE_NAME" -o wide >&2 || true
-  exit 1
-fi
+DEADLINE=$((SECONDS + TIMEOUT_SEC))
+BASE_URL="http://127.0.0.1:${LOCAL_PORT}"
+echo "Using local endpoint via port-forward: $BASE_URL"
 
-BASE_URL="http://${ENDPOINT}:${SERVICE_PORT}"
-echo "Resolved endpoint: $BASE_URL"
-
-for _ in {1..60}; do
+while (( SECONDS < DEADLINE )); do
   if curl -fsS "${BASE_URL}/healthz" >/dev/null 2>&1; then
     break
   fi
-  sleep 5
+  sleep 1
 done
 
 if ! curl -fsS "${BASE_URL}/healthz" >/dev/null 2>&1; then
-  echo "endpoint is reachable but /healthz did not return success: $BASE_URL" >&2
+  echo "port-forward did not become ready within ${TIMEOUT_SEC}s. See $PORT_FORWARD_LOG" >&2
   exit 1
 fi
 

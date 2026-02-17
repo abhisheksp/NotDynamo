@@ -8,6 +8,7 @@ REGION="${AWS_REGION:-us-west-2}"
 NAMESPACE="notdynamo"
 IMAGE_REPO="notdynamo/notdynamo"
 DELETE_ECR_REPO=0
+DELETE_ORPHAN_EBS=1
 
 usage() {
   cat <<'USAGE'
@@ -21,6 +22,7 @@ Options:
   --namespace <ns>         Namespace to delete first (default: notdynamo)
   --image-repo <repo>      ECR repository (default: notdynamo/notdynamo)
   --delete-ecr-repo        Also delete ECR repo (force)
+  --skip-ebs-cleanup       Skip orphaned EBS cleanup
   --help                   Show this help message
 USAGE
 }
@@ -47,6 +49,10 @@ while (( $# > 0 )); do
       DELETE_ECR_REPO=1
       shift
       ;;
+    --skip-ebs-cleanup)
+      DELETE_ORPHAN_EBS=0
+      shift
+      ;;
     --help)
       usage
       exit 0
@@ -70,6 +76,32 @@ cluster_exists() {
   aws eks describe-cluster --name "$CLUSTER_NAME" --region "$REGION" >/dev/null 2>&1
 }
 
+delete_orphan_ebs() {
+  local cluster_tag="kubernetes.io/cluster/${CLUSTER_NAME}"
+  local -a volumes=()
+  while IFS= read -r volume_id; do
+    if [[ -n "$volume_id" ]]; then
+      volumes+=("$volume_id")
+    fi
+  done < <(
+    aws ec2 describe-volumes \
+      --region "$REGION" \
+      --filters "Name=tag:${cluster_tag},Values=owned,shared" "Name=status,Values=available" \
+      --query 'Volumes[].VolumeId' \
+      --output text | tr '\t' '\n' | awk 'NF'
+  )
+
+  if (( ${#volumes[@]} == 0 )); then
+    echo "No orphaned EBS volumes found for cluster tag '${cluster_tag}'."
+    return
+  fi
+
+  echo "Deleting orphaned EBS volumes tagged for cluster '${CLUSTER_NAME}': ${volumes[*]}"
+  for volume_id in "${volumes[@]}"; do
+    aws ec2 delete-volume --region "$REGION" --volume-id "$volume_id" >/dev/null || true
+  done
+}
+
 require_bin aws
 require_bin eksctl
 
@@ -82,6 +114,8 @@ fi
 if cluster_exists; then
   if command -v kubectl >/dev/null 2>&1; then
     aws eks update-kubeconfig --name "$CLUSTER_NAME" --region "$REGION" >/dev/null || true
+    kubectl -n "$NAMESPACE" delete statefulset notdynamo-data --ignore-not-found --wait=true --timeout=10m || true
+    kubectl -n "$NAMESPACE" delete pvc -l app=notdynamo-data --ignore-not-found --wait=true --timeout=10m || true
     kubectl delete namespace "$NAMESPACE" --ignore-not-found --wait=true --timeout=10m || true
   fi
 
@@ -89,6 +123,10 @@ if cluster_exists; then
   echo "Deleted EKS cluster '$CLUSTER_NAME' in '$REGION'."
 else
   echo "EKS cluster '$CLUSTER_NAME' not found in '$REGION'."
+fi
+
+if (( DELETE_ORPHAN_EBS == 1 )); then
+  delete_orphan_ebs
 fi
 
 if (( DELETE_ECR_REPO == 1 )); then

@@ -11,6 +11,8 @@ NODE_TYPE="t3.large"
 NODES=2
 NODES_MIN=2
 NODES_MAX=4
+API_ENDPOINT_MODE="restricted"
+API_PUBLIC_CIDR="${EKS_PUBLIC_CIDR:-}"
 
 usage() {
   cat <<'USAGE'
@@ -27,6 +29,9 @@ Options:
   --nodes <n>                 Desired node count (default: 2)
   --nodes-min <n>             Nodegroup min size (default: 2)
   --nodes-max <n>             Nodegroup max size (default: 4)
+  --public-api                Leave API endpoint publicly reachable (not recommended)
+  --private-api-only          Disable public API endpoint (requires VPC/VPN access)
+  --public-cidr <cidr>        Allowed public API CIDR when restricted mode (default: caller-ip/32)
   --help                      Show this help message
 USAGE
 }
@@ -63,6 +68,18 @@ while (( $# > 0 )); do
       ;;
     --nodes-max)
       NODES_MAX="$2"
+      shift 2
+      ;;
+    --public-api)
+      API_ENDPOINT_MODE="public"
+      shift
+      ;;
+    --private-api-only)
+      API_ENDPOINT_MODE="private"
+      shift
+      ;;
+    --public-cidr)
+      API_PUBLIC_CIDR="$2"
       shift 2
       ;;
     --help)
@@ -112,9 +129,28 @@ cluster_exists() {
   aws eks describe-cluster --name "$CLUSTER_NAME" --region "$REGION" >/dev/null 2>&1
 }
 
+resolve_public_cidr() {
+  if [[ -n "$API_PUBLIC_CIDR" ]]; then
+    echo "$API_PUBLIC_CIDR"
+    return
+  fi
+
+  local ip
+  ip="$(curl -fsS https://checkip.amazonaws.com | tr -d '[:space:]' || true)"
+  if [[ -z "$ip" ]]; then
+    echo "could not determine current public IP for restricted API access." >&2
+    echo "provide --public-cidr <cidr> or use --public-api." >&2
+    exit 1
+  fi
+  echo "${ip}/32"
+}
+
 require_bin aws
 require_bin eksctl
 require_bin kubectl
+if [[ "$API_ENDPOINT_MODE" == "restricted" ]]; then
+  require_bin curl
+fi
 
 if ! aws sts get-caller-identity >/dev/null 2>&1; then
   echo "AWS credentials are not configured or not valid." >&2
@@ -154,6 +190,29 @@ trap 'rm -f "$CONFIG_FILE"' EXIT
   echo "    minSize: $NODES_MIN"
   echo "    maxSize: $NODES_MAX"
   echo "    volumeSize: 80"
+
+  if [[ "$API_ENDPOINT_MODE" == "public" ]]; then
+    echo
+    echo "vpc:"
+    echo "  clusterEndpoints:"
+    echo "    publicAccess: true"
+    echo "    privateAccess: true"
+  elif [[ "$API_ENDPOINT_MODE" == "private" ]]; then
+    echo
+    echo "vpc:"
+    echo "  clusterEndpoints:"
+    echo "    publicAccess: false"
+    echo "    privateAccess: true"
+  else
+    PUBLIC_CIDR="$(resolve_public_cidr)"
+    echo
+    echo "vpc:"
+    echo "  clusterEndpoints:"
+    echo "    publicAccess: true"
+    echo "    privateAccess: true"
+    echo "  publicAccessCIDRs:"
+    echo "    - \"$PUBLIC_CIDR\""
+  fi
 } >"$CONFIG_FILE"
 
 eksctl create cluster -f "$CONFIG_FILE"

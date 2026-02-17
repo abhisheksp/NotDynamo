@@ -6,6 +6,7 @@ These scripts provide a low-friction EKS setup/deploy/smoke/teardown loop for No
 
 - Keep local and cloud manifests aligned by reusing the same Kubernetes base.
 - Make cluster lifecycle explicit so AWS billing only accrues during active test windows.
+- Avoid exposing NotDynamo service publicly by default.
 
 ## Prerequisites
 
@@ -25,6 +26,27 @@ Authenticate AWS:
 ```bash
 aws configure
 aws sts get-caller-identity
+```
+
+## Security defaults
+
+- Data service in EKS overlay is `ClusterIP` (no public `LoadBalancer`).
+- Smoke tests use `kubectl port-forward` over the Kubernetes API.
+- `eks_up.sh` defaults to restricted API access:
+  - public endpoint enabled but CIDR-limited to your current public IP (`/32`)
+  - private endpoint enabled
+
+You can override API endpoint mode:
+
+```bash
+# Allow broad public API endpoint (not recommended)
+./scripts/eks/eks_up.sh --public-api
+
+# Disable public API endpoint entirely (requires VPN/VPC access)
+./scripts/eks/eks_up.sh --private-api-only
+
+# Explicit CIDR restriction
+./scripts/eks/eks_up.sh --public-cidr 203.0.113.10/32
 ```
 
 ## Typical EKS Session
@@ -49,7 +71,7 @@ cd /Users/abhishek/workspace/projects/kivi2/NotDynamo
   --control-plane-replicas 1 \
   --provider nerdctl
 
-# 3) Smoke test against AWS LoadBalancer endpoint
+# 3) Smoke test via kubectl port-forward (no public data endpoint)
 ./scripts/eks/eks_smoke.sh \
   --name notdynamo-eks \
   --region us-west-2
@@ -82,3 +104,6 @@ Delete ECR repo too:
 ```bash
 ./scripts/eks/eks_deploy.sh --name notdynamo-eks --region us-west-2 --skip-build --image <image-ref>
 ```
+
+- `eks_down.sh` deletes app namespace, EKS cluster, and by default performs best-effort cleanup of orphaned EBS volumes tagged to the cluster.
+- Benchmark roadmap: `scripts/eks/BENCHMARK_PLAN.md`.

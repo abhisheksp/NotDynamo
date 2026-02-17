@@ -229,14 +229,9 @@ kubectl -n "$NAMESPACE" scale deployment notdynamo-control-plane --replicas="$CO
 kubectl -n "$NAMESPACE" rollout status statefulset/notdynamo-data --timeout=1200s
 kubectl -n "$NAMESPACE" rollout status deployment/notdynamo-control-plane --timeout=1200s
 
-ENDPOINT="$(kubectl -n "$NAMESPACE" get svc notdynamo-data -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')"
-
 kubectl -n "$NAMESPACE" get pods -o wide
 kubectl -n "$NAMESPACE" get svc notdynamo-data
 
 echo
-if [[ -n "$ENDPOINT" ]]; then
-  echo "Data endpoint: http://$ENDPOINT:8080"
-fi
 echo "Deployment complete."
 echo "Next: $ROOT_DIR/scripts/eks/eks_smoke.sh --name $CLUSTER_NAME --region $REGION --namespace $NAMESPACE"
