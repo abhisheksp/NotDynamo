@@ -17,6 +17,7 @@ pushd "$ROOT_DIR" >/dev/null
 
 ./gradlew :node:test \
   --tests "io.notdynamo.node.cluster.GrpcNodeRpcClientTest" \
+  --tests "io.notdynamo.node.cluster.RatisKvRouterTest" \
   >"$NODE_LOG"
 
 ./gradlew :it:test \
@@ -30,12 +31,12 @@ cat >"$REPORT_FILE" <<JSON
   "status": "PASS",
   "timestamp_utc": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
   "ratis_tests": "./gradlew :raft-ratis:test --tests io.notdynamo.ratis.RatisConsensusEngineIT",
-  "node_tests": "./gradlew :node:test --tests io.notdynamo.node.cluster.GrpcNodeRpcClientTest",
+  "node_tests": "./gradlew :node:test --tests io.notdynamo.node.cluster.GrpcNodeRpcClientTest --tests io.notdynamo.node.cluster.RatisKvRouterTest",
   "it_tests": "./gradlew :it:test --tests io.notdynamo.it.RatisRoutingIT",
   "ratis_log": "$RAFT_LOG",
   "node_log": "$NODE_LOG",
   "it_log": "$IT_LOG",
-  "notes": "Apache Ratis-backed consensus, routing integration, and node transport behavior validated"
+  "notes": "Apache Ratis-backed consensus, bounded write-retry routing behavior, and node transport behavior validated"
 }
 JSON
 

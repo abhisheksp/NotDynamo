@@ -1,12 +1,12 @@
 {
   "gate": "G15",
   "status": "PASS",
-  "timestamp_utc": "2026-02-17T21:42:42Z",
+  "timestamp_utc": "2026-02-17T21:52:43Z",
   "ratis_tests": "./gradlew :raft-ratis:test --tests io.notdynamo.ratis.RatisConsensusEngineIT",
-  "node_tests": "./gradlew :node:test --tests io.notdynamo.node.cluster.GrpcNodeRpcClientTest",
+  "node_tests": "./gradlew :node:test --tests io.notdynamo.node.cluster.GrpcNodeRpcClientTest --tests io.notdynamo.node.cluster.RatisKvRouterTest",
   "it_tests": "./gradlew :it:test --tests io.notdynamo.it.RatisRoutingIT",
   "ratis_log": "/tmp/notdynamo-g15-ratis.log",
   "node_log": "/tmp/notdynamo-g15-node.log",
   "it_log": "/tmp/notdynamo-g15-it.log",
-  "notes": "Apache Ratis-backed consensus, routing integration, and node transport behavior validated"
+  "notes": "Apache Ratis-backed consensus, bounded write-retry routing behavior, and node transport behavior validated"
 }

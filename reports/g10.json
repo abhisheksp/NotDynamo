@@ -1,7 +1,7 @@
 {
   "gate": "G10",
   "status": "PASS",
-  "timestamp_utc": "2026-02-17T21:42:38Z",
+  "timestamp_utc": "2026-02-17T21:51:40Z",
   "node_tests": "./gradlew :node:test --tests io.notdynamo.node.cluster.GrpcNodeRpcClientTest --tests io.notdynamo.node.http.HttpBridgeServerTest",
   "integration_tests": "./gradlew :it:test --tests io.notdynamo.it.MultiNodeRoutingIT --tests io.notdynamo.it.LiveGrpcRoutingIT",
   "node_log": "/tmp/notdynamo-g10-node.log",

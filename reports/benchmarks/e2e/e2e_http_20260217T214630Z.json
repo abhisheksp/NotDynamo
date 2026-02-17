@@ -1,7 +1,7 @@
 {
   "benchmark": "e2e_http",
   "status": "WARN",
-  "timestamp_utc": "2026-02-17T21:58:35Z",
+  "timestamp_utc": "2026-02-17T21:47:05Z",
   "scenario": "e2e-http",
   "base_url": "http://127.0.0.1:18080",
   "config": {
@@ -17,23 +17,23 @@
     "request_timeout_ms": "5000"
   },
   "results": {
-    "throughput_rps": "246.49",
-    "success_throughput_rps": "226.45",
-    "latency_ms_p50": "50.454",
-    "latency_ms_p95": "179.911",
-    "latency_ms_p99": "190.358",
-    "success_count": "9187",
-    "error_count": "813",
-    "error_rate_percent": "8.1300",
-    "read_count": "8996",
-    "write_count": "1004",
-    "read_not_found_count": "8509",
+    "throughput_rps": "298.70",
+    "success_throughput_rps": "275.58",
+    "latency_ms_p50": "50.373",
+    "latency_ms_p95": "60.584",
+    "latency_ms_p99": "61.581",
+    "success_count": "9226",
+    "error_count": "774",
+    "error_rate_percent": "7.7400",
+    "read_count": "9047",
+    "write_count": "953",
+    "read_not_found_count": "8611",
     "preload_attempted": "0",
     "preload_success": "0",
     "preload_failed": "0",
     "distribution_effective": "uniform"
   },
   "command": "./gradlew :bench:run --args='--scenario e2e-http --baseUrl http://127.0.0.1:18080 --operations 10000 --keyspace 2000 --threads 16 --readRatio 0.90 --distribution uniform --zipfTheta 0.90 --valueBytes 256 --preload false --connectTimeoutMs 3000 --requestTimeoutMs 5000'",
-  "log_file": "/tmp/notdynamo-e2e-http-20260217T215754Z.log",
-  "human_report": "/Users/abhishek/workspace/projects/kivi2/NotDynamo/reports/benchmarks/e2e/e2e_http_20260217T215754Z.md"
+  "log_file": "/tmp/notdynamo-e2e-http-20260217T214630Z.log",
+  "human_report": "/Users/abhishek/workspace/projects/kivi2/NotDynamo/reports/benchmarks/e2e/e2e_http_20260217T214630Z.md"
 }

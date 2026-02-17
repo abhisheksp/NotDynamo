@@ -18,6 +18,9 @@ import java.util.Objects;
 import java.util.Set;
 
 public final class RatisKvRouter {
+    private static final int MAX_CONSENSUS_WRITE_ATTEMPTS = 4;
+    private static final long CONSENSUS_RETRY_BACKOFF_MS = 20L;
+
     private final String localNodeId;
     private final KvServiceHandler localService;
     private final NodeRpcClient rpcClient;
@@ -65,7 +68,7 @@ public final class RatisKvRouter {
         }
 
         try {
-            long version = consensusEngine.put(request.getKey().toByteArray(), request.getValue().toByteArray());
+            long version = writeWithRetry(() -> consensusEngine.put(request.getKey().toByteArray(), request.getValue().toByteArray()));
             return PutResponse.newBuilder().setVersion(version).build();
         } catch (IllegalArgumentException e) {
             return PutResponse.newBuilder().setError(invalidArgument(e.getMessage())).build();
@@ -80,7 +83,7 @@ public final class RatisKvRouter {
         }
 
         try {
-            long version = consensusEngine.delete(request.getKey().toByteArray());
+            long version = writeWithRetry(() -> consensusEngine.delete(request.getKey().toByteArray()));
             return DeleteResponse.newBuilder().setVersion(version).build();
         } catch (IllegalArgumentException e) {
             return DeleteResponse.newBuilder().setError(invalidArgument(e.getMessage())).build();
@@ -125,6 +128,32 @@ public final class RatisKvRouter {
         return observer.value();
     }
 
+    private long writeWithRetry(ConsensusWrite write) {
+        RuntimeException lastFailure = null;
+        for (int attempt = 1; attempt <= MAX_CONSENSUS_WRITE_ATTEMPTS; attempt++) {
+            try {
+                return write.execute();
+            } catch (RuntimeException e) {
+                lastFailure = e;
+                if (attempt == MAX_CONSENSUS_WRITE_ATTEMPTS) {
+                    break;
+                }
+                sleepBeforeRetry(attempt);
+            }
+        }
+        throw lastFailure == null ? new IllegalStateException("consensus write failed without exception") : lastFailure;
+    }
+
+    private static void sleepBeforeRetry(int attempt) {
+        long delayMillis = CONSENSUS_RETRY_BACKOFF_MS * attempt;
+        try {
+            Thread.sleep(delayMillis);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new IllegalStateException("interrupted while retrying consensus write", e);
+        }
+    }
+
     private static String validateNodeId(String nodeId, String label) {
         if (nodeId == null || nodeId.isBlank()) {
             throw new IllegalArgumentException(label + " must not be blank");
@@ -150,5 +179,10 @@ public final class RatisKvRouter {
             return throwable.getClass().getSimpleName();
         }
         return message;
+    }
+
+    @FunctionalInterface
+    private interface ConsensusWrite {
+        long execute();
     }
 }
