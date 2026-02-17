@@ -13,6 +13,9 @@ NODES_MIN=2
 NODES_MAX=4
 API_ENDPOINT_MODE="restricted"
 API_PUBLIC_CIDR="${EKS_PUBLIC_CIDR:-}"
+EBS_CSI_ADDON_NAME="aws-ebs-csi-driver"
+EBS_CSI_IAM_ROLE_NAME="${CLUSTER_NAME}-ebs-csi-role"
+EBS_CSI_POLICY_ARN="arn:aws:iam::aws:policy/service-role/AmazonEBSCSIDriverPolicy"
 
 usage() {
   cat <<'USAGE'
@@ -172,6 +175,70 @@ wait_for_nodegroup_ready() {
   return 1
 }
 
+ensure_ebs_csi_addon() {
+  local role_arn=""
+  local addon_status=""
+
+  echo "ensuring EBS CSI add-on is configured..."
+  eksctl utils associate-iam-oidc-provider \
+    --cluster "$CLUSTER_NAME" \
+    --region "$REGION" \
+    --approve >/dev/null
+
+  if ! aws iam get-role --role-name "$EBS_CSI_IAM_ROLE_NAME" >/dev/null 2>&1; then
+    eksctl create iamserviceaccount \
+      --cluster "$CLUSTER_NAME" \
+      --region "$REGION" \
+      --namespace kube-system \
+      --name ebs-csi-controller-sa \
+      --role-name "$EBS_CSI_IAM_ROLE_NAME" \
+      --attach-policy-arn "$EBS_CSI_POLICY_ARN" \
+      --role-only \
+      --approve >/dev/null
+  fi
+
+  role_arn="$(aws iam get-role \
+    --role-name "$EBS_CSI_IAM_ROLE_NAME" \
+    --query 'Role.Arn' \
+    --output text)"
+
+  if aws eks describe-addon \
+    --cluster-name "$CLUSTER_NAME" \
+    --region "$REGION" \
+    --addon-name "$EBS_CSI_ADDON_NAME" >/dev/null 2>&1; then
+    addon_status="$(aws eks describe-addon \
+      --cluster-name "$CLUSTER_NAME" \
+      --region "$REGION" \
+      --addon-name "$EBS_CSI_ADDON_NAME" \
+      --query 'addon.status' \
+      --output text || true)"
+    if [[ "$addon_status" == "CREATING" || "$addon_status" == "UPDATING" ]]; then
+      aws eks wait addon-active \
+        --cluster-name "$CLUSTER_NAME" \
+        --region "$REGION" \
+        --addon-name "$EBS_CSI_ADDON_NAME"
+    fi
+    aws eks update-addon \
+      --cluster-name "$CLUSTER_NAME" \
+      --region "$REGION" \
+      --addon-name "$EBS_CSI_ADDON_NAME" \
+      --service-account-role-arn "$role_arn" \
+      --resolve-conflicts OVERWRITE >/dev/null
+  else
+    aws eks create-addon \
+      --cluster-name "$CLUSTER_NAME" \
+      --region "$REGION" \
+      --addon-name "$EBS_CSI_ADDON_NAME" \
+      --service-account-role-arn "$role_arn" \
+      --resolve-conflicts OVERWRITE >/dev/null
+  fi
+
+  aws eks wait addon-active \
+    --cluster-name "$CLUSTER_NAME" \
+    --region "$REGION" \
+    --addon-name "$EBS_CSI_ADDON_NAME"
+}
+
 resolve_public_cidr() {
   if [[ -n "$API_PUBLIC_CIDR" ]]; then
     echo "$API_PUBLIC_CIDR"
@@ -204,6 +271,7 @@ fi
 if cluster_exists; then
   echo "EKS cluster '$CLUSTER_NAME' already exists in region '$REGION'"
   aws eks update-kubeconfig --name "$CLUSTER_NAME" --region "$REGION" >/dev/null
+  ensure_ebs_csi_addon
   kubectl get nodes -o wide
   exit 0
 fi
@@ -261,6 +329,7 @@ aws eks wait nodegroup-active \
   --nodegroup-name "$NODEGROUP_NAME" \
   --region "$REGION"
 aws eks update-kubeconfig --name "$CLUSTER_NAME" --region "$REGION" >/dev/null
+ensure_ebs_csi_addon
 
 kubectl get nodes -o wide
 

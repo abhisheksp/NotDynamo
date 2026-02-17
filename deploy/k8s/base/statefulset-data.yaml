@@ -4,6 +4,7 @@ metadata:
   name: notdynamo-data
 spec:
   serviceName: notdynamo-data-headless
+  podManagementPolicy: Parallel
   replicas: 3
   selector:
     matchLabels:
@@ -39,6 +40,13 @@ spec:
               containerPort: 9090
             - name: http
               containerPort: 8080
+          startupProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            periodSeconds: 5
+            timeoutSeconds: 2
+            failureThreshold: 60
           readinessProbe:
             httpGet:
               path: /healthz

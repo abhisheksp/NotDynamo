@@ -10,6 +10,7 @@ IMAGE_REPO="notdynamo/notdynamo"
 IMAGE_TAG="dev-$(date -u +%Y%m%dT%H%M%SZ)"
 IMAGE=""
 IMAGE_PLATFORM="linux/amd64"
+DOCKERFILE_PATH="Dockerfile.runtime"
 DATA_REPLICAS=3
 CONTROL_PLANE_REPLICAS=1
 PROVIDER="${IMAGE_PROVIDER:-auto}"
@@ -29,6 +30,7 @@ Options:
   --image-repo <repo>           ECR repo path (default: notdynamo/notdynamo)
   --image-tag <tag>             Image tag (default: dev-<utc timestamp>)
   --platform <platform>         Image platform for build (default: linux/amd64)
+  --dockerfile <path>           Dockerfile path relative to repo root (default: Dockerfile.runtime)
   --data-replicas <n>           Data pod replicas (default: 3)
   --control-plane-replicas <n>  Control-plane replicas (default: 1)
   --provider <auto|docker|nerdctl>
@@ -66,6 +68,10 @@ while (( $# > 0 )); do
       ;;
     --platform)
       IMAGE_PLATFORM="$2"
+      shift 2
+      ;;
+    --dockerfile)
+      DOCKERFILE_PATH="$2"
       shift 2
       ;;
     --data-replicas)
@@ -168,17 +174,22 @@ build_and_push() {
   local provider="$1"
   local image_ref="$2"
   local platform="$3"
+  local dockerfile="$4"
 
   if [[ "$provider" == "docker" ]]; then
     require_bin docker
-    docker build --platform "$platform" -t "$image_ref" "$ROOT_DIR"
+    docker build --platform "$platform" -f "$dockerfile" -t "$image_ref" "$ROOT_DIR"
     docker push "$image_ref"
   else
     ensure_nerdctl_path
     require_bin finch
-    finch build --platform "$platform" -t "$image_ref" "$ROOT_DIR"
+    finch build --platform "$platform" -f "$dockerfile" -t "$image_ref" "$ROOT_DIR"
     finch push "$image_ref"
   fi
+}
+
+build_distribution() {
+  (cd "$ROOT_DIR" && ./gradlew :node:installDist --no-daemon)
 }
 
 require_bin aws
@@ -205,6 +216,13 @@ if (( SKIP_BUILD == 1 )) && [[ -z "$IMAGE" ]]; then
 fi
 
 if (( SKIP_BUILD == 0 )) && [[ -z "$IMAGE" ]]; then
+  if [[ ! -f "$ROOT_DIR/$DOCKERFILE_PATH" ]]; then
+    echo "dockerfile not found: $ROOT_DIR/$DOCKERFILE_PATH" >&2
+    exit 1
+  fi
+
+  build_distribution
+
   ACCOUNT_ID="$(aws sts get-caller-identity --query Account --output text)"
   REGISTRY="${ACCOUNT_ID}.dkr.ecr.${REGION}.amazonaws.com"
   IMAGE="${REGISTRY}/${IMAGE_REPO}:${IMAGE_TAG}"
@@ -217,7 +235,7 @@ if (( SKIP_BUILD == 0 )) && [[ -z "$IMAGE" ]]; then
   fi
 
   ecr_login "$EFFECTIVE_PROVIDER" "$REGISTRY"
-  build_and_push "$EFFECTIVE_PROVIDER" "$IMAGE" "$IMAGE_PLATFORM"
+  build_and_push "$EFFECTIVE_PROVIDER" "$IMAGE" "$IMAGE_PLATFORM" "$ROOT_DIR/$DOCKERFILE_PATH"
 fi
 
 kubectl apply -k "$ROOT_DIR/deploy/k8s/overlays/eks"

@@ -1,6 +1,10 @@
 .git
 .gradle
 **/build
+!node/build
+!node/build/install
+!node/build/install/node
+!node/build/install/node/**
 out
 .idea
 .vscode

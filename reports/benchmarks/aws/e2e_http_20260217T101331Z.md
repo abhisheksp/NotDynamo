@@ -1,0 +1,63 @@
+# NotDynamo E2E HTTP Benchmark Report
+
+- Status: **WARN**
+- Timestamp (UTC): 2026-02-17T10:14:22Z
+- Scenario: `e2e-http`
+- Endpoint: `http://127.0.0.1:18080`
+
+## Configuration
+
+| Field | Value |
+|---|---|
+| Operations | 10000 |
+| Keyspace | 5000 |
+| Threads | 16 |
+| Read ratio | 0.90 |
+| Distribution | uniform |
+| Zipf theta | 0.90 |
+| Value bytes | 256 |
+| Preload | false |
+| Connect timeout ms | 1000 |
+| Request timeout ms | 1500 |
+
+## Results
+
+| Metric | Value |
+|---|---|
+| Throughput (rps) | 202.93 |
+| Success throughput (rps) | 187.82 |
+| p50 latency (ms) | 78.870 |
+| p95 latency (ms) | 90.225 |
+| p99 latency (ms) | 285.645 |
+| Success count | 9255 |
+| Error count | 745 |
+| Error rate (%) | 7.4500 |
+| Read count | 8993 |
+| Write count | 1007 |
+| Read not found count | 8670 |
+| Preload attempted | 0 |
+| Preload success | 0 |
+| Preload failed | 0 |
+| Effective distribution | uniform |
+
+## Error Samples
+
+- `http_status=500`
+- `http_status=500`
+- `http_status=500`
+- `http_status=500`
+- `http_status=500`
+- `http_status=500`
+- `http_status=500`
+- `http_status=500`
+- `http_status=500`
+
+## Artifacts
+
+- JSON report: `/Users/abhishek/workspace/projects/kivi2/NotDynamo/reports/benchmarks/aws/e2e_http_20260217T101331Z.json`
+- Raw log: `/tmp/notdynamo-e2e-http-20260217T101331Z.log`
+- Command:
+
+```bash
+./gradlew :bench:run --args='--scenario e2e-http --baseUrl http://127.0.0.1:18080 --operations 10000 --keyspace 5000 --threads 16 --readRatio 0.90 --distribution uniform --zipfTheta 0.90 --valueBytes 256 --preload false --connectTimeoutMs 1000 --requestTimeoutMs 1500'
+```

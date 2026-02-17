@@ -63,6 +63,8 @@ cd /Users/abhishek/workspace/projects/kivi2/NotDynamo
   --nodes-min 2 \
   --nodes-max 4
 
+# (eks_up also configures EBS CSI + IAM role so PVC provisioning works)
+
 # 2) Build + push image to ECR and deploy to EKS
 ./scripts/eks/eks_deploy.sh \
   --name notdynamo-eks \
@@ -82,7 +84,8 @@ cd /Users/abhishek/workspace/projects/kivi2/NotDynamo
   --region us-west-2 \
   --operations 200000 \
   --threads 32 \
-  --read-ratio 0.90
+  --read-ratio 0.90 \
+  --preload false
 
 # 5) Teardown when done (stop billing)
 ./scripts/eks/eks_down.sh \
@@ -112,5 +115,6 @@ Delete ECR repo too:
 
 - `eks_down.sh` deletes app namespace, EKS cluster, and by default performs best-effort cleanup of orphaned EBS volumes tagged to the cluster.
 - `eks_bench_http.sh` runs end-to-end HTTP benchmark without exposing a public data endpoint.
+- `eks_bench_http.sh` defaults to `--preload true`; use `--preload false` for faster smoke-level benchmark iteration.
 - each benchmark run writes both JSON and human-readable Markdown reports.
 - Benchmark roadmap: `scripts/eks/BENCHMARK_PLAN.md`.
