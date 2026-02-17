@@ -36,6 +36,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Callable;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -88,6 +92,76 @@ class RatisRoutingIT {
 
             assertTrue(cluster.transport().getForwardedCallsTo("node-a") >= 1, "expected read forwarding to shard leader");
             assertEquals(0L, cluster.transport().putForwardedCalls(), "put should use local ratis client instead of node-to-node put forwarding");
+        }
+    }
+
+    @Test
+    void concurrentWritesAcrossRoutersSucceedAfterWarmup() throws Exception {
+        int shardCount = 64;
+        int virtualNodesPerShard = 256;
+        List<String> nodeIds = List.of("node-a", "node-b", "node-c");
+        ClusterPartitionMap leaderMap = ClusterPartitionMap.roundRobin(
+            new PartitionMapVersion(0),
+            shardCount,
+            virtualNodesPerShard,
+            nodeIds
+        );
+        ReplicaPartitionMap replicaMap = ReplicaPartitionMap.withUniformReplicas(leaderMap, nodeIds);
+        Map<String, Integer> ratisPorts = allocatePorts(nodeIds);
+
+        try (TestCluster cluster = TestCluster.open(tempDir, nodeIds, shardCount, virtualNodesPerShard, replicaMap, ratisPorts)) {
+            PutResponse warmup = eventuallyValue(
+                Duration.ofSeconds(10),
+                Duration.ofMillis(150),
+                () -> cluster.router("node-a").put(
+                    PutRequest.newBuilder()
+                        .setKey(ByteString.copyFromUtf8("warmup-key"))
+                        .setValue(ByteString.copyFromUtf8("warmup-value"))
+                        .build()
+                )
+            );
+            assertFalse(warmup.hasError(), () -> "warmup put failed: " + warmup.getError().getMessage());
+
+            int threads = 8;
+            int operationsPerThread = 100;
+            ExecutorService pool = Executors.newFixedThreadPool(threads);
+            CountDownLatch startLatch = new CountDownLatch(1);
+            List<Future<Integer>> results = new ArrayList<>();
+
+            try {
+                for (int thread = 0; thread < threads; thread++) {
+                    final int threadId = thread;
+                    results.add(
+                        pool.submit(() -> {
+                            startLatch.await();
+                            int failures = 0;
+                            for (int op = 0; op < operationsPerThread; op++) {
+                                String nodeId = nodeIds.get((threadId + op) % nodeIds.size());
+                                PutResponse put = cluster.router(nodeId).put(
+                                    PutRequest.newBuilder()
+                                        .setKey(ByteString.copyFromUtf8("concurrent-" + threadId + "-" + op))
+                                        .setValue(ByteString.copyFromUtf8("value-" + threadId + "-" + op))
+                                        .build()
+                                );
+                                if (put.hasError()) {
+                                    failures += 1;
+                                }
+                            }
+                            return failures;
+                        })
+                    );
+                }
+
+                startLatch.countDown();
+
+                int totalFailures = 0;
+                for (Future<Integer> result : results) {
+                    totalFailures += result.get();
+                }
+                assertEquals(0, totalFailures, "concurrent ratis writes should not return errors");
+            } finally {
+                pool.shutdownNow();
+            }
         }
     }
 
