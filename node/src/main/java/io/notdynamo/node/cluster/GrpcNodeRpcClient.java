@@ -12,6 +12,7 @@ import io.notdynamo.proto.v1.GetResponse;
 import io.notdynamo.proto.v1.KvServiceGrpc;
 import io.notdynamo.proto.v1.PutRequest;
 import io.notdynamo.proto.v1.PutResponse;
+import io.notdynamo.proto.v1.ReplicaApplyServiceGrpc;
 import io.notdynamo.proto.v1.StatusCode;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
@@ -23,6 +24,8 @@ public final class GrpcNodeRpcClient implements NodeRpcClient {
     private final long timeoutMillis;
     private final ConcurrentHashMap<String, ManagedChannel> channelsByNodeId = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<String, KvServiceGrpc.KvServiceBlockingStub> stubsByNodeId = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String, ReplicaApplyServiceGrpc.ReplicaApplyServiceBlockingStub> replicaStubsByNodeId =
+        new ConcurrentHashMap<>();
 
     public GrpcNodeRpcClient(Function<String, String> targetResolver, long timeoutMillis) {
         this.targetResolver = Objects.requireNonNull(targetResolver, "targetResolver must not be null");
@@ -69,16 +72,48 @@ public final class GrpcNodeRpcClient implements NodeRpcClient {
     }
 
     @Override
+    public PutResponse applyReplicaPut(String nodeId, PutRequest request) {
+        String validatedNodeId = validateNodeId(nodeId);
+        try {
+            return replicaStubFor(validatedNodeId).withDeadlineAfter(timeoutMillis, TimeUnit.MILLISECONDS).applyPut(request);
+        } catch (StatusRuntimeException e) {
+            return PutResponse.newBuilder().setError(errorFromException(validatedNodeId, e)).build();
+        } catch (RuntimeException e) {
+            return PutResponse.newBuilder().setError(internal(validatedNodeId, e)).build();
+        }
+    }
+
+    @Override
+    public DeleteResponse applyReplicaDelete(String nodeId, DeleteRequest request) {
+        String validatedNodeId = validateNodeId(nodeId);
+        try {
+            return replicaStubFor(validatedNodeId).withDeadlineAfter(timeoutMillis, TimeUnit.MILLISECONDS).applyDelete(request);
+        } catch (StatusRuntimeException e) {
+            return DeleteResponse.newBuilder().setError(errorFromException(validatedNodeId, e)).build();
+        } catch (RuntimeException e) {
+            return DeleteResponse.newBuilder().setError(internal(validatedNodeId, e)).build();
+        }
+    }
+
+    @Override
     public void close() {
         for (ManagedChannel channel : channelsByNodeId.values()) {
             channel.shutdownNow();
         }
         channelsByNodeId.clear();
         stubsByNodeId.clear();
+        replicaStubsByNodeId.clear();
     }
 
     private KvServiceGrpc.KvServiceBlockingStub stubFor(String nodeId) {
         return stubsByNodeId.computeIfAbsent(nodeId, id -> KvServiceGrpc.newBlockingStub(channelFor(id)));
+    }
+
+    private ReplicaApplyServiceGrpc.ReplicaApplyServiceBlockingStub replicaStubFor(String nodeId) {
+        return replicaStubsByNodeId.computeIfAbsent(
+            nodeId,
+            id -> ReplicaApplyServiceGrpc.newBlockingStub(channelFor(id))
+        );
     }
 
     private ManagedChannel channelFor(String nodeId) {

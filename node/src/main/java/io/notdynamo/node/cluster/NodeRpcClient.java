@@ -14,6 +14,10 @@ public interface NodeRpcClient extends AutoCloseable {
 
     DeleteResponse delete(String nodeId, DeleteRequest request);
 
+    PutResponse applyReplicaPut(String nodeId, PutRequest request);
+
+    DeleteResponse applyReplicaDelete(String nodeId, DeleteRequest request);
+
     @Override
     default void close() {
         // no-op by default

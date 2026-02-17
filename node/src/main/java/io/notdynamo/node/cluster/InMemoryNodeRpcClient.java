@@ -6,6 +6,7 @@ import io.notdynamo.proto.v1.DeleteResponse;
 import io.notdynamo.proto.v1.Error;
 import io.notdynamo.proto.v1.GetRequest;
 import io.notdynamo.proto.v1.GetResponse;
+import io.notdynamo.proto.v1.KvServiceGrpc;
 import io.notdynamo.proto.v1.PutRequest;
 import io.notdynamo.proto.v1.PutResponse;
 import io.notdynamo.proto.v1.StatusCode;
@@ -14,7 +15,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 
 public final class InMemoryNodeRpcClient implements NodeRpcClient {
-    private final ConcurrentHashMap<String, KvServiceHandler> handlersByNodeId = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String, KvServiceGrpc.KvServiceImplBase> handlersByNodeId = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String, KvServiceHandler> replicaApplyHandlersByNodeId = new ConcurrentHashMap<>();
     private final AtomicLong getForwardedCalls = new AtomicLong();
     private final AtomicLong putForwardedCalls = new AtomicLong();
     private final AtomicLong deleteForwardedCalls = new AtomicLong();
@@ -22,12 +24,26 @@ public final class InMemoryNodeRpcClient implements NodeRpcClient {
     private final ConcurrentHashMap<String, AtomicLong> putCallsByNode = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<String, AtomicLong> deleteCallsByNode = new ConcurrentHashMap<>();
 
-    public void register(String nodeId, KvServiceHandler handler) {
-        handlersByNodeId.put(validateNodeId(nodeId), Objects.requireNonNull(handler, "handler must not be null"));
+    public void register(String nodeId, KvServiceGrpc.KvServiceImplBase handler) {
+        String validatedNodeId = validateNodeId(nodeId);
+        KvServiceGrpc.KvServiceImplBase validatedHandler = Objects.requireNonNull(handler, "handler must not be null");
+        handlersByNodeId.put(validatedNodeId, validatedHandler);
+        if (validatedHandler instanceof KvServiceHandler localHandler) {
+            replicaApplyHandlersByNodeId.put(validatedNodeId, localHandler);
+        }
+    }
+
+    public void registerReplicaApply(String nodeId, KvServiceHandler localHandler) {
+        replicaApplyHandlersByNodeId.put(
+            validateNodeId(nodeId),
+            Objects.requireNonNull(localHandler, "localHandler must not be null")
+        );
     }
 
     public void unregister(String nodeId) {
-        handlersByNodeId.remove(validateNodeId(nodeId));
+        String validatedNodeId = validateNodeId(nodeId);
+        handlersByNodeId.remove(validatedNodeId);
+        replicaApplyHandlersByNodeId.remove(validatedNodeId);
     }
 
     @Override
@@ -36,7 +52,7 @@ public final class InMemoryNodeRpcClient implements NodeRpcClient {
         getForwardedCalls.incrementAndGet();
         getCallsByNode.computeIfAbsent(validatedNodeId, ignored -> new AtomicLong()).incrementAndGet();
 
-        KvServiceHandler handler = handlersByNodeId.get(validatedNodeId);
+        KvServiceGrpc.KvServiceImplBase handler = handlersByNodeId.get(validatedNodeId);
         if (handler == null) {
             return GetResponse.newBuilder().setError(unavailable("no handler for node " + nodeId)).build();
         }
@@ -56,7 +72,7 @@ public final class InMemoryNodeRpcClient implements NodeRpcClient {
         putForwardedCalls.incrementAndGet();
         putCallsByNode.computeIfAbsent(validatedNodeId, ignored -> new AtomicLong()).incrementAndGet();
 
-        KvServiceHandler handler = handlersByNodeId.get(validatedNodeId);
+        KvServiceGrpc.KvServiceImplBase handler = handlersByNodeId.get(validatedNodeId);
         if (handler == null) {
             return PutResponse.newBuilder().setError(unavailable("no handler for node " + nodeId)).build();
         }
@@ -76,7 +92,7 @@ public final class InMemoryNodeRpcClient implements NodeRpcClient {
         deleteForwardedCalls.incrementAndGet();
         deleteCallsByNode.computeIfAbsent(validatedNodeId, ignored -> new AtomicLong()).incrementAndGet();
 
-        KvServiceHandler handler = handlersByNodeId.get(validatedNodeId);
+        KvServiceGrpc.KvServiceImplBase handler = handlersByNodeId.get(validatedNodeId);
         if (handler == null) {
             return DeleteResponse.newBuilder().setError(unavailable("no handler for node " + nodeId)).build();
         }
@@ -86,6 +102,38 @@ public final class InMemoryNodeRpcClient implements NodeRpcClient {
 
         if (observer.error() != null || observer.value() == null || !observer.completed()) {
             return DeleteResponse.newBuilder().setError(internal("remote delete failed for node " + nodeId)).build();
+        }
+        return observer.value();
+    }
+
+    @Override
+    public PutResponse applyReplicaPut(String nodeId, PutRequest request) {
+        String validatedNodeId = validateNodeId(nodeId);
+        KvServiceHandler localHandler = replicaApplyHandlersByNodeId.get(validatedNodeId);
+        if (localHandler == null) {
+            return PutResponse.newBuilder().setError(unavailable("no replica-apply handler for node " + nodeId)).build();
+        }
+
+        SyncResponseObserver<PutResponse> observer = new SyncResponseObserver<>();
+        localHandler.put(request, observer);
+        if (observer.error() != null || observer.value() == null || !observer.completed()) {
+            return PutResponse.newBuilder().setError(internal("replica put failed for node " + nodeId)).build();
+        }
+        return observer.value();
+    }
+
+    @Override
+    public DeleteResponse applyReplicaDelete(String nodeId, DeleteRequest request) {
+        String validatedNodeId = validateNodeId(nodeId);
+        KvServiceHandler localHandler = replicaApplyHandlersByNodeId.get(validatedNodeId);
+        if (localHandler == null) {
+            return DeleteResponse.newBuilder().setError(unavailable("no replica-apply handler for node " + nodeId)).build();
+        }
+
+        SyncResponseObserver<DeleteResponse> observer = new SyncResponseObserver<>();
+        localHandler.delete(request, observer);
+        if (observer.error() != null || observer.value() == null || !observer.completed()) {
+            return DeleteResponse.newBuilder().setError(internal("replica delete failed for node " + nodeId)).build();
         }
         return observer.value();
     }

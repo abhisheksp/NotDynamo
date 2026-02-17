@@ -4,12 +4,16 @@ import io.grpc.Server;
 import io.grpc.netty.shaded.io.grpc.netty.NettyServerBuilder;
 import io.notdynamo.controlplane.ClusterPartitionMap;
 import io.notdynamo.controlplane.PartitionMapVersion;
+import io.notdynamo.controlplane.ReplicaPartitionMap;
 import io.notdynamo.node.cluster.GrpcNodeRpcClient;
 import io.notdynamo.node.cluster.InMemoryNodeRpcClient;
 import io.notdynamo.node.cluster.NodeRpcClient;
 import io.notdynamo.node.cluster.PartitionMapCache;
 import io.notdynamo.node.cluster.PartitionedKvRouter;
 import io.notdynamo.node.cluster.PartitionedKvServiceHandler;
+import io.notdynamo.node.cluster.ReplicaApplyServiceHandler;
+import io.notdynamo.node.cluster.ReplicaQuorumKvRouter;
+import io.notdynamo.node.cluster.ReplicaQuorumKvServiceHandler;
 import io.notdynamo.node.http.HttpBridgeServer;
 import io.notdynamo.proto.v1.KvServiceGrpc;
 import java.util.ArrayList;
@@ -42,22 +46,34 @@ public final class NodeMain {
                 ClusterPartitionMap partitionMap = settings.partitionMap();
                 PartitionMapCache partitionMapCache = new PartitionMapCache(partitionMap);
                 rpcClient = createRpcClient(settings);
-
-                PartitionedKvRouter router = new PartitionedKvRouter(
-                    config.nodeId(),
-                    nodeServer.kvService(),
-                    rpcClient,
-                    partitionMapCache
-                );
-
-                kvApi = new PartitionedKvServiceHandler(router);
+                if (settings.writePolicy == WritePolicy.LEADER_QUORUM) {
+                    ReplicaPartitionMap replicaMap = settings.replicaMap(partitionMap);
+                    ReplicaQuorumKvRouter router = new ReplicaQuorumKvRouter(
+                        config.nodeId(),
+                        nodeServer.kvService(),
+                        rpcClient,
+                        replicaMap,
+                        settings.writeQuorumAcks
+                    );
+                    kvApi = new ReplicaQuorumKvServiceHandler(router);
+                } else {
+                    PartitionedKvRouter router = new PartitionedKvRouter(
+                        config.nodeId(),
+                        nodeServer.kvService(),
+                        rpcClient,
+                        partitionMapCache
+                    );
+                    kvApi = new PartitionedKvServiceHandler(router);
+                }
                 partitionMapEpochSupplier = () -> String.valueOf(partitionMapCache.current().version().epoch());
             }
 
             NodeHealthServiceHandler healthService = new NodeHealthServiceHandler(config.nodeId(), () -> true, partitionMapEpochSupplier);
+            ReplicaApplyServiceHandler replicaApplyService = new ReplicaApplyServiceHandler(nodeServer.kvService());
 
             Server grpcServer = NettyServerBuilder.forPort(config.grpcPort())
                 .addService(kvApi)
+                .addService(replicaApplyService)
                 .addService(healthService)
                 .build();
 
@@ -117,6 +133,8 @@ public final class NodeMain {
         System.out.println("shard_count=" + settings.shardCount);
         System.out.println("virtual_nodes_per_shard=" + settings.virtualNodesPerShard);
         System.out.println("runtime_mode=" + settings.runtimeMode);
+        System.out.println("write_policy=" + settings.writePolicy);
+        System.out.println("write_quorum_acks=" + settings.writeQuorumAcks);
         System.out.println("rpc_mode=" + settings.rpcMode);
         System.out.println("cluster_nodes=" + String.join(",", settings.clusterNodeIds));
     }
@@ -153,6 +171,22 @@ public final class NodeMain {
         }
     }
 
+    private enum WritePolicy {
+        SINGLE_OWNER,
+        LEADER_QUORUM;
+
+        private static WritePolicy parse(String value) {
+            if (value == null || value.isBlank()) {
+                return SINGLE_OWNER;
+            }
+            return switch (value.trim().toLowerCase(Locale.ROOT)) {
+                case "single-owner", "single_owner", "single" -> SINGLE_OWNER;
+                case "leader-quorum", "leader_quorum", "quorum" -> LEADER_QUORUM;
+                default -> throw new IllegalArgumentException("unsupported NOTDYNAMO_WRITE_POLICY: " + value);
+            };
+        }
+    }
+
     private static final class RuntimeSettings {
         private static final String NODE_ID_ENV = "NOTDYNAMO_NODE_ID";
         private static final String HOST_ENV = "NOTDYNAMO_HOST";
@@ -170,6 +204,8 @@ public final class NodeMain {
         private static final String NAMESPACE_ENV = "NOTDYNAMO_NAMESPACE";
         private static final String RPC_ADDRESS_TEMPLATE_ENV = "NOTDYNAMO_RPC_ADDRESS_TEMPLATE";
         private static final String RPC_TIMEOUT_MS_ENV = "NOTDYNAMO_RPC_TIMEOUT_MS";
+        private static final String WRITE_POLICY_ENV = "NOTDYNAMO_WRITE_POLICY";
+        private static final String WRITE_QUORUM_ACKS_ENV = "NOTDYNAMO_WRITE_QUORUM_ACKS";
 
         private final String nodeId;
         private final String host;
@@ -183,6 +219,8 @@ public final class NodeMain {
         private final List<String> clusterNodeIds;
         private final String rpcAddressTemplate;
         private final long rpcTimeoutMillis;
+        private final WritePolicy writePolicy;
+        private final int writeQuorumAcks;
 
         private RuntimeSettings(
             String nodeId,
@@ -196,7 +234,9 @@ public final class NodeMain {
             RpcMode rpcMode,
             List<String> clusterNodeIds,
             String rpcAddressTemplate,
-            long rpcTimeoutMillis
+            long rpcTimeoutMillis,
+            WritePolicy writePolicy,
+            int writeQuorumAcks
         ) {
             this.nodeId = nodeId;
             this.host = host;
@@ -210,6 +250,8 @@ public final class NodeMain {
             this.clusterNodeIds = clusterNodeIds;
             this.rpcAddressTemplate = rpcAddressTemplate;
             this.rpcTimeoutMillis = rpcTimeoutMillis;
+            this.writePolicy = writePolicy;
+            this.writeQuorumAcks = writeQuorumAcks;
         }
 
         private static RuntimeSettings fromEnvironment(Map<String, String> env) {
@@ -262,6 +304,16 @@ public final class NodeMain {
                     : runtimeModeValue
             );
             RpcMode rpcMode = RpcMode.parse(env.get(RPC_MODE_ENV));
+            WritePolicy writePolicy = WritePolicy.parse(env.get(WRITE_POLICY_ENV));
+            int writeQuorumAcks = parseInt(env.get(WRITE_QUORUM_ACKS_ENV), 2, WRITE_QUORUM_ACKS_ENV);
+            if (writeQuorumAcks <= 0) {
+                throw new IllegalArgumentException("NOTDYNAMO_WRITE_QUORUM_ACKS must be > 0");
+            }
+            if (writePolicy == WritePolicy.LEADER_QUORUM && clusterNodeIds.size() < writeQuorumAcks) {
+                throw new IllegalArgumentException(
+                    "cluster node count must be >= write quorum acks for leader-quorum policy"
+                );
+            }
 
             return new RuntimeSettings(
                 nodeId,
@@ -275,7 +327,9 @@ public final class NodeMain {
                 rpcMode,
                 clusterNodeIds,
                 rpcAddressTemplate,
-                rpcTimeoutMillis
+                rpcTimeoutMillis,
+                writePolicy,
+                writeQuorumAcks
             );
         }
 
@@ -286,6 +340,10 @@ public final class NodeMain {
                 virtualNodesPerShard,
                 clusterNodeIds
             );
+        }
+
+        private ReplicaPartitionMap replicaMap(ClusterPartitionMap partitionMap) {
+            return ReplicaPartitionMap.withUniformReplicas(partitionMap, clusterNodeIds);
         }
 
         private String rpcTargetForNode(String nodeId) {

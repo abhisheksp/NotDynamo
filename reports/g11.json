@@ -1,7 +1,7 @@
 {
   "gate": "G11",
   "status": "PASS",
-  "timestamp_utc": "2026-02-17T17:28:21Z",
+  "timestamp_utc": "2026-02-17T17:40:28Z",
   "integration_tests": "./gradlew :it:test --tests io.notdynamo.it.KubernetesManifestIT --tests io.notdynamo.it.LiveGrpcRoutingIT",
   "drain_dry_run_command": "./scripts/k8s/drill-node-drain.sh --dry-run --node dummy-node --namespace notdynamo",
   "pod_delete_dry_run_command": "./scripts/k8s/drill-pod-delete.sh --dry-run --namespace notdynamo",

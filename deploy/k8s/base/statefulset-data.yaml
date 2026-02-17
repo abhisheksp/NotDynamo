@@ -88,6 +88,10 @@ spec:
               value: "grpc"
             - name: NOTDYNAMO_RPC_TIMEOUT_MS
               value: "750"
+            - name: NOTDYNAMO_WRITE_POLICY
+              value: "leader-quorum"
+            - name: NOTDYNAMO_WRITE_QUORUM_ACKS
+              value: "2"
             - name: NOTDYNAMO_CLUSTER_SIZE
               value: "3"
             - name: NOTDYNAMO_STATEFULSET_NAME

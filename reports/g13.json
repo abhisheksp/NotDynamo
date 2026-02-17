@@ -1,0 +1,10 @@
+{
+  "gate": "G13",
+  "status": "PASS",
+  "timestamp_utc": "2026-02-17T17:39:19Z",
+  "node_tests": "./gradlew :node:test --tests io.notdynamo.node.cluster.GrpcNodeRpcClientTest",
+  "integration_tests": "./gradlew :it:test --tests io.notdynamo.it.QuorumReplicationRoutingIT",
+  "node_log": "/tmp/notdynamo-g13-node.log",
+  "integration_log": "/tmp/notdynamo-g13-it.log",
+  "notes": "Leader-quorum write routing and replica-apply RPC path validated"
+}

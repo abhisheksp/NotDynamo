@@ -31,7 +31,11 @@ class GrpcNodeRpcClientTest {
         NodeConfig config = new NodeConfig("node-a", "127.0.0.1", 9090, 8080, tempDir.resolve("node-a"));
 
         try (NodeServer node = NodeServer.openSharded(config, 32, 64)) {
-            Server grpcServer = NettyServerBuilder.forPort(0).addService(node.kvService()).build().start();
+            Server grpcServer = NettyServerBuilder.forPort(0)
+                .addService(node.kvService())
+                .addService(new ReplicaApplyServiceHandler(node.kvService()))
+                .build()
+                .start();
             int port = grpcServer.getPort();
 
             try (GrpcNodeRpcClient rpc = new GrpcNodeRpcClient(ignored -> "127.0.0.1:" + port, 1000)) {
@@ -54,6 +58,18 @@ class GrpcNodeRpcClientTest {
                 var delete = rpc.delete("node-a", DeleteRequest.newBuilder().setKey(ByteString.copyFrom(key)).build());
                 assertFalse(delete.hasError());
                 assertEquals(2L, delete.getVersion());
+
+                PutResponse replicaPut = rpc.applyReplicaPut(
+                    "node-a",
+                    PutRequest.newBuilder().setKey(ByteString.copyFromUtf8("replica-key")).setValue(ByteString.copyFromUtf8("v2")).build()
+                );
+                assertFalse(replicaPut.hasError());
+
+                var replicaDelete = rpc.applyReplicaDelete(
+                    "node-a",
+                    DeleteRequest.newBuilder().setKey(ByteString.copyFromUtf8("replica-key")).build()
+                );
+                assertFalse(replicaDelete.hasError());
             } finally {
                 grpcServer.shutdownNow();
                 grpcServer.awaitTermination(5, TimeUnit.SECONDS);

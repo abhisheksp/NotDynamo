@@ -68,3 +68,8 @@ service KvService {
 service NodeHealthService {
   rpc Health(HealthRequest) returns (HealthResponse);
 }
+
+service ReplicaApplyService {
+  rpc ApplyPut(PutRequest) returns (PutResponse);
+  rpc ApplyDelete(DeleteRequest) returns (DeleteResponse);
+}
