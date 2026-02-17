@@ -2,12 +2,13 @@ FROM eclipse-temurin:17-jdk AS build
 
 WORKDIR /workspace
 COPY . .
-RUN ./gradlew :node:installDist --no-daemon
+RUN ./gradlew :node:installDist :control-plane:installDist --no-daemon
 
 FROM eclipse-temurin:17-jre
 
 WORKDIR /opt/notdynamo
 COPY --from=build /workspace/node/build/install/node/ /opt/notdynamo/
+COPY --from=build /workspace/control-plane/build/install/control-plane/ /opt/notdynamo-control-plane/
 
 ENV NOTDYNAMO_NODE_ID=node-local
 ENV NOTDYNAMO_HOST=0.0.0.0

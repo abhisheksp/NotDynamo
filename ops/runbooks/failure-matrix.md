@@ -30,5 +30,6 @@ This runbook lists the primary failure modes, how to inject each failure, and wh
 - `./scripts/verify/g11.sh`
 - `./scripts/verify/g12.sh`
 - `./scripts/verify/g13.sh`
+- `./scripts/verify/g14.sh`
 
 These gates provide repeatable verification artifacts in `/reports`.

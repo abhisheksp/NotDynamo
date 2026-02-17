@@ -31,7 +31,34 @@ spec:
         - name: control-plane
           image: ghcr.io/notdynamo/notdynamo:dev
           imagePullPolicy: IfNotPresent
-          command: ["/bin/sh", "-c", "echo notdynamo control-plane placeholder && sleep 3600"]
+          command: ["/bin/sh", "-c", "exec /opt/notdynamo-control-plane/bin/control-plane"]
           ports:
             - name: grpc
               containerPort: 9090
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: grpc
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            timeoutSeconds: 2
+            failureThreshold: 6
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: grpc
+            initialDelaySeconds: 15
+            periodSeconds: 10
+            timeoutSeconds: 2
+            failureThreshold: 6
+          env:
+            - name: NOTDYNAMO_CONTROL_PLANE_PORT
+              value: "9090"
+            - name: NOTDYNAMO_SHARD_COUNT
+              value: "2048"
+            - name: NOTDYNAMO_VIRTUAL_NODES_PER_SHARD
+              value: "256"
+            - name: NOTDYNAMO_CLUSTER_SIZE
+              value: "3"
+            - name: NOTDYNAMO_STATEFULSET_NAME
+              value: "notdynamo-data"

@@ -31,6 +31,7 @@ Milestone branches:
 - `codex/e12-true-distributed-data-path`: live HTTP->gRPC multi-node routing verification
 - `codex/e13-failure-verification-matrix`: codified failure-mode verification runbook
 - `codex/e14-leader-quorum-replication`: leader-quorum write path and internal replica-apply service
+- `codex/e15-control-plane-runtime`: replace placeholder control-plane with a real runtime process
 
 Default branch `main` always points to the latest completed task state.
 
@@ -155,7 +156,8 @@ Notes:
 - End-to-end local and EKS deploy flows are operational.
 - Runtime now supports partitioned request routing across nodes using gRPC node-to-node forwarding.
 - Runtime now supports leader-quorum writes (`quorum=2`) with internal replica-apply RPC.
-- New verification gates `G10` to `G13` validate distributed routing, failure-drill scripts, and quorum write behavior.
+- Control-plane deployment now runs an executable process with `/healthz` and `/v1/partition-map` endpoints.
+- New verification gates `G10` to `G14` validate distributed routing, failure-drill scripts, quorum writes, and control-plane runtime.
 - Automated setup/teardown scripts include cost-control safeguards.
 - Benchmark harness and human-readable reports are source-controlled.
 
