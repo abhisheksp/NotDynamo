@@ -30,6 +30,12 @@ Run networked E2E benchmark against EKS through `kubectl port-forward` (private 
 ./scripts/eks/eks_bench_http.sh --name notdynamo-eks --region us-west-2
 ```
 
+For local or port-forwarded benchmark loops where you want correctness gating first:
+
+```bash
+./scripts/bench/run_gated_e2e_http_profile.sh --base-url http://127.0.0.1:18080
+```
+
 Artifacts:
 - `reports/benchmarks/aws/e2e_http_*.json`
 - `reports/benchmarks/aws/e2e_http_*.md`
