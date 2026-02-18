@@ -1,6 +1,7 @@
 package io.notdynamo.it;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import io.notdynamo.controlplane.ClusterPartitionMap;
@@ -35,6 +36,8 @@ class LearnerSyncIT {
         coordinator.startMove(move, 12.0, throttler);
         coordinator.markSnapshotTransferred(move);
         coordinator.recordLearnerLagMillis(move, 700);
+        assertFalse(coordinator.readyToPromote(move));
+        coordinator.markCatchupComplete(move);
         assertTrue(coordinator.readyToPromote(move));
 
         coordinator.finalizeMove(move);

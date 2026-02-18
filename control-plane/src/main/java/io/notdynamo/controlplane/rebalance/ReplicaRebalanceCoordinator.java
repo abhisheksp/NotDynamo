@@ -88,6 +88,14 @@ public final class ReplicaRebalanceCoordinator {
         activeMoves.put(move, context.withStage(MoveStage.SNAPSHOT_TRANSFERRED));
     }
 
+    public synchronized void markCatchupComplete(ShardMove move) {
+        MoveContext context = requireActiveMove(move);
+        if (context.stage != MoveStage.SNAPSHOT_TRANSFERRED) {
+            throw new IllegalStateException("catchup completion can only follow snapshot transfer");
+        }
+        activeMoves.put(move, context.withStage(MoveStage.CATCHUP_COMPLETE));
+    }
+
     public synchronized void recordLearnerLagMillis(ShardMove move, long lagMillis) {
         if (lagMillis < 0) {
             throw new IllegalArgumentException("lagMillis must be >= 0");
@@ -99,7 +107,7 @@ public final class ReplicaRebalanceCoordinator {
 
     public synchronized boolean readyToPromote(ShardMove move) {
         MoveContext context = requireActiveMove(move);
-        return context.stage.ordinal() >= MoveStage.SNAPSHOT_TRANSFERRED.ordinal()
+        return context.stage.ordinal() >= MoveStage.CATCHUP_COMPLETE.ordinal()
             && context.learnerLagMillis <= learnerLagThresholdMillis;
     }
 
@@ -145,7 +153,8 @@ public final class ReplicaRebalanceCoordinator {
 
     private enum MoveStage {
         LEARNER_ADDED,
-        SNAPSHOT_TRANSFERRED
+        SNAPSHOT_TRANSFERRED,
+        CATCHUP_COMPLETE
     }
 
     private record MoveContext(MoveStage stage, long learnerLagMillis, List<String> originalReplicas) {
