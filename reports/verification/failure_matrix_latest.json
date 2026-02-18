@@ -1,0 +1,18 @@
+{
+  "gate": "failure-matrix",
+  "timestamp_utc": "2026-02-18T07:38:38Z",
+  "namespace": "notdynamo",
+  "mode": "dry-run",
+  "overall_status": "PASS",
+  "harness_command": "/Users/abhishek/workspace/projects/kivi2/NotDynamo/scripts/local/kind_failure_harness.sh --namespace notdynamo --scenarios pod-restart,leader-restart,process-restart,node-drain --timeout-sec 600 --dry-run",
+  "harness_status": "PASS",
+  "harness_log": "/tmp/notdynamo-failure-matrix-20260218T073838Z.log",
+  "harness_json": "/Users/abhishek/workspace/projects/kivi2/NotDynamo/reports/failures/failure_harness_latest.json",
+  "harness_md": "/Users/abhishek/workspace/projects/kivi2/NotDynamo/reports/failures/failure_harness_latest.md",
+  "scenarios": [
+    {"name":"pod-restart","status":"PASS"},
+    {"name":"leader-restart","status":"PASS"},
+    {"name":"process-restart","status":"PASS"},
+    {"name":"node-drain","status":"PASS"}
+  ]
+}
