@@ -10,12 +10,18 @@ import io.notdynamo.controlplane.PartitionMapVersion;
 import io.notdynamo.controlplane.ReplicaPartitionMap;
 import io.notdynamo.node.NodeConfig;
 import io.notdynamo.node.NodeServer;
+import io.notdynamo.node.shard.ConsistentHashRing;
+import io.notdynamo.proto.v1.GetRequest;
+import io.notdynamo.proto.v1.GetResponse;
 import io.notdynamo.proto.v1.PutRequest;
 import io.notdynamo.proto.v1.PutResponse;
 import io.notdynamo.proto.v1.StatusCode;
 import io.notdynamo.ratis.ConsensusEngine;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -62,6 +68,113 @@ class RatisKvRouterTest {
         }
     }
 
+    @Test
+    void eventualReadUsesFreshFollowerWithinBudget() {
+        int shardCount = 16;
+        int virtualNodesPerShard = 64;
+        List<String> nodes = List.of("node-a", "node-b", "node-c");
+        ClusterPartitionMap leaderMap = ClusterPartitionMap.roundRobin(
+            new PartitionMapVersion(0),
+            shardCount,
+            virtualNodesPerShard,
+            nodes
+        );
+        ReplicaPartitionMap replicaMap = ReplicaPartitionMap.withUniformReplicas(leaderMap, nodes);
+        byte[] key = findKeyForOwner(leaderMap, "node-a");
+        byte[] value = "fresh-follower".getBytes(StandardCharsets.UTF_8);
+
+        try (
+            NodeServer nodeA = NodeServer.openSharded(configFor("node-a"), shardCount, virtualNodesPerShard);
+            NodeServer nodeB = NodeServer.openSharded(configFor("node-b"), shardCount, virtualNodesPerShard);
+            NodeServer nodeC = NodeServer.openSharded(configFor("node-c"), shardCount, virtualNodesPerShard)
+        ) {
+            InMemoryNodeRpcClient transport = new InMemoryNodeRpcClient();
+            transport.register("node-a", nodeA.kvService());
+            transport.register("node-b", nodeB.kvService());
+            transport.register("node-c", nodeC.kvService());
+
+            PutRequest preload = PutRequest.newBuilder().setKey(ByteString.copyFrom(key)).setValue(ByteString.copyFrom(value)).build();
+            assertFalse(transport.put("node-a", preload).hasError());
+            assertFalse(transport.put("node-b", preload).hasError());
+
+            int shardId = shardForKey(leaderMap, key);
+            ReplicaLagTracker lagTracker = new ReplicaLagTracker();
+            lagTracker.recordLagMillis(shardId, "node-b", 120L);
+            lagTracker.recordLagMillis(shardId, "node-c", 1500L);
+
+            RatisKvRouter routerC = new RatisKvRouter(
+                "node-c",
+                nodeC.kvService(),
+                transport,
+                replicaMap,
+                new FlakyConsensusEngine(0, 0, 1L, 1L),
+                RatisKvRouter.ReadMode.EVENTUAL,
+                lagTracker,
+                1000L
+            );
+
+            long forwardedToBBefore = transport.getForwardedCallsTo("node-b");
+            GetResponse read = routerC.get(GetRequest.newBuilder().setKey(ByteString.copyFrom(key)).build());
+            assertFalse(read.hasError());
+            assertTrue(read.getFound());
+            assertEquals(forwardedToBBefore + 1, transport.getForwardedCallsTo("node-b"));
+            assertEquals(0L, routerC.leaderFallbackReads());
+        }
+    }
+
+    @Test
+    void eventualReadFallsBackToLeaderWhenNoFollowerIsFresh() {
+        int shardCount = 16;
+        int virtualNodesPerShard = 64;
+        List<String> nodes = List.of("node-a", "node-b", "node-c");
+        ClusterPartitionMap leaderMap = ClusterPartitionMap.roundRobin(
+            new PartitionMapVersion(0),
+            shardCount,
+            virtualNodesPerShard,
+            nodes
+        );
+        ReplicaPartitionMap replicaMap = ReplicaPartitionMap.withUniformReplicas(leaderMap, nodes);
+        byte[] key = findKeyForOwner(leaderMap, "node-a");
+        byte[] value = "leader-fallback".getBytes(StandardCharsets.UTF_8);
+
+        try (
+            NodeServer nodeA = NodeServer.openSharded(configFor("node-a"), shardCount, virtualNodesPerShard);
+            NodeServer nodeB = NodeServer.openSharded(configFor("node-b"), shardCount, virtualNodesPerShard);
+            NodeServer nodeC = NodeServer.openSharded(configFor("node-c"), shardCount, virtualNodesPerShard)
+        ) {
+            InMemoryNodeRpcClient transport = new InMemoryNodeRpcClient();
+            transport.register("node-a", nodeA.kvService());
+            transport.register("node-b", nodeB.kvService());
+            transport.register("node-c", nodeC.kvService());
+
+            PutRequest preload = PutRequest.newBuilder().setKey(ByteString.copyFrom(key)).setValue(ByteString.copyFrom(value)).build();
+            assertFalse(transport.put("node-a", preload).hasError());
+
+            int shardId = shardForKey(leaderMap, key);
+            ReplicaLagTracker lagTracker = new ReplicaLagTracker();
+            lagTracker.recordLagMillis(shardId, "node-b", 1800L);
+            lagTracker.recordLagMillis(shardId, "node-c", 2500L);
+
+            RatisKvRouter routerC = new RatisKvRouter(
+                "node-c",
+                nodeC.kvService(),
+                transport,
+                replicaMap,
+                new FlakyConsensusEngine(0, 0, 1L, 1L),
+                RatisKvRouter.ReadMode.EVENTUAL,
+                lagTracker,
+                1000L
+            );
+
+            long leaderGetsBefore = transport.getForwardedCallsTo("node-a");
+            GetResponse read = routerC.get(GetRequest.newBuilder().setKey(ByteString.copyFrom(key)).build());
+            assertFalse(read.hasError());
+            assertTrue(read.getFound());
+            assertEquals(leaderGetsBefore + 1, transport.getForwardedCallsTo("node-a"));
+            assertEquals(1L, routerC.leaderFallbackReads());
+        }
+    }
+
     private PutRequest putRequest(String key, String value) {
         return PutRequest.newBuilder()
             .setKey(ByteString.copyFromUtf8(key))
@@ -87,6 +200,31 @@ class RatisKvRouterTest {
             List.of(nodeId)
         );
         return ReplicaPartitionMap.withUniformReplicas(map, List.of(nodeId));
+    }
+
+    private static int shardForKey(ClusterPartitionMap map, byte[] key) {
+        Set<Integer> shardIds = new HashSet<>();
+        for (int shard = 0; shard < map.shardCount(); shard++) {
+            shardIds.add(shard);
+        }
+        ConsistentHashRing ring = ConsistentHashRing.create(shardIds, map.virtualNodesPerShard());
+        return ring.shardForKey(key);
+    }
+
+    private static byte[] findKeyForOwner(ClusterPartitionMap map, String ownerNodeId) {
+        Set<Integer> shardIds = new HashSet<>();
+        for (int shard = 0; shard < map.shardCount(); shard++) {
+            shardIds.add(shard);
+        }
+        ConsistentHashRing ring = ConsistentHashRing.create(shardIds, map.virtualNodesPerShard());
+        for (int i = 0; i < 500_000; i++) {
+            byte[] candidate = ("key-" + i).getBytes(StandardCharsets.UTF_8);
+            int shard = ring.shardForKey(candidate);
+            if (ownerNodeId.equals(map.ownerForShard(shard).orElse(null))) {
+                return candidate;
+            }
+        }
+        throw new IllegalStateException("unable to find key for owner " + ownerNodeId);
     }
 
     private static final class FlakyConsensusEngine implements ConsensusEngine {

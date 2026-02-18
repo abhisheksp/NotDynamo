@@ -15,6 +15,7 @@ import io.notdynamo.node.cluster.PartitionedKvRouter;
 import io.notdynamo.node.cluster.PartitionedKvServiceHandler;
 import io.notdynamo.node.cluster.RatisKvRouter;
 import io.notdynamo.node.cluster.RatisKvServiceHandler;
+import io.notdynamo.node.cluster.ReplicaLagTracker;
 import io.notdynamo.node.cluster.ReplicaApplyServiceHandler;
 import io.notdynamo.node.cluster.ReplicaQuorumKvRouter;
 import io.notdynamo.node.cluster.ReplicaQuorumKvServiceHandler;
@@ -72,12 +73,16 @@ public final class NodeMain {
                     case RAFT -> {
                         RatisMultiShardConsensusEngineConfig consensusConfig = settings.multiShardConsensusConfig(shardPartitionMap);
                         consensusEngine = RatisMultiShardConsensusEngine.open(consensusConfig, nodeServer.keyValueStore());
+                        ReplicaLagTracker lagTracker = new ReplicaLagTracker();
                         RatisKvRouter router = new RatisKvRouter(
                             config.nodeId(),
                             nodeServer.kvService(),
                             rpcClient,
                             replicaMap,
-                            consensusEngine
+                            consensusEngine,
+                            settings.ratisReadMode(),
+                            lagTracker,
+                            settings.eventualFreshnessMillis
                         );
                         kvApi = new RatisKvServiceHandler(router);
                     }
@@ -184,6 +189,8 @@ public final class NodeMain {
         System.out.println("ratis_group_name=" + settings.ratisGroupName);
         System.out.println("ratis_port=" + settings.ratisPort);
         System.out.println("ratis_request_timeout_ms=" + settings.ratisRequestTimeoutMillis);
+        System.out.println("read_consistency=" + settings.readConsistency);
+        System.out.println("eventual_freshness_ms=" + settings.eventualFreshnessMillis);
         System.out.println("partition_map_source=" + settings.partitionMapSource);
         System.out.println("partition_map_endpoint=" + settings.controlPlanePartitionMapEndpoint);
         System.out.println("cluster_nodes=" + String.join(",", settings.clusterNodeIds));
@@ -239,6 +246,22 @@ public final class NodeMain {
         }
     }
 
+    private enum ReadConsistency {
+        EVENTUAL,
+        LEADER;
+
+        private static ReadConsistency parse(String value) {
+            if (value == null || value.isBlank()) {
+                return EVENTUAL;
+            }
+            return switch (value.trim().toLowerCase(Locale.ROOT)) {
+                case "eventual", "replica", "replica-read", "replica_read" -> EVENTUAL;
+                case "leader", "strong", "leader-read", "leader_read" -> LEADER;
+                default -> throw new IllegalArgumentException("unsupported NOTDYNAMO_READ_CONSISTENCY: " + value);
+            };
+        }
+    }
+
     private enum PartitionMapSource {
         STATIC,
         CONTROL_PLANE;
@@ -278,6 +301,8 @@ public final class NodeMain {
         private static final String RATIS_REQUEST_TIMEOUT_MS_ENV = "NOTDYNAMO_RATIS_REQUEST_TIMEOUT_MS";
         private static final String WRITE_POLICY_ENV = "NOTDYNAMO_WRITE_POLICY";
         private static final String WRITE_QUORUM_ACKS_ENV = "NOTDYNAMO_WRITE_QUORUM_ACKS";
+        private static final String READ_CONSISTENCY_ENV = "NOTDYNAMO_READ_CONSISTENCY";
+        private static final String EVENTUAL_FRESHNESS_MS_ENV = "NOTDYNAMO_EVENTUAL_FRESHNESS_MILLIS";
         private static final String REPLICATION_FACTOR_ENV = "NOTDYNAMO_REPLICATION_FACTOR";
         private static final String PARTITION_MAP_SOURCE_ENV = "NOTDYNAMO_PARTITION_MAP_SOURCE";
         private static final String CONTROL_PLANE_PARTITION_MAP_ENDPOINT_ENV = "NOTDYNAMO_CONTROL_PLANE_PARTITION_MAP_ENDPOINT";
@@ -301,6 +326,8 @@ public final class NodeMain {
         private final long ratisRequestTimeoutMillis;
         private final WritePolicy writePolicy;
         private final int writeQuorumAcks;
+        private final ReadConsistency readConsistency;
+        private final long eventualFreshnessMillis;
         private final int replicationFactor;
         private final PartitionMapSource partitionMapSource;
         private final String controlPlanePartitionMapEndpoint;
@@ -325,6 +352,8 @@ public final class NodeMain {
             long ratisRequestTimeoutMillis,
             WritePolicy writePolicy,
             int writeQuorumAcks,
+            ReadConsistency readConsistency,
+            long eventualFreshnessMillis,
             int replicationFactor,
             PartitionMapSource partitionMapSource,
             String controlPlanePartitionMapEndpoint,
@@ -348,6 +377,8 @@ public final class NodeMain {
             this.ratisRequestTimeoutMillis = ratisRequestTimeoutMillis;
             this.writePolicy = writePolicy;
             this.writeQuorumAcks = writeQuorumAcks;
+            this.readConsistency = readConsistency;
+            this.eventualFreshnessMillis = eventualFreshnessMillis;
             this.replicationFactor = replicationFactor;
             this.partitionMapSource = partitionMapSource;
             this.controlPlanePartitionMapEndpoint = controlPlanePartitionMapEndpoint;
@@ -451,8 +482,13 @@ public final class NodeMain {
             RpcMode rpcMode = RpcMode.parse(env.get(RPC_MODE_ENV));
             WritePolicy writePolicy = WritePolicy.parse(env.get(WRITE_POLICY_ENV));
             int writeQuorumAcks = parseInt(env.get(WRITE_QUORUM_ACKS_ENV), 2, WRITE_QUORUM_ACKS_ENV);
+            ReadConsistency readConsistency = ReadConsistency.parse(env.get(READ_CONSISTENCY_ENV));
+            long eventualFreshnessMillis = parseLong(env.get(EVENTUAL_FRESHNESS_MS_ENV), 1000L, EVENTUAL_FRESHNESS_MS_ENV);
             if (writeQuorumAcks <= 0) {
                 throw new IllegalArgumentException("NOTDYNAMO_WRITE_QUORUM_ACKS must be > 0");
+            }
+            if (eventualFreshnessMillis < 0) {
+                throw new IllegalArgumentException("NOTDYNAMO_EVENTUAL_FRESHNESS_MILLIS must be >= 0");
             }
             if (writePolicy == WritePolicy.LEADER_QUORUM && clusterNodeIds.size() < writeQuorumAcks) {
                 throw new IllegalArgumentException(
@@ -482,6 +518,8 @@ public final class NodeMain {
                 ratisRequestTimeoutMillis,
                 writePolicy,
                 writeQuorumAcks,
+                readConsistency,
+                eventualFreshnessMillis,
                 replicationFactor,
                 partitionMapSource,
                 controlPlanePartitionMapEndpoint,
@@ -557,6 +595,12 @@ public final class NodeMain {
                 dataDir.resolve("ratis"),
                 ratisRequestTimeoutMillis
             );
+        }
+
+        private RatisKvRouter.ReadMode ratisReadMode() {
+            return readConsistency == ReadConsistency.LEADER
+                ? RatisKvRouter.ReadMode.LEADER
+                : RatisKvRouter.ReadMode.EVENTUAL;
         }
 
         private String rpcTargetForNode(String nodeId) {

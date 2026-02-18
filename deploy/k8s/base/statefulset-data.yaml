@@ -100,6 +100,10 @@ spec:
               value: "raft"
             - name: NOTDYNAMO_WRITE_QUORUM_ACKS
               value: "2"
+            - name: NOTDYNAMO_READ_CONSISTENCY
+              value: "eventual"
+            - name: NOTDYNAMO_EVENTUAL_FRESHNESS_MILLIS
+              value: "1000"
             - name: NOTDYNAMO_REPLICATION_FACTOR
               value: "3"
             - name: NOTDYNAMO_PARTITION_MAP_SOURCE

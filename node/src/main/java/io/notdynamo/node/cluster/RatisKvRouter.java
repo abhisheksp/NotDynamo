@@ -16,6 +16,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicLong;
 
 public final class RatisKvRouter {
     private static final int MAX_CONSENSUS_WRITE_ATTEMPTS = 4;
@@ -27,6 +28,11 @@ public final class RatisKvRouter {
     private final NodeRpcClient rpcClient;
     private final ReplicaPartitionMap replicaMap;
     private final ConsensusEngine consensusEngine;
+    private final ReadMode readMode;
+    private final ReplicaLagTracker lagTracker;
+    private final FreshReplicaPicker replicaPicker;
+    private final long freshnessBudgetMillis;
+    private final AtomicLong leaderFallbackReads = new AtomicLong();
 
     private volatile long ringEpoch = Long.MIN_VALUE;
     private volatile ConsistentHashRing ring;
@@ -38,11 +44,31 @@ public final class RatisKvRouter {
         ReplicaPartitionMap replicaMap,
         ConsensusEngine consensusEngine
     ) {
+        this(localNodeId, localService, rpcClient, replicaMap, consensusEngine, ReadMode.LOCAL_REPLICA, new ReplicaLagTracker(), 1000L);
+    }
+
+    public RatisKvRouter(
+        String localNodeId,
+        KvServiceHandler localService,
+        NodeRpcClient rpcClient,
+        ReplicaPartitionMap replicaMap,
+        ConsensusEngine consensusEngine,
+        ReadMode readMode,
+        ReplicaLagTracker lagTracker,
+        long freshnessBudgetMillis
+    ) {
         this.localNodeId = validateNodeId(localNodeId, "localNodeId");
         this.localService = Objects.requireNonNull(localService, "localService must not be null");
         this.rpcClient = Objects.requireNonNull(rpcClient, "rpcClient must not be null");
         this.replicaMap = Objects.requireNonNull(replicaMap, "replicaMap must not be null");
         this.consensusEngine = Objects.requireNonNull(consensusEngine, "consensusEngine must not be null");
+        this.readMode = Objects.requireNonNull(readMode, "readMode must not be null");
+        this.lagTracker = Objects.requireNonNull(lagTracker, "lagTracker must not be null");
+        this.replicaPicker = new FreshReplicaPicker();
+        if (freshnessBudgetMillis < 0) {
+            throw new IllegalArgumentException("freshnessBudgetMillis must be >= 0");
+        }
+        this.freshnessBudgetMillis = freshnessBudgetMillis;
     }
 
     public GetResponse get(GetRequest request) {
@@ -52,7 +78,8 @@ public final class RatisKvRouter {
 
         int shardId = shardForKey(request.getKey().toByteArray());
         List<String> replicas = replicaMap.replicasForShard(shardId);
-        String readNodeId = replicas.contains(localNodeId) ? localNodeId : replicaMap.leaderForShard(shardId);
+        String leaderNodeId = replicaMap.leaderForShard(shardId);
+        String readNodeId = readNodeIdFor(shardId, replicas, leaderNodeId);
         if (readNodeId == null || readNodeId.isBlank()) {
             return GetResponse.newBuilder().setError(unavailable("no read node available for shard " + shardId)).build();
         }
@@ -81,6 +108,7 @@ public final class RatisKvRouter {
             long version = writeWithRetry(
                 () -> consensusEngine.put(shardId, request.getKey().toByteArray(), request.getValue().toByteArray())
             );
+            lagTracker.recordLagMillis(shardId, localNodeId, 0L);
             return PutResponse.newBuilder().setVersion(version).build();
         } catch (IllegalArgumentException e) {
             return PutResponse.newBuilder().setError(invalidArgument(e.getMessage())).build();
@@ -105,12 +133,41 @@ public final class RatisKvRouter {
 
         try {
             long version = writeWithRetry(() -> consensusEngine.delete(shardId, request.getKey().toByteArray()));
+            lagTracker.recordLagMillis(shardId, localNodeId, 0L);
             return DeleteResponse.newBuilder().setVersion(version).build();
         } catch (IllegalArgumentException e) {
             return DeleteResponse.newBuilder().setError(invalidArgument(e.getMessage())).build();
         } catch (RuntimeException e) {
             return DeleteResponse.newBuilder().setError(unavailable("ratis delete failed: " + safeMessage(e))).build();
         }
+    }
+
+    public long leaderFallbackReads() {
+        return leaderFallbackReads.get();
+    }
+
+    private String readNodeIdFor(int shardId, List<String> replicas, String leaderNodeId) {
+        if (leaderNodeId == null || leaderNodeId.isBlank()) {
+            return "";
+        }
+        return switch (readMode) {
+            case LEADER -> leaderNodeId;
+            case LOCAL_REPLICA -> replicas.contains(localNodeId) ? localNodeId : leaderNodeId;
+            case EVENTUAL -> {
+                String freshReplica = replicaPicker.pickFreshFollower(
+                    shardId,
+                    leaderNodeId,
+                    replicas,
+                    lagTracker,
+                    freshnessBudgetMillis
+                );
+                if (freshReplica != null && !freshReplica.isBlank()) {
+                    yield freshReplica;
+                }
+                leaderFallbackReads.incrementAndGet();
+                yield leaderNodeId;
+            }
+        };
     }
 
     private int shardForKey(byte[] key) {
@@ -213,5 +270,11 @@ public final class RatisKvRouter {
     @FunctionalInterface
     private interface ConsensusWrite {
         long execute();
+    }
+
+    public enum ReadMode {
+        LOCAL_REPLICA,
+        EVENTUAL,
+        LEADER
     }
 }
