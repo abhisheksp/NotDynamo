@@ -22,6 +22,9 @@ These scripts provide a simple local test loop for NotDynamo on kind.
 
 # Failure drill: drain one Kubernetes node and verify cluster recovery
 ./scripts/local/kind_failure_node_drain.sh --namespace notdynamo
+
+# Failure harness: run pod/leader/process/node failures and emit pass/fail reports
+./scripts/local/kind_failure_harness.sh --namespace notdynamo
 ```
 
 ## Teardown
@@ -38,3 +41,4 @@ These scripts provide a simple local test loop for NotDynamo on kind.
 - `kind_cross_node_smoke.sh` directly forwards to two different pods to validate cross-node request routing.
 - `kind_failure_pod_restart.sh` provides a simple pod-failure and recovery drill on local Kubernetes.
 - `kind_failure_node_drain.sh` provides a node-drain and recovery drill on local Kubernetes.
+- `kind_failure_harness.sh` runs multiple failure modes and writes reports to `reports/failures/`.
