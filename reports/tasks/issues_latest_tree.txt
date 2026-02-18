@@ -1,5 +1,4 @@
 ◐ nd-jui ● P1 [epic] E21 Program: Single-AZ True Sharding and Replication
-├── ○ nd-jui.3 ● P1 E24 True shard-aware write path (leader-targeted quorum)
 ├── ○ nd-jui.4 ● P1 E25 Eventual read path with staleness contract
 ├── ○ nd-jui.5 ● P1 E26 Rebalance planner for shard movement
 ├── ○ nd-jui.6 ● P1 E27 Rebalance executor (stream/catchup/switch)
@@ -11,6 +10,6 @@
 └── ○ nd-jui.12 ● P3 [epic] E33 Multi-AZ resilience phase (deferred)
 
 --------------------------------------------------------------------------------
-Total: 11 issues (10 open, 1 in progress)
+Total: 10 issues (9 open, 1 in progress)
 
 Status: ○ open  ◐ in_progress  ● blocked  ✓ closed  ❄ deferred

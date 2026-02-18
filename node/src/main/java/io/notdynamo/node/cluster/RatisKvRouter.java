@@ -69,6 +69,14 @@ public final class RatisKvRouter {
         }
 
         int shardId = shardForKey(request.getKey().toByteArray());
+        String leaderNodeId = replicaMap.leaderForShard(shardId);
+        if (leaderNodeId == null || leaderNodeId.isBlank()) {
+            return PutResponse.newBuilder().setError(unavailable("no leader for shard " + shardId)).build();
+        }
+        if (!localNodeId.equals(leaderNodeId)) {
+            return rpcClient.put(leaderNodeId, request);
+        }
+
         try {
             long version = writeWithRetry(
                 () -> consensusEngine.put(shardId, request.getKey().toByteArray(), request.getValue().toByteArray())
@@ -87,6 +95,14 @@ public final class RatisKvRouter {
         }
 
         int shardId = shardForKey(request.getKey().toByteArray());
+        String leaderNodeId = replicaMap.leaderForShard(shardId);
+        if (leaderNodeId == null || leaderNodeId.isBlank()) {
+            return DeleteResponse.newBuilder().setError(unavailable("no leader for shard " + shardId)).build();
+        }
+        if (!localNodeId.equals(leaderNodeId)) {
+            return rpcClient.delete(leaderNodeId, request);
+        }
+
         try {
             long version = writeWithRetry(() -> consensusEngine.delete(shardId, request.getKey().toByteArray()));
             return DeleteResponse.newBuilder().setVersion(version).build();

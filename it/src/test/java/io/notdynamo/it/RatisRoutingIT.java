@@ -91,7 +91,51 @@ class RatisRoutingIT {
             assertArrayEquals(value, read.getValue().toByteArray());
 
             assertTrue(cluster.transport().getForwardedCallsTo("node-a") >= 1, "expected read forwarding to shard leader");
-            assertEquals(0L, cluster.transport().putForwardedCalls(), "put should use local ratis client instead of node-to-node put forwarding");
+            assertTrue(cluster.transport().putForwardedCallsTo("node-a") >= 1, "expected put forwarding to shard leader");
+        }
+    }
+
+    @Test
+    void writesForDifferentShardsForwardToTheirRespectiveLeaders() throws Exception {
+        int shardCount = 64;
+        int virtualNodesPerShard = 256;
+        List<String> nodeIds = List.of("node-a", "node-b", "node-c");
+        ClusterPartitionMap leaderMap = ClusterPartitionMap.roundRobin(
+            new PartitionMapVersion(0),
+            shardCount,
+            virtualNodesPerShard,
+            nodeIds
+        );
+        ReplicaPartitionMap replicaMap = ReplicaPartitionMap.withUniformReplicas(leaderMap, nodeIds);
+        Map<String, Integer> ratisPorts = allocatePorts(nodeIds);
+
+        byte[] keyOnLeaderA = findKeyForOwner(leaderMap, "node-a");
+        byte[] keyOnLeaderB = findKeyForOwner(leaderMap, "node-b");
+        byte[] valueA = "leader-a-value".getBytes(StandardCharsets.UTF_8);
+        byte[] valueB = "leader-b-value".getBytes(StandardCharsets.UTF_8);
+
+        try (TestCluster cluster = TestCluster.open(tempDir, nodeIds, shardCount, virtualNodesPerShard, replicaMap, ratisPorts)) {
+            PutResponse putA = eventuallyValue(
+                Duration.ofSeconds(10),
+                Duration.ofMillis(150),
+                () -> cluster.router("node-c").put(
+                    PutRequest.newBuilder().setKey(ByteString.copyFrom(keyOnLeaderA)).setValue(ByteString.copyFrom(valueA)).build()
+                )
+            );
+            PutResponse putB = eventuallyValue(
+                Duration.ofSeconds(10),
+                Duration.ofMillis(150),
+                () -> cluster.router("node-c").put(
+                    PutRequest.newBuilder().setKey(ByteString.copyFrom(keyOnLeaderB)).setValue(ByteString.copyFrom(valueB)).build()
+                )
+            );
+
+            assertFalse(putA.hasError(), () -> "putA failed: " + putA.getError().getMessage());
+            assertFalse(putB.hasError(), () -> "putB failed: " + putB.getError().getMessage());
+            assertTrue(cluster.transport().putForwardedCallsTo("node-a") >= 1, "expected shard-A write forwarding to node-a");
+            assertTrue(cluster.transport().putForwardedCallsTo("node-b") >= 1, "expected shard-B write forwarding to node-b");
+            waitForReplication(cluster, keyOnLeaderA, valueA, putA.getVersion(), Duration.ofSeconds(8));
+            waitForReplication(cluster, keyOnLeaderB, valueB, putB.getVersion(), Duration.ofSeconds(8));
         }
     }
 
