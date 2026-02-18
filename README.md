@@ -138,6 +138,7 @@ Use scripted lifecycle for cost-controlled create/deploy/bench/teardown.
 ./scripts/eks/eks_bench_matrix.sh --name notdynamo-eks --region us-west-2 --operations 10000 --preload false
 ./scripts/eks/eks_bench_matrix.sh --name notdynamo-eks --region us-west-2 --external-mode load-balancer --operations 10000 --preload false
 ./scripts/eks/eks_scaling_sweep.sh --name notdynamo-eks --region us-west-2 --node-counts 2,3,4 --data-replicas 3,6 --operations 10000 --preload false
+./scripts/eks/eks_runbook.sh --name notdynamo-eks --region us-west-2 --max-daily-usd 20 --operations 10000 --preload false
 ./scripts/eks/eks_down.sh --name notdynamo-eks --region us-west-2 --delete-ecr-repo
 ```
 
@@ -156,6 +157,7 @@ Benchmark categories currently supported on EKS:
 - In-cluster benchmark job: `scripts/eks/eks_bench_job_up.sh`
 - Category matrix summary: `scripts/eks/eks_bench_matrix.sh`
 - Horizontal scaling sweeps: `scripts/eks/eks_scaling_sweep.sh`
+- End-to-end runbook with cleanup audit: `scripts/eks/eks_runbook.sh`
 
 Latest end-to-end benchmark report:
 

@@ -132,6 +132,24 @@ Artifacts:
 2. Add automated sweep profiles for port-forward vs load-balancer vs in-cluster comparability.
 3. Add repeat-run statistical confidence (multiple trials per sweep point).
 
+## Phase 4: One-Command Runbook (now)
+
+Use the runbook automation for deterministic setup/deploy/bench/teardown:
+
+```bash
+./scripts/eks/eks_runbook.sh \
+  --name notdynamo-eks \
+  --region us-west-2 \
+  --max-daily-usd 20 \
+  --operations 10000 \
+  --preload false
+```
+
+Artifacts:
+- `reports/benchmarks/aws/runbook_*.json|md`
+- `reports/benchmarks/aws/runbook_*_artifacts/benchmark_matrix.json|md`
+- `reports/benchmarks/aws/runbook_*_artifacts/cleanup_audit.json|md`
+
 ## Acceptance criteria for AWS benchmark phase
 
 1. No public data endpoint is required for smoke tests or port-forward benchmark mode.

@@ -163,6 +163,24 @@ Delete ECR repo too:
   --delete-ecr-repo
 ```
 
+## One-Command Runbook
+
+Run setup -> deploy -> smoke -> benchmark -> teardown -> cleanup-audit in one command:
+
+```bash
+./scripts/eks/eks_runbook.sh \
+  --name notdynamo-eks \
+  --region us-west-2 \
+  --max-daily-usd 20 \
+  --operations 10000 \
+  --preload false
+```
+
+Artifacts:
+- `reports/benchmarks/aws/runbook_*.json|md`
+- `reports/benchmarks/aws/runbook_*_artifacts/benchmark_matrix.json|md`
+- `reports/benchmarks/aws/runbook_*_artifacts/cleanup_audit.json|md`
+
 ## Notes
 
 - `eks_deploy.sh` defaults to building and pushing a timestamped image tag.
@@ -179,6 +197,8 @@ Delete ECR repo too:
 - `eks_bench_job_down.sh` removes benchmark jobs created for in-cluster benchmarking.
 - `eks_bench_matrix.sh` runs both benchmark categories and emits one summary report.
 - `eks_scaling_sweep.sh` runs node/pod scaling sweeps and emits per-run matrix artifacts plus sweep summaries (JSON/Markdown/CSV).
+- `eks_cleanup_audit.sh` checks for potentially billable residual AWS resources and writes JSON/Markdown reports.
+- `eks_runbook.sh` runs the end-to-end EKS lifecycle with deterministic teardown and cleanup audit reporting.
 - `eks_bench_http.sh` defaults to `--preload true`; use `--preload false` for faster smoke-level benchmark iteration.
 - each benchmark run writes both JSON and human-readable Markdown reports.
 - Benchmark roadmap: `scripts/eks/BENCHMARK_PLAN.md`.

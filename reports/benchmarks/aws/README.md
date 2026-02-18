@@ -30,9 +30,20 @@ This folder stores EKS benchmark artifacts for NotDynamo.
    - files: `scaling_sweep_*.json|md|csv`
    - run artifacts: `scaling_sweep_*_runs/run_*/benchmark_matrix.json|md`
 
+6. Cleanup audit:
+   - checks for potentially billable residual resources after teardown
+   - files: `cleanup_audit_*.json|md`
+
+7. End-to-end runbook:
+   - one-command setup->deploy->bench->teardown->cleanup-audit
+   - files: `runbook_*.json|md`
+   - run artifacts: `runbook_*_artifacts/benchmark_matrix.json|md`, `runbook_*_artifacts/cleanup_audit.json|md`
+
 ## Generators
 
 - `scripts/eks/eks_bench_http.sh`
 - `scripts/eks/eks_bench_job_up.sh`
 - `scripts/eks/eks_bench_matrix.sh`
 - `scripts/eks/eks_scaling_sweep.sh`
+- `scripts/eks/eks_cleanup_audit.sh`
+- `scripts/eks/eks_runbook.sh`
