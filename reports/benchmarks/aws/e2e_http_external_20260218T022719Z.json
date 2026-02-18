@@ -1,0 +1,41 @@
+{
+  "benchmark": "e2e_http",
+  "status": "WARN",
+  "timestamp_utc": "2026-02-18T02:28:48Z",
+  "scenario": "e2e-http",
+  "category": "external-client-port-forward",
+  "context": "eks:notdynamo-eks/notdynamo/notdynamo-data",
+  "base_url": "http://127.0.0.1:18080",
+  "config": {
+    "operations": "8000",
+    "keyspace": "1000",
+    "threads": "8",
+    "read_ratio": "0.90",
+    "distribution": "uniform",
+    "zipf_theta": "0.90",
+    "value_bytes": "256",
+    "preload": "false",
+    "connect_timeout_ms": "3000",
+    "request_timeout_ms": "5000"
+  },
+  "results": {
+    "throughput_rps": "94.96",
+    "success_throughput_rps": "90.11",
+    "latency_ms_p50": "78.445",
+    "latency_ms_p95": "195.150",
+    "latency_ms_p99": "249.020",
+    "success_count": "7591",
+    "error_count": "409",
+    "error_rate_percent": "5.1125",
+    "read_count": "7251",
+    "write_count": "749",
+    "read_not_found_count": "4842",
+    "preload_attempted": "0",
+    "preload_success": "0",
+    "preload_failed": "0",
+    "distribution_effective": "uniform"
+  },
+  "command": "./gradlew :bench:run --args='--scenario e2e-http --baseUrl http://127.0.0.1:18080 --operations 8000 --keyspace 1000 --threads 8 --readRatio 0.90 --distribution uniform --zipfTheta 0.90 --valueBytes 256 --preload false --connectTimeoutMs 3000 --requestTimeoutMs 5000'",
+  "log_file": "/tmp/notdynamo-e2e-http-20260218T022723Z.log",
+  "human_report": "/Users/abhishek/workspace/projects/kivi2/NotDynamo/reports/benchmarks/aws/e2e_http_external_20260218T022719Z.md"
+}

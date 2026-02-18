@@ -81,7 +81,7 @@ spec:
             - name: NOTDYNAMO_HTTP_PORT
               value: "8080"
             - name: NOTDYNAMO_SHARD_COUNT
-              value: "2048"
+              value: "128"
             - name: NOTDYNAMO_VIRTUAL_NODES_PER_SHARD
               value: "256"
             - name: NOTDYNAMO_RUNTIME_MODE
@@ -95,7 +95,7 @@ spec:
             - name: NOTDYNAMO_RATIS_GROUP_NAME
               value: "notdynamo-main"
             - name: NOTDYNAMO_RATIS_REQUEST_TIMEOUT_MS
-              value: "2000"
+              value: "5000"
             - name: NOTDYNAMO_WRITE_POLICY
               value: "raft"
             - name: NOTDYNAMO_WRITE_QUORUM_ACKS

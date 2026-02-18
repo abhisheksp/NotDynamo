@@ -20,6 +20,7 @@ import java.util.Set;
 public final class RatisKvRouter {
     private static final int MAX_CONSENSUS_WRITE_ATTEMPTS = 4;
     private static final long CONSENSUS_RETRY_BACKOFF_MS = 20L;
+    private static final long MAX_CONSENSUS_WRITE_DURATION_MS = 2500L;
 
     private final String localNodeId;
     private final KvServiceHandler localService;
@@ -129,6 +130,7 @@ public final class RatisKvRouter {
     }
 
     private long writeWithRetry(ConsensusWrite write) {
+        long deadlineNanos = System.nanoTime() + java.util.concurrent.TimeUnit.MILLISECONDS.toNanos(MAX_CONSENSUS_WRITE_DURATION_MS);
         RuntimeException lastFailure = null;
         for (int attempt = 1; attempt <= MAX_CONSENSUS_WRITE_ATTEMPTS; attempt++) {
             try {
@@ -138,16 +140,23 @@ public final class RatisKvRouter {
                 if (attempt == MAX_CONSENSUS_WRITE_ATTEMPTS) {
                     break;
                 }
-                sleepBeforeRetry(attempt);
+                if (System.nanoTime() >= deadlineNanos) {
+                    break;
+                }
+                sleepBeforeRetry(attempt, deadlineNanos);
             }
         }
         throw lastFailure == null ? new IllegalStateException("consensus write failed without exception") : lastFailure;
     }
 
-    private static void sleepBeforeRetry(int attempt) {
+    private static void sleepBeforeRetry(int attempt, long deadlineNanos) {
         long delayMillis = CONSENSUS_RETRY_BACKOFF_MS * attempt;
+        long remainingMillis = java.util.concurrent.TimeUnit.NANOSECONDS.toMillis(deadlineNanos - System.nanoTime());
+        if (remainingMillis <= 0) {
+            return;
+        }
         try {
-            Thread.sleep(delayMillis);
+            Thread.sleep(Math.min(delayMillis, remainingMillis));
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             throw new IllegalStateException("interrupted while retrying consensus write", e);

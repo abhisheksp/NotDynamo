@@ -335,7 +335,7 @@ public final class NodeMain {
             int ratisPort = parseInt(env.get(RATIS_PORT_ENV), 10090, RATIS_PORT_ENV);
             long ratisRequestTimeoutMillis = parseLong(
                 env.get(RATIS_REQUEST_TIMEOUT_MS_ENV),
-                2000L,
+                5000L,
                 RATIS_REQUEST_TIMEOUT_MS_ENV
             );
             String ratisGroupName = env.getOrDefault(RATIS_GROUP_NAME_ENV, "notdynamo-main");

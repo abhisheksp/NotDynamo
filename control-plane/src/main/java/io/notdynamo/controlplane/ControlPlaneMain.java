@@ -127,7 +127,7 @@ public final class ControlPlaneMain {
 
         private static RuntimeSettings fromEnvironment(Map<String, String> env) {
             int port = parseInt(env.get(PORT_ENV), 9090, PORT_ENV);
-            int shardCount = parseInt(env.get(SHARD_COUNT_ENV), 2048, SHARD_COUNT_ENV);
+            int shardCount = parseInt(env.get(SHARD_COUNT_ENV), 128, SHARD_COUNT_ENV);
             int virtualNodesPerShard = parseInt(env.get(VNODES_ENV), 256, VNODES_ENV);
 
             if (port <= 0 || port > 65535) {

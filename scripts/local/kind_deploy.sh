@@ -185,13 +185,13 @@ kubectl -n "$NAMESPACE" set env statefulset/notdynamo-data \
   NOTDYNAMO_RPC_MODE="grpc" \
   NOTDYNAMO_RATIS_PORT="10090" \
   NOTDYNAMO_RATIS_GROUP_NAME="notdynamo-main" \
-  NOTDYNAMO_RATIS_REQUEST_TIMEOUT_MS="2000" \
+  NOTDYNAMO_RATIS_REQUEST_TIMEOUT_MS="5000" \
   NOTDYNAMO_WRITE_POLICY="raft" \
   NOTDYNAMO_WRITE_QUORUM_ACKS="2" >/dev/null
 kubectl -n "$NAMESPACE" set env deployment/notdynamo-control-plane \
   NOTDYNAMO_CLUSTER_SIZE="$DATA_REPLICAS" \
   NOTDYNAMO_STATEFULSET_NAME="notdynamo-data" \
-  NOTDYNAMO_SHARD_COUNT="2048" \
+  NOTDYNAMO_SHARD_COUNT="128" \
   NOTDYNAMO_VIRTUAL_NODES_PER_SHARD="256" >/dev/null
 
 kubectl -n "$NAMESPACE" rollout status statefulset/notdynamo-data --timeout=300s

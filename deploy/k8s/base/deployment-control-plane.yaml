@@ -55,7 +55,7 @@ spec:
             - name: NOTDYNAMO_CONTROL_PLANE_PORT
               value: "9090"
             - name: NOTDYNAMO_SHARD_COUNT
-              value: "2048"
+              value: "128"
             - name: NOTDYNAMO_VIRTUAL_NODES_PER_SHARD
               value: "256"
             - name: NOTDYNAMO_CLUSTER_SIZE

@@ -4,12 +4,16 @@ import io.notdynamo.storage.KeyValueStore;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import org.apache.ratis.RaftConfigKeys;
 import org.apache.ratis.client.RaftClient;
 import org.apache.ratis.client.RaftClientConfigKeys;
@@ -24,6 +28,7 @@ import org.apache.ratis.protocol.RaftPeerId;
 import org.apache.ratis.rpc.SupportedRpcType;
 import org.apache.ratis.server.RaftServer;
 import org.apache.ratis.server.RaftServerConfigKeys;
+import org.apache.ratis.server.storage.RaftStorage;
 import org.apache.ratis.statemachine.TransactionContext;
 import org.apache.ratis.statemachine.impl.BaseStateMachine;
 import org.apache.ratis.thirdparty.com.google.protobuf.ByteString;
@@ -32,10 +37,15 @@ import org.apache.ratis.util.TimeDuration;
 public final class RatisConsensusEngine implements ConsensusEngine {
     private final RaftServer server;
     private final RaftClient client;
+    private final long requestTimeoutMillis;
 
-    private RatisConsensusEngine(RaftServer server, RaftClient client) {
+    private RatisConsensusEngine(RaftServer server, RaftClient client, long requestTimeoutMillis) {
         this.server = Objects.requireNonNull(server, "server must not be null");
         this.client = Objects.requireNonNull(client, "client must not be null");
+        if (requestTimeoutMillis <= 0) {
+            throw new IllegalArgumentException("requestTimeoutMillis must be positive");
+        }
+        this.requestTimeoutMillis = requestTimeoutMillis;
     }
 
     public static RatisConsensusEngine open(RatisConsensusEngineConfig config, KeyValueStore keyValueStore) {
@@ -75,19 +85,117 @@ public final class RatisConsensusEngine implements ConsensusEngine {
         RaftGroup raftGroup = RaftGroup.valueOf(raftGroupId, peers);
         KeyValueStateMachine stateMachine = new KeyValueStateMachine(keyValueStore);
 
+        RaftServer server;
         try {
-            RaftServer server = RaftServer.newBuilder()
-                .setServerId(RaftPeerId.valueOf(config.localNodeId()))
-                .setGroup(raftGroup)
-                .setProperties(properties)
-                .setStateMachine(stateMachine)
-                .build();
-            server.start();
+            server = startServer(config, raftGroup, properties, stateMachine, RaftStorage.StartupOption.RECOVER);
+        } catch (Exception recoverFailure) {
+            if (!isRecoverableStorageFailure(recoverFailure)) {
+                throw new IllegalStateException("failed to start ratis consensus engine for " + config.localNodeId(), recoverFailure);
+            }
+            System.err.println(
+                "ratis.recover.failed=true node_id="
+                    + config.localNodeId()
+                    + " reason="
+                    + rootMessage(recoverFailure)
+                    + " action=wipe_and_format"
+            );
+            wipeStorageDir(config.storageDir());
+            try {
+                server = startServer(config, raftGroup, properties, stateMachine, RaftStorage.StartupOption.FORMAT);
+            } catch (Exception formatFailure) {
+                throw new IllegalStateException(
+                    "failed to start ratis consensus engine for "
+                        + config.localNodeId()
+                        + " after fallback format",
+                    formatFailure
+                );
+            }
+        }
 
-            RaftClient client = RaftClient.newBuilder().setRaftGroup(raftGroup).setProperties(properties).build();
-            return new RatisConsensusEngine(server, client);
-        } catch (IOException e) {
+        try {
+            RaftClient client = RaftClient.newBuilder()
+                .setRaftGroup(raftGroup)
+                .setProperties(properties)
+                .build();
+            return new RatisConsensusEngine(server, client, config.requestTimeoutMillis());
+        } catch (RuntimeException e) {
+            try {
+                server.close();
+            } catch (IOException closeFailure) {
+                e.addSuppressed(closeFailure);
+            }
             throw new IllegalStateException("failed to start ratis consensus engine for " + config.localNodeId(), e);
+        }
+    }
+
+    private static RaftServer startServer(
+        RatisConsensusEngineConfig config,
+        RaftGroup raftGroup,
+        RaftProperties properties,
+        KeyValueStateMachine stateMachine,
+        RaftStorage.StartupOption startupOption
+    ) throws IOException {
+        RaftServer server = RaftServer.newBuilder()
+            .setServerId(RaftPeerId.valueOf(config.localNodeId()))
+            .setGroup(raftGroup)
+            .setOption(startupOption)
+            .setProperties(properties)
+            .setStateMachine(stateMachine)
+            .build();
+        server.start();
+        return server;
+    }
+
+    private static boolean isRecoverableStorageFailure(Throwable throwable) {
+        Throwable cursor = throwable;
+        while (cursor != null) {
+            String message = cursor.getMessage();
+            if (message != null) {
+                String normalized = message.toLowerCase();
+                if (
+                    normalized.contains("not_formatted")
+                        || normalized.contains("failed to parse 'term'")
+                        || normalized.contains("failed to load")
+                        || normalized.contains("existing directories found")
+                ) {
+                    return true;
+                }
+            }
+            cursor = cursor.getCause();
+        }
+        return false;
+    }
+
+    private static String rootMessage(Throwable throwable) {
+        Throwable cursor = throwable;
+        Throwable last = throwable;
+        while (cursor != null) {
+            last = cursor;
+            cursor = cursor.getCause();
+        }
+        String message = last.getMessage();
+        return message == null || message.isBlank() ? last.getClass().getSimpleName() : message;
+    }
+
+    private static void wipeStorageDir(Path storageDir) {
+        try {
+            if (!Files.exists(storageDir)) {
+                return;
+            }
+            try (var stream = Files.walk(storageDir)) {
+                stream
+                    .sorted(Comparator.reverseOrder())
+                    .forEach(path -> {
+                        try {
+                            Files.deleteIfExists(path);
+                        } catch (IOException e) {
+                            throw new IllegalStateException("failed to delete path " + path, e);
+                        }
+                    });
+            }
+            Files.createDirectories(storageDir);
+        } catch (IOException e) {
+            throw new IllegalStateException("failed to wipe ratis storage dir " + storageDir, e);
         }
     }
 
@@ -125,7 +233,8 @@ public final class RatisConsensusEngine implements ConsensusEngine {
 
     private long submit(byte[] commandBytes) {
         try {
-            RaftClientReply reply = client.io().send(Message.valueOf(ByteString.copyFrom(commandBytes)));
+            CompletableFuture<RaftClientReply> sendFuture = client.async().send(Message.valueOf(ByteString.copyFrom(commandBytes)));
+            RaftClientReply reply = awaitReply(sendFuture);
             if (reply == null) {
                 throw new IllegalStateException("ratis reply is null");
             }
@@ -142,10 +251,32 @@ public final class RatisConsensusEngine implements ConsensusEngine {
             }
             String versionText = new String(message.getContent().toByteArray(), StandardCharsets.UTF_8);
             return Long.parseLong(versionText);
-        } catch (IOException e) {
-            throw new IllegalStateException("ratis write I/O failure", e);
         } catch (NumberFormatException e) {
             throw new IllegalStateException("invalid version returned from ratis state machine", e);
+        }
+    }
+
+    private RaftClientReply awaitReply(CompletableFuture<RaftClientReply> sendFuture) {
+        try {
+            return sendFuture.get(requestTimeoutMillis, TimeUnit.MILLISECONDS);
+        } catch (TimeoutException e) {
+            throw new IllegalStateException("ratis write timed out after " + requestTimeoutMillis + "ms", e);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new IllegalStateException("interrupted while waiting for ratis write", e);
+        } catch (ExecutionException e) {
+            Throwable cause = e.getCause();
+            if (cause instanceof IOException ioException) {
+                String detail = rootMessage(ioException);
+                if (detail == null || detail.isBlank()) {
+                    detail = ioException.getClass().getSimpleName();
+                }
+                throw new IllegalStateException("ratis write I/O failure: " + detail, ioException);
+            }
+            if (cause instanceof RuntimeException runtimeException) {
+                throw runtimeException;
+            }
+            throw new IllegalStateException("ratis write failed", cause == null ? e : cause);
         }
     }
 
@@ -196,6 +327,7 @@ public final class RatisConsensusEngine implements ConsensusEngine {
 
                 return CompletableFuture.completedFuture(Message.valueOf(Long.toString(version)));
             } catch (RuntimeException e) {
+                System.err.println("ratis.state_machine.apply.failed=true reason=" + rootMessage(e));
                 CompletableFuture<Message> failed = new CompletableFuture<>();
                 failed.completeExceptionally(e);
                 return failed;

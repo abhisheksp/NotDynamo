@@ -1,0 +1,18 @@
+◐ nd-jui ● P1 [epic] E21 Program: Single-AZ True Sharding and Replication
+├── ○ nd-jui.1 ● P1 E22 Shard Metadata v2 (per-shard group + replica set)
+├── ○ nd-jui.2 ● P1 E23 Multi-Raft runtime (one Raft group per shard)
+├── ○ nd-jui.3 ● P1 E24 True shard-aware write path (leader-targeted quorum)
+├── ○ nd-jui.4 ● P1 E25 Eventual read path with staleness contract
+├── ○ nd-jui.5 ● P1 E26 Rebalance planner for shard movement
+├── ○ nd-jui.6 ● P1 E27 Rebalance executor (stream/catchup/switch)
+├── ○ nd-jui.7 ● P1 E28 Failure injection harness (pod, leader, node, restart)
+├── ○ nd-jui.8 ● P1 E29 Correctness verification matrix for failure modes
+├── ○ nd-jui.10 ● P2 E31 Single-AZ horizontal scaling sweeps
+├── ○ nd-jui.11 ● P2 E32 EKS benchmark runbook (budget-safe setup/teardown)
+├── ○ nd-jui.9 ● P2 E30 External benchmark path via LoadBalancer/NLB
+└── ○ nd-jui.12 ● P3 [epic] E33 Multi-AZ resilience phase (deferred)
+
+--------------------------------------------------------------------------------
+Total: 13 issues (12 open, 1 in progress)
+
+Status: ○ open  ◐ in_progress  ● blocked  ✓ closed  ❄ deferred

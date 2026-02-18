@@ -5,7 +5,7 @@ metadata:
 data:
   notdynamo.yaml: |
     cluster:
-      shardCount: 2048
+      shardCount: 128
       virtualNodesPerShard: 256
     node:
       grpcPort: 9090

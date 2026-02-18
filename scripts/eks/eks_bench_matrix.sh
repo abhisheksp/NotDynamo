@@ -180,8 +180,8 @@ fi
 
 extract_json_value() {
   local file="$1"
-  local key="$2"
-  (rg -o "\"${key}\":\\s*\"?[^\"]+\"?" "$file" | head -n1 | sed -E "s/\"${key}\":\\s*\"?([^\",}]+)\"?/\\1/") || true
+  local expr="$2"
+  jq -r "$expr // empty" "$file" 2>/dev/null || true
 }
 
 RUN_TS="$(date -u +%Y%m%dT%H%M%SZ)"
@@ -196,6 +196,11 @@ MATRIX_JSON="$REPORT_DIR/benchmark_matrix_${RUN_TS}.json"
 MATRIX_MD="$REPORT_DIR/benchmark_matrix_${RUN_TS}.md"
 MATRIX_LATEST_JSON="$REPORT_DIR/benchmark_matrix_latest.json"
 MATRIX_LATEST_MD="$REPORT_DIR/benchmark_matrix_latest.md"
+
+if ! command -v jq >/dev/null 2>&1; then
+  echo "missing required command: jq" >&2
+  exit 1
+fi
 
 EXTERNAL_STATUS="SKIPPED"
 EXTERNAL_RC=0
@@ -225,7 +230,7 @@ if (( RUN_EXTERNAL == 1 )); then
   EXTERNAL_RC=$?
   set -e
   if [[ -f "$EXTERNAL_JSON" ]]; then
-    EXTERNAL_STATUS="$(extract_json_value "$EXTERNAL_JSON" "status")"
+    EXTERNAL_STATUS="$(extract_json_value "$EXTERNAL_JSON" '.status')"
     if [[ -z "$EXTERNAL_STATUS" ]]; then
       EXTERNAL_STATUS="UNKNOWN"
     fi
@@ -265,7 +270,7 @@ if (( RUN_INCLUSTER == 1 )); then
   INCLUSTER_RC=$?
   set -e
   if [[ -f "$INCLUSTER_JSON" ]]; then
-    INCLUSTER_STATUS="$(extract_json_value "$INCLUSTER_JSON" "status")"
+    INCLUSTER_STATUS="$(extract_json_value "$INCLUSTER_JSON" '.status')"
     if [[ -z "$INCLUSTER_STATUS" ]]; then
       INCLUSTER_STATUS="UNKNOWN"
     fi
@@ -300,18 +305,44 @@ EXTERNAL_TPS=""
 EXTERNAL_P99=""
 EXTERNAL_ERROR_RATE=""
 if [[ -f "$EXTERNAL_JSON" ]]; then
-  EXTERNAL_TPS="$(extract_json_value "$EXTERNAL_JSON" "throughput_rps")"
-  EXTERNAL_P99="$(extract_json_value "$EXTERNAL_JSON" "latency_ms_p99")"
-  EXTERNAL_ERROR_RATE="$(extract_json_value "$EXTERNAL_JSON" "error_rate_percent")"
+  EXTERNAL_TPS="$(extract_json_value "$EXTERNAL_JSON" '.results.throughput_rps')"
+  EXTERNAL_P99="$(extract_json_value "$EXTERNAL_JSON" '.results.latency_ms_p99')"
+  EXTERNAL_ERROR_RATE="$(extract_json_value "$EXTERNAL_JSON" '.results.error_rate_percent')"
 fi
 
 INCLUSTER_TPS=""
 INCLUSTER_P99=""
 INCLUSTER_ERROR_RATE=""
 if [[ -f "$INCLUSTER_JSON" ]]; then
-  INCLUSTER_TPS="$(extract_json_value "$INCLUSTER_JSON" "throughput_rps_aggregate")"
-  INCLUSTER_P99="$(extract_json_value "$INCLUSTER_JSON" "latency_ms_p99_max_pod")"
-  INCLUSTER_ERROR_RATE="$(extract_json_value "$INCLUSTER_JSON" "error_rate_percent")"
+  INCLUSTER_TPS="$(extract_json_value "$INCLUSTER_JSON" '.results.throughput_rps_aggregate')"
+  INCLUSTER_P99="$(extract_json_value "$INCLUSTER_JSON" '.results.latency_ms_p99_max_pod')"
+  INCLUSTER_ERROR_RATE="$(extract_json_value "$INCLUSTER_JSON" '.results.error_rate_percent')"
+fi
+
+EXTERNAL_JSON_REL=""
+EXTERNAL_MD_REL=""
+INCLUSTER_JSON_REL=""
+INCLUSTER_MD_REL=""
+if [[ -f "$EXTERNAL_JSON" ]]; then
+  EXTERNAL_JSON_REL="${EXTERNAL_JSON#$ROOT_DIR/}"
+fi
+if [[ -f "$EXTERNAL_MD" ]]; then
+  EXTERNAL_MD_REL="${EXTERNAL_MD#$ROOT_DIR/}"
+fi
+if [[ -f "$INCLUSTER_JSON" ]]; then
+  INCLUSTER_JSON_REL="${INCLUSTER_JSON#$ROOT_DIR/}"
+fi
+if [[ -f "$INCLUSTER_MD" ]]; then
+  INCLUSTER_MD_REL="${INCLUSTER_MD#$ROOT_DIR/}"
+fi
+
+EXTERNAL_MD_DISPLAY=""
+INCLUSTER_MD_DISPLAY=""
+if [[ -n "$EXTERNAL_MD_REL" ]]; then
+  EXTERNAL_MD_DISPLAY="\`$EXTERNAL_MD_REL\`"
+fi
+if [[ -n "$INCLUSTER_MD_REL" ]]; then
+  INCLUSTER_MD_DISPLAY="\`$INCLUSTER_MD_REL\`"
 fi
 
 cat >"$MATRIX_JSON" <<JSON
@@ -327,8 +358,8 @@ cat >"$MATRIX_JSON" <<JSON
       "enabled": "$RUN_EXTERNAL",
       "status": "$EXTERNAL_STATUS",
       "exit_code": "$EXTERNAL_RC",
-      "report_json": "$( [[ -f "$EXTERNAL_JSON" ]] && echo "${EXTERNAL_JSON#$ROOT_DIR/}" || echo "" )",
-      "report_md": "$( [[ -f "$EXTERNAL_MD" ]] && echo "${EXTERNAL_MD#$ROOT_DIR/}" || echo "" )",
+      "report_json": "$EXTERNAL_JSON_REL",
+      "report_md": "$EXTERNAL_MD_REL",
       "throughput_rps": "$EXTERNAL_TPS",
       "latency_ms_p99": "$EXTERNAL_P99",
       "error_rate_percent": "$EXTERNAL_ERROR_RATE"
@@ -337,8 +368,8 @@ cat >"$MATRIX_JSON" <<JSON
       "enabled": "$RUN_INCLUSTER",
       "status": "$INCLUSTER_STATUS",
       "exit_code": "$INCLUSTER_RC",
-      "report_json": "$( [[ -f "$INCLUSTER_JSON" ]] && echo "${INCLUSTER_JSON#$ROOT_DIR/}" || echo "" )",
-      "report_md": "$( [[ -f "$INCLUSTER_MD" ]] && echo "${INCLUSTER_MD#$ROOT_DIR/}" || echo "" )",
+      "report_json": "$INCLUSTER_JSON_REL",
+      "report_md": "$INCLUSTER_MD_REL",
       "throughput_rps_aggregate": "$INCLUSTER_TPS",
       "latency_ms_p99_max_pod": "$INCLUSTER_P99",
       "error_rate_percent": "$INCLUSTER_ERROR_RATE"
@@ -360,8 +391,8 @@ JSON
   echo
   echo "| Category | Enabled | Status | Throughput (rps) | p99 (ms) | Error rate (%) | Report |"
   echo "|---|---|---|---|---|---|---|"
-  echo "| External client via port-forward | $RUN_EXTERNAL | $EXTERNAL_STATUS | ${EXTERNAL_TPS:-} | ${EXTERNAL_P99:-} | ${EXTERNAL_ERROR_RATE:-} | $( [[ -f "$EXTERNAL_MD" ]] && echo "\\`${EXTERNAL_MD#$ROOT_DIR/}\\`" || echo "" ) |"
-  echo "| In-cluster benchmark job | $RUN_INCLUSTER | $INCLUSTER_STATUS | ${INCLUSTER_TPS:-} | ${INCLUSTER_P99:-} | ${INCLUSTER_ERROR_RATE:-} | $( [[ -f "$INCLUSTER_MD" ]] && echo "\\`${INCLUSTER_MD#$ROOT_DIR/}\\`" || echo "" ) |"
+  echo "| External client via port-forward | $RUN_EXTERNAL | $EXTERNAL_STATUS | ${EXTERNAL_TPS:-} | ${EXTERNAL_P99:-} | ${EXTERNAL_ERROR_RATE:-} | $EXTERNAL_MD_DISPLAY |"
+  echo "| In-cluster benchmark job | $RUN_INCLUSTER | $INCLUSTER_STATUS | ${INCLUSTER_TPS:-} | ${INCLUSTER_P99:-} | ${INCLUSTER_ERROR_RATE:-} | $INCLUSTER_MD_DISPLAY |"
 } >"$MATRIX_MD"
 
 cp "$MATRIX_JSON" "$MATRIX_LATEST_JSON"

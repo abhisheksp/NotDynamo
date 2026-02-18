@@ -1,0 +1,30 @@
+{
+  "benchmark": "eks_benchmark_matrix",
+  "status": "WARN",
+  "timestamp_utc": "2026-02-18T02:33:41Z",
+  "cluster_name": "notdynamo-eks",
+  "region": "us-west-2",
+  "namespace": "notdynamo",
+  "categories": {
+    "external_client_port_forward": {
+      "enabled": "1",
+      "status": "WARN",
+      "exit_code": "0",
+      "report_json": "reports/benchmarks/aws/e2e_http_external_20260218T023313Z.json",
+      "report_md": "reports/benchmarks/aws/e2e_http_external_20260218T023313Z.md",
+      "throughput_rps": "8.64",
+      "latency_ms_p99": "1002.942",
+      "error_rate_percent": "33.5000"
+    },
+    "in_cluster_job": {
+      "enabled": "0",
+      "status": "SKIPPED",
+      "exit_code": "0",
+      "report_json": "",
+      "report_md": "",
+      "throughput_rps_aggregate": "",
+      "latency_ms_p99_max_pod": "",
+      "error_rate_percent": ""
+    }
+  }
+}

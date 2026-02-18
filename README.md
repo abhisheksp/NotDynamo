@@ -40,6 +40,25 @@ Milestone branches:
 
 Default branch `main` always points to the latest completed task state.
 
+## Task Management and Checkpoints
+
+Task tracking uses Beads (`bd`) in-repo. To see the active roadmap tree:
+
+```bash
+bd list --tree --limit 0
+bd ready --limit 20
+```
+
+For checkpointed execution of each task, use:
+
+```bash
+./scripts/tasks/checkpoint.sh --id <issue-id> --claim --status in_progress --note "started"
+./scripts/tasks/checkpoint.sh --id <issue-id> --note "progress update"
+./scripts/tasks/checkpoint.sh --id <issue-id> --note "acceptance met" --close
+```
+
+Detailed process: `/docs/process/TASK_CHECKPOINTS.md`
+
 ## Architecture
 
 ### Core Components

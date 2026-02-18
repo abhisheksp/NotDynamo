@@ -5,6 +5,14 @@
 !node/build/install
 !node/build/install/node
 !node/build/install/node/**
+!control-plane/build
+!control-plane/build/install
+!control-plane/build/install/control-plane
+!control-plane/build/install/control-plane/**
+!bench/build
+!bench/build/install
+!bench/build/install/bench
+!bench/build/install/bench/**
 out
 .idea
 .vscode
