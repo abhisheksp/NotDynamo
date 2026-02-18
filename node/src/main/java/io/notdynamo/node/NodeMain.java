@@ -5,6 +5,8 @@ import io.grpc.netty.shaded.io.grpc.netty.NettyServerBuilder;
 import io.notdynamo.controlplane.ClusterPartitionMap;
 import io.notdynamo.controlplane.PartitionMapVersion;
 import io.notdynamo.controlplane.ReplicaPartitionMap;
+import io.notdynamo.controlplane.ShardPartitionMap;
+import io.notdynamo.node.cluster.ControlPlanePartitionMapClient;
 import io.notdynamo.node.cluster.GrpcNodeRpcClient;
 import io.notdynamo.node.cluster.InMemoryNodeRpcClient;
 import io.notdynamo.node.cluster.NodeRpcClient;
@@ -21,6 +23,7 @@ import io.notdynamo.proto.v1.KvServiceGrpc;
 import io.notdynamo.ratis.ConsensusEngine;
 import io.notdynamo.ratis.RatisConsensusEngine;
 import io.notdynamo.ratis.RatisConsensusEngineConfig;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -49,12 +52,13 @@ public final class NodeMain {
             Supplier<String> partitionMapEpochSupplier = () -> "0";
 
             if (settings.runtimeMode == RuntimeMode.PARTITIONED) {
-                ClusterPartitionMap partitionMap = settings.partitionMap();
+                ShardPartitionMap shardPartitionMap = settings.shardPartitionMap();
+                ClusterPartitionMap partitionMap = shardPartitionMap.toClusterPartitionMap();
+                ReplicaPartitionMap replicaMap = shardPartitionMap.toReplicaPartitionMap();
                 PartitionMapCache partitionMapCache = new PartitionMapCache(partitionMap);
                 rpcClient = createRpcClient(settings);
                 switch (settings.writePolicy) {
                     case LEADER_QUORUM -> {
-                        ReplicaPartitionMap replicaMap = settings.replicaMap(partitionMap);
                         ReplicaQuorumKvRouter router = new ReplicaQuorumKvRouter(
                             config.nodeId(),
                             nodeServer.kvService(),
@@ -65,7 +69,6 @@ public final class NodeMain {
                         kvApi = new ReplicaQuorumKvServiceHandler(router);
                     }
                     case RAFT -> {
-                        ReplicaPartitionMap replicaMap = settings.replicaMap(partitionMap);
                         RatisConsensusEngineConfig consensusConfig = new RatisConsensusEngineConfig(
                             config.nodeId(),
                             settings.clusterNodeIds,
@@ -187,6 +190,8 @@ public final class NodeMain {
         System.out.println("ratis_group_name=" + settings.ratisGroupName);
         System.out.println("ratis_port=" + settings.ratisPort);
         System.out.println("ratis_request_timeout_ms=" + settings.ratisRequestTimeoutMillis);
+        System.out.println("partition_map_source=" + settings.partitionMapSource);
+        System.out.println("partition_map_endpoint=" + settings.controlPlanePartitionMapEndpoint);
         System.out.println("cluster_nodes=" + String.join(",", settings.clusterNodeIds));
     }
 
@@ -240,6 +245,22 @@ public final class NodeMain {
         }
     }
 
+    private enum PartitionMapSource {
+        STATIC,
+        CONTROL_PLANE;
+
+        private static PartitionMapSource parse(String value) {
+            if (value == null || value.isBlank()) {
+                return STATIC;
+            }
+            return switch (value.trim().toLowerCase(Locale.ROOT)) {
+                case "static", "embedded" -> STATIC;
+                case "control-plane", "control_plane", "controlplane" -> CONTROL_PLANE;
+                default -> throw new IllegalArgumentException("unsupported NOTDYNAMO_PARTITION_MAP_SOURCE: " + value);
+            };
+        }
+    }
+
     private static final class RuntimeSettings {
         private static final String NODE_ID_ENV = "NOTDYNAMO_NODE_ID";
         private static final String HOST_ENV = "NOTDYNAMO_HOST";
@@ -263,6 +284,10 @@ public final class NodeMain {
         private static final String RATIS_REQUEST_TIMEOUT_MS_ENV = "NOTDYNAMO_RATIS_REQUEST_TIMEOUT_MS";
         private static final String WRITE_POLICY_ENV = "NOTDYNAMO_WRITE_POLICY";
         private static final String WRITE_QUORUM_ACKS_ENV = "NOTDYNAMO_WRITE_QUORUM_ACKS";
+        private static final String REPLICATION_FACTOR_ENV = "NOTDYNAMO_REPLICATION_FACTOR";
+        private static final String PARTITION_MAP_SOURCE_ENV = "NOTDYNAMO_PARTITION_MAP_SOURCE";
+        private static final String CONTROL_PLANE_PARTITION_MAP_ENDPOINT_ENV = "NOTDYNAMO_CONTROL_PLANE_PARTITION_MAP_ENDPOINT";
+        private static final String CONTROL_PLANE_PARTITION_MAP_TIMEOUT_MS_ENV = "NOTDYNAMO_CONTROL_PLANE_PARTITION_MAP_TIMEOUT_MS";
 
         private final String nodeId;
         private final String host;
@@ -282,6 +307,10 @@ public final class NodeMain {
         private final long ratisRequestTimeoutMillis;
         private final WritePolicy writePolicy;
         private final int writeQuorumAcks;
+        private final int replicationFactor;
+        private final PartitionMapSource partitionMapSource;
+        private final String controlPlanePartitionMapEndpoint;
+        private final long controlPlanePartitionMapTimeoutMillis;
 
         private RuntimeSettings(
             String nodeId,
@@ -301,7 +330,11 @@ public final class NodeMain {
             String ratisAddressTemplate,
             long ratisRequestTimeoutMillis,
             WritePolicy writePolicy,
-            int writeQuorumAcks
+            int writeQuorumAcks,
+            int replicationFactor,
+            PartitionMapSource partitionMapSource,
+            String controlPlanePartitionMapEndpoint,
+            long controlPlanePartitionMapTimeoutMillis
         ) {
             this.nodeId = nodeId;
             this.host = host;
@@ -321,6 +354,10 @@ public final class NodeMain {
             this.ratisRequestTimeoutMillis = ratisRequestTimeoutMillis;
             this.writePolicy = writePolicy;
             this.writeQuorumAcks = writeQuorumAcks;
+            this.replicationFactor = replicationFactor;
+            this.partitionMapSource = partitionMapSource;
+            this.controlPlanePartitionMapEndpoint = controlPlanePartitionMapEndpoint;
+            this.controlPlanePartitionMapTimeoutMillis = controlPlanePartitionMapTimeoutMillis;
         }
 
         private static RuntimeSettings fromEnvironment(Map<String, String> env) {
@@ -339,6 +376,17 @@ public final class NodeMain {
                 RATIS_REQUEST_TIMEOUT_MS_ENV
             );
             String ratisGroupName = env.getOrDefault(RATIS_GROUP_NAME_ENV, "notdynamo-main");
+            int replicationFactor = parseInt(env.get(REPLICATION_FACTOR_ENV), 3, REPLICATION_FACTOR_ENV);
+            PartitionMapSource partitionMapSource = PartitionMapSource.parse(env.get(PARTITION_MAP_SOURCE_ENV));
+            String controlPlanePartitionMapEndpoint = env.getOrDefault(
+                CONTROL_PLANE_PARTITION_MAP_ENDPOINT_ENV,
+                "http://notdynamo-control-plane:9090/v1/partition-map"
+            );
+            long controlPlanePartitionMapTimeoutMillis = parseLong(
+                env.get(CONTROL_PLANE_PARTITION_MAP_TIMEOUT_MS_ENV),
+                1500L,
+                CONTROL_PLANE_PARTITION_MAP_TIMEOUT_MS_ENV
+            );
 
             if (shardCount <= 0) {
                 throw new IllegalArgumentException("NOTDYNAMO_SHARD_COUNT must be > 0");
@@ -358,6 +406,12 @@ public final class NodeMain {
             if (ratisGroupName.isBlank()) {
                 throw new IllegalArgumentException("NOTDYNAMO_RATIS_GROUP_NAME must not be blank");
             }
+            if (replicationFactor <= 0) {
+                throw new IllegalArgumentException("NOTDYNAMO_REPLICATION_FACTOR must be > 0");
+            }
+            if (controlPlanePartitionMapTimeoutMillis <= 0) {
+                throw new IllegalArgumentException("NOTDYNAMO_CONTROL_PLANE_PARTITION_MAP_TIMEOUT_MS must be > 0");
+            }
 
             List<String> clusterNodeIds = parseClusterNodeIds(env.get(CLUSTER_NODE_IDS_ENV));
             if (clusterNodeIds.isEmpty()) {
@@ -376,6 +430,17 @@ public final class NodeMain {
                 clusterNodeIds.add(nodeId);
             }
             clusterNodeIds = new ArrayList<>(new LinkedHashSet<>(clusterNodeIds));
+            if (replicationFactor > clusterNodeIds.size()) {
+                throw new IllegalArgumentException("NOTDYNAMO_REPLICATION_FACTOR must be <= cluster node count");
+            }
+            if (
+                partitionMapSource == PartitionMapSource.CONTROL_PLANE
+                    && (controlPlanePartitionMapEndpoint == null || controlPlanePartitionMapEndpoint.isBlank())
+            ) {
+                throw new IllegalArgumentException(
+                    "NOTDYNAMO_CONTROL_PLANE_PARTITION_MAP_ENDPOINT must not be blank when source=control-plane"
+                );
+            }
 
             String headlessService = env.getOrDefault(HEADLESS_SERVICE_ENV, "notdynamo-data-headless");
             String namespace = env.getOrDefault(NAMESPACE_ENV, "notdynamo");
@@ -422,21 +487,67 @@ public final class NodeMain {
                 ratisAddressTemplate,
                 ratisRequestTimeoutMillis,
                 writePolicy,
-                writeQuorumAcks
+                writeQuorumAcks,
+                replicationFactor,
+                partitionMapSource,
+                controlPlanePartitionMapEndpoint,
+                controlPlanePartitionMapTimeoutMillis
             );
         }
 
-        private ClusterPartitionMap partitionMap() {
-            return ClusterPartitionMap.roundRobin(
-                new PartitionMapVersion(0),
-                shardCount,
-                virtualNodesPerShard,
-                clusterNodeIds
-            );
-        }
+        private ShardPartitionMap shardPartitionMap() {
+            if (runtimeMode != RuntimeMode.PARTITIONED || partitionMapSource == PartitionMapSource.STATIC) {
+                return ShardPartitionMap.roundRobin(
+                    new PartitionMapVersion(0),
+                    shardCount,
+                    virtualNodesPerShard,
+                    clusterNodeIds,
+                    replicationFactor
+                );
+            }
 
-        private ReplicaPartitionMap replicaMap(ClusterPartitionMap partitionMap) {
-            return ReplicaPartitionMap.withUniformReplicas(partitionMap, clusterNodeIds);
+            ControlPlanePartitionMapClient client = new ControlPlanePartitionMapClient(
+                Duration.ofMillis(controlPlanePartitionMapTimeoutMillis)
+            );
+            RuntimeException lastFailure = null;
+            for (int attempt = 1; attempt <= 20; attempt++) {
+                try {
+                    ShardPartitionMap fetched = client.fetch(controlPlanePartitionMapEndpoint);
+                    if (fetched.shardCount() != shardCount) {
+                        throw new IllegalStateException(
+                            "control-plane shardCount mismatch: expected=" + shardCount + " actual=" + fetched.shardCount()
+                        );
+                    }
+                    if (fetched.virtualNodesPerShard() != virtualNodesPerShard) {
+                        throw new IllegalStateException(
+                            "control-plane virtualNodesPerShard mismatch: expected="
+                                + virtualNodesPerShard
+                                + " actual="
+                                + fetched.virtualNodesPerShard()
+                        );
+                    }
+                    return fetched;
+                } catch (RuntimeException e) {
+                    lastFailure = e;
+                    if (attempt == 20) {
+                        break;
+                    }
+                    try {
+                        Thread.sleep(Math.min(200L * attempt, 1000L));
+                    } catch (InterruptedException interruptedException) {
+                        Thread.currentThread().interrupt();
+                        throw new IllegalStateException(
+                            "interrupted while retrying control-plane partition map fetch",
+                            interruptedException
+                        );
+                    }
+                }
+            }
+
+            throw new IllegalStateException(
+                "failed to fetch partition map from control-plane endpoint " + controlPlanePartitionMapEndpoint,
+                lastFailure
+            );
         }
 
         private String rpcTargetForNode(String nodeId) {

@@ -100,6 +100,14 @@ spec:
               value: "raft"
             - name: NOTDYNAMO_WRITE_QUORUM_ACKS
               value: "2"
+            - name: NOTDYNAMO_REPLICATION_FACTOR
+              value: "3"
+            - name: NOTDYNAMO_PARTITION_MAP_SOURCE
+              value: "control-plane"
+            - name: NOTDYNAMO_CONTROL_PLANE_PARTITION_MAP_ENDPOINT
+              value: "http://notdynamo-control-plane:9090/v1/partition-map"
+            - name: NOTDYNAMO_CONTROL_PLANE_PARTITION_MAP_TIMEOUT_MS
+              value: "1500"
             - name: NOTDYNAMO_CLUSTER_SIZE
               value: "3"
             - name: NOTDYNAMO_STATEFULSET_NAME

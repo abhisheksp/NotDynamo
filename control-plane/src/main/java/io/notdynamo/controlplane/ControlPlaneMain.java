@@ -18,13 +18,14 @@ public final class ControlPlaneMain {
 
     public static void main(String[] args) throws Exception {
         RuntimeSettings settings = RuntimeSettings.fromEnvironment(System.getenv());
-        ClusterPartitionMap initialMap = ClusterPartitionMap.roundRobin(
+        ShardPartitionMap initialMap = ShardPartitionMap.roundRobin(
             new PartitionMapVersion(0),
             settings.shardCount,
             settings.virtualNodesPerShard,
-            settings.clusterNodeIds
+            settings.clusterNodeIds,
+            settings.replicationFactor
         );
-        PartitionMapManager partitionMapManager = new PartitionMapManager(initialMap);
+        ShardPartitionMapManager partitionMapManager = new ShardPartitionMapManager(initialMap);
 
         HttpServer server = HttpServer.create(new InetSocketAddress(settings.port), 0);
         server.setExecutor(Executors.newFixedThreadPool(Math.max(2, Runtime.getRuntime().availableProcessors() / 2)));
@@ -43,7 +44,7 @@ public final class ControlPlaneMain {
         shutdownLatch.await();
     }
 
-    private static void handleHealth(HttpExchange exchange, PartitionMapManager partitionMapManager) throws IOException {
+    private static void handleHealth(HttpExchange exchange, ShardPartitionMapManager partitionMapManager) throws IOException {
         if (!"GET".equalsIgnoreCase(exchange.getRequestMethod())) {
             sendJson(exchange, 405, "{\"error\":\"method_not_allowed\"}");
             return;
@@ -53,35 +54,14 @@ public final class ControlPlaneMain {
         sendJson(exchange, 200, "{\"ready\":true,\"partitionMapEpoch\":" + epoch + "}");
     }
 
-    private static void handlePartitionMap(HttpExchange exchange, PartitionMapManager partitionMapManager) throws IOException {
+    private static void handlePartitionMap(HttpExchange exchange, ShardPartitionMapManager partitionMapManager) throws IOException {
         if (!"GET".equalsIgnoreCase(exchange.getRequestMethod())) {
             sendJson(exchange, 405, "{\"error\":\"method_not_allowed\"}");
             return;
         }
 
-        ClusterPartitionMap map = partitionMapManager.current();
-        sendJson(exchange, 200, toJson(map));
-    }
-
-    private static String toJson(ClusterPartitionMap map) {
-        StringBuilder builder = new StringBuilder(64 + map.shardCount() * 16);
-        builder.append("{\"version\":{\"epoch\":")
-            .append(map.version().epoch())
-            .append("},\"shardCount\":")
-            .append(map.shardCount())
-            .append(",\"virtualNodesPerShard\":")
-            .append(map.virtualNodesPerShard())
-            .append(",\"owners\":{");
-
-        for (int shard = 0; shard < map.shardCount(); shard++) {
-            if (shard > 0) {
-                builder.append(',');
-            }
-            String owner = map.ownerForShard(shard).orElse("");
-            builder.append('"').append(shard).append("\":\"").append(escapeJson(owner)).append('"');
-        }
-        builder.append("}}");
-        return builder.toString();
+        ShardPartitionMap map = partitionMapManager.current();
+        sendJson(exchange, 200, ShardPartitionMapJsonCodec.toJson(map));
     }
 
     private static void sendJson(HttpExchange exchange, int status, String payload) throws IOException {
@@ -92,15 +72,12 @@ public final class ControlPlaneMain {
         exchange.close();
     }
 
-    private static String escapeJson(String value) {
-        return value.replace("\\", "\\\\").replace("\"", "\\\"");
-    }
-
-    private static void logStartup(RuntimeSettings settings, ClusterPartitionMap map) {
+    private static void logStartup(RuntimeSettings settings, ShardPartitionMap map) {
         System.out.println("notdynamo.control_plane.started=true");
         System.out.println("port=" + settings.port);
         System.out.println("shard_count=" + settings.shardCount);
         System.out.println("virtual_nodes_per_shard=" + settings.virtualNodesPerShard);
+        System.out.println("replication_factor=" + settings.replicationFactor);
         System.out.println("cluster_nodes=" + String.join(",", settings.clusterNodeIds));
         System.out.println("partition_map_epoch=" + map.version().epoch());
     }
@@ -109,6 +86,7 @@ public final class ControlPlaneMain {
         private static final String PORT_ENV = "NOTDYNAMO_CONTROL_PLANE_PORT";
         private static final String SHARD_COUNT_ENV = "NOTDYNAMO_SHARD_COUNT";
         private static final String VNODES_ENV = "NOTDYNAMO_VIRTUAL_NODES_PER_SHARD";
+        private static final String REPLICATION_FACTOR_ENV = "NOTDYNAMO_REPLICATION_FACTOR";
         private static final String CLUSTER_NODE_IDS_ENV = "NOTDYNAMO_CLUSTER_NODE_IDS";
         private static final String CLUSTER_SIZE_ENV = "NOTDYNAMO_CLUSTER_SIZE";
         private static final String STATEFULSET_NAME_ENV = "NOTDYNAMO_STATEFULSET_NAME";
@@ -116,12 +94,20 @@ public final class ControlPlaneMain {
         private final int port;
         private final int shardCount;
         private final int virtualNodesPerShard;
+        private final int replicationFactor;
         private final List<String> clusterNodeIds;
 
-        private RuntimeSettings(int port, int shardCount, int virtualNodesPerShard, List<String> clusterNodeIds) {
+        private RuntimeSettings(
+            int port,
+            int shardCount,
+            int virtualNodesPerShard,
+            int replicationFactor,
+            List<String> clusterNodeIds
+        ) {
             this.port = port;
             this.shardCount = shardCount;
             this.virtualNodesPerShard = virtualNodesPerShard;
+            this.replicationFactor = replicationFactor;
             this.clusterNodeIds = clusterNodeIds;
         }
 
@@ -129,6 +115,7 @@ public final class ControlPlaneMain {
             int port = parseInt(env.get(PORT_ENV), 9090, PORT_ENV);
             int shardCount = parseInt(env.get(SHARD_COUNT_ENV), 128, SHARD_COUNT_ENV);
             int virtualNodesPerShard = parseInt(env.get(VNODES_ENV), 256, VNODES_ENV);
+            int replicationFactor = parseInt(env.get(REPLICATION_FACTOR_ENV), 3, REPLICATION_FACTOR_ENV);
 
             if (port <= 0 || port > 65535) {
                 throw new IllegalArgumentException("NOTDYNAMO_CONTROL_PLANE_PORT must be in [1,65535]");
@@ -138,6 +125,9 @@ public final class ControlPlaneMain {
             }
             if (virtualNodesPerShard <= 0) {
                 throw new IllegalArgumentException("NOTDYNAMO_VIRTUAL_NODES_PER_SHARD must be > 0");
+            }
+            if (replicationFactor <= 0) {
+                throw new IllegalArgumentException("NOTDYNAMO_REPLICATION_FACTOR must be > 0");
             }
 
             List<String> clusterNodeIds = parseClusterNodeIds(env.get(CLUSTER_NODE_IDS_ENV));
@@ -157,8 +147,11 @@ public final class ControlPlaneMain {
             if (clusterNodeIds.isEmpty()) {
                 throw new IllegalArgumentException("control-plane requires at least one node ID");
             }
+            if (replicationFactor > clusterNodeIds.size()) {
+                throw new IllegalArgumentException("NOTDYNAMO_REPLICATION_FACTOR must be <= cluster node count");
+            }
 
-            return new RuntimeSettings(port, shardCount, virtualNodesPerShard, clusterNodeIds);
+            return new RuntimeSettings(port, shardCount, virtualNodesPerShard, replicationFactor, clusterNodeIds);
         }
 
         private static int parseInt(String value, int defaultValue, String envName) {

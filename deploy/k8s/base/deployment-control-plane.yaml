@@ -58,6 +58,8 @@ spec:
               value: "128"
             - name: NOTDYNAMO_VIRTUAL_NODES_PER_SHARD
               value: "256"
+            - name: NOTDYNAMO_REPLICATION_FACTOR
+              value: "3"
             - name: NOTDYNAMO_CLUSTER_SIZE
               value: "3"
             - name: NOTDYNAMO_STATEFULSET_NAME

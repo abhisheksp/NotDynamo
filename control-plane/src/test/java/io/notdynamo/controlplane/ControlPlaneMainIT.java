@@ -38,6 +38,10 @@ class ControlPlaneMainIT {
             assertEquals(200, partitionMap.statusCode());
             assertTrue(partitionMap.body().contains("\"shardCount\":16"));
             assertTrue(partitionMap.body().contains("\"virtualNodesPerShard\":32"));
+            assertTrue(partitionMap.body().contains("\"schemaVersion\":2"));
+            assertTrue(partitionMap.body().contains("\"shards\""));
+            assertTrue(partitionMap.body().contains("\"groupId\":\"shard-0\""));
+            assertTrue(partitionMap.body().contains("\"rebalanceState\":\"STABLE\""));
         } finally {
             process.destroy();
             if (!process.waitFor(5, TimeUnit.SECONDS)) {

@@ -7,6 +7,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import io.notdynamo.controlplane.ClusterPartitionMap;
 import io.notdynamo.controlplane.PartitionMapManager;
 import io.notdynamo.controlplane.PartitionMapVersion;
+import io.notdynamo.controlplane.ShardPartitionMap;
+import io.notdynamo.controlplane.ShardPartitionMapManager;
 import io.notdynamo.node.cluster.PartitionMapCache;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -15,6 +17,30 @@ import java.util.Map;
 import org.junit.jupiter.api.Test;
 
 class PartitionMapConvergenceIT {
+    @Test
+    void metadataV2EpochUpdatesConvergeAcrossNodes() {
+        List<String> nodes = List.of("node-a", "node-b", "node-c");
+        ShardPartitionMap v0 = ShardPartitionMap.roundRobin(new PartitionMapVersion(0), 16, 64, nodes, 3);
+        ShardPartitionMapManager manager = new ShardPartitionMapManager(v0);
+
+        Map<Integer, String> v1Leaders = rotatedAssignments(v0.toClusterPartitionMap().shardToNodeId(), nodes, 1);
+        ShardPartitionMap v1 = manager.next(v1Leaders);
+        assertTrue(manager.tryApply(v1));
+
+        Map<Integer, String> v2Leaders = rotatedAssignments(v1.toClusterPartitionMap().shardToNodeId(), nodes, 2);
+        ShardPartitionMap v2 = manager.next(v2Leaders);
+        assertTrue(manager.tryApply(v2));
+
+        PartitionMapCache cacheA = new PartitionMapCache(v0.toClusterPartitionMap());
+        PartitionMapCache cacheB = new PartitionMapCache(v0.toClusterPartitionMap());
+
+        assertTrue(cacheA.tryApply(v1.toClusterPartitionMap()));
+        assertTrue(cacheA.tryApply(v2.toClusterPartitionMap()));
+        assertTrue(cacheB.tryApply(v2.toClusterPartitionMap()));
+        assertEquals(v2.version().epoch(), cacheA.current().version().epoch());
+        assertEquals(v2.version().epoch(), cacheB.current().version().epoch());
+    }
+
     @Test
     void rollingNodeUpdatesConvergeToLatestPartitionMap() {
         List<String> nodes = List.of("node-a", "node-b", "node-c");
