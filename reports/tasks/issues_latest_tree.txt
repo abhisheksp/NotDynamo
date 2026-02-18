@@ -1,5 +1,4 @@
 ◐ nd-jui ● P1 [epic] E21 Program: Single-AZ True Sharding and Replication
-├── ○ nd-jui.5 ● P1 E26 Rebalance planner for shard movement
 ├── ○ nd-jui.6 ● P1 E27 Rebalance executor (stream/catchup/switch)
 ├── ○ nd-jui.7 ● P1 E28 Failure injection harness (pod, leader, node, restart)
 ├── ○ nd-jui.8 ● P1 E29 Correctness verification matrix for failure modes
@@ -9,6 +8,6 @@
 └── ○ nd-jui.12 ● P3 [epic] E33 Multi-AZ resilience phase (deferred)
 
 --------------------------------------------------------------------------------
-Total: 9 issues (8 open, 1 in progress)
+Total: 8 issues (7 open, 1 in progress)
 
 Status: ○ open  ◐ in_progress  ● blocked  ✓ closed  ❄ deferred

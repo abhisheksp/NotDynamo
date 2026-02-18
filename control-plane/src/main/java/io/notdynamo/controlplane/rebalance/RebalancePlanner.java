@@ -52,6 +52,7 @@ public final class RebalancePlanner {
         strandedShards.sort(Integer::compareTo);
 
         List<ShardMove> moves = new ArrayList<>();
+        Set<Integer> movedShards = new HashSet<>();
 
         for (int shard : strandedShards) {
             if (moves.size() >= maxMoves) {
@@ -61,6 +62,7 @@ public final class RebalancePlanner {
             String source = workingAssignments.get(shard);
             String target = leastLoadedNode(counts, normalizedLiveNodes);
             moves.add(new ShardMove(shard, source, target));
+            movedShards.add(shard);
             workingAssignments.put(shard, target);
             counts.put(target, counts.get(target) + 1);
         }
@@ -75,12 +77,13 @@ public final class RebalancePlanner {
                 break;
             }
 
-            Integer shardToMove = findShardOwnedBy(workingAssignments, source);
+            Integer shardToMove = findShardOwnedBy(workingAssignments, source, movedShards);
             if (shardToMove == null) {
                 break;
             }
 
             moves.add(new ShardMove(shardToMove, source, target));
+            movedShards.add(shardToMove);
             workingAssignments.put(shardToMove, target);
             counts.put(source, sourceCount - 1);
             counts.put(target, targetCount + 1);
@@ -107,9 +110,10 @@ public final class RebalancePlanner {
             .orElseThrow();
     }
 
-    private static Integer findShardOwnedBy(Map<Integer, String> assignments, String nodeId) {
+    private static Integer findShardOwnedBy(Map<Integer, String> assignments, String nodeId, Set<Integer> excludedShards) {
         return assignments.entrySet().stream()
             .filter(entry -> entry.getValue().equals(nodeId))
+            .filter(entry -> !excludedShards.contains(entry.getKey()))
             .map(Map.Entry::getKey)
             .min(Integer::compareTo)
             .orElse(null);
