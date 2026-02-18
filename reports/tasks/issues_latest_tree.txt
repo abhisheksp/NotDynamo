@@ -1,5 +1,4 @@
 ◐ nd-jui ● P1 [epic] E21 Program: Single-AZ True Sharding and Replication
-├── ○ nd-jui.2 ● P1 E23 Multi-Raft runtime (one Raft group per shard)
 ├── ○ nd-jui.3 ● P1 E24 True shard-aware write path (leader-targeted quorum)
 ├── ○ nd-jui.4 ● P1 E25 Eventual read path with staleness contract
 ├── ○ nd-jui.5 ● P1 E26 Rebalance planner for shard movement
@@ -12,6 +11,6 @@
 └── ○ nd-jui.12 ● P3 [epic] E33 Multi-AZ resilience phase (deferred)
 
 --------------------------------------------------------------------------------
-Total: 12 issues (11 open, 1 in progress)
+Total: 11 issues (10 open, 1 in progress)
 
 Status: ○ open  ◐ in_progress  ● blocked  ✓ closed  ❄ deferred

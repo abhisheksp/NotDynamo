@@ -68,8 +68,11 @@ public final class RatisKvRouter {
             return PutResponse.newBuilder().setError(invalidArgument("key must not be empty")).build();
         }
 
+        int shardId = shardForKey(request.getKey().toByteArray());
         try {
-            long version = writeWithRetry(() -> consensusEngine.put(request.getKey().toByteArray(), request.getValue().toByteArray()));
+            long version = writeWithRetry(
+                () -> consensusEngine.put(shardId, request.getKey().toByteArray(), request.getValue().toByteArray())
+            );
             return PutResponse.newBuilder().setVersion(version).build();
         } catch (IllegalArgumentException e) {
             return PutResponse.newBuilder().setError(invalidArgument(e.getMessage())).build();
@@ -83,8 +86,9 @@ public final class RatisKvRouter {
             return DeleteResponse.newBuilder().setError(invalidArgument("key must not be empty")).build();
         }
 
+        int shardId = shardForKey(request.getKey().toByteArray());
         try {
-            long version = writeWithRetry(() -> consensusEngine.delete(request.getKey().toByteArray()));
+            long version = writeWithRetry(() -> consensusEngine.delete(shardId, request.getKey().toByteArray()));
             return DeleteResponse.newBuilder().setVersion(version).build();
         } catch (IllegalArgumentException e) {
             return DeleteResponse.newBuilder().setError(invalidArgument(e.getMessage())).build();

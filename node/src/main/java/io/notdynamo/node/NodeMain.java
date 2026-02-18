@@ -21,8 +21,9 @@ import io.notdynamo.node.cluster.ReplicaQuorumKvServiceHandler;
 import io.notdynamo.node.http.HttpBridgeServer;
 import io.notdynamo.proto.v1.KvServiceGrpc;
 import io.notdynamo.ratis.ConsensusEngine;
-import io.notdynamo.ratis.RatisConsensusEngine;
-import io.notdynamo.ratis.RatisConsensusEngineConfig;
+import io.notdynamo.ratis.RatisMultiShardConsensusEngine;
+import io.notdynamo.ratis.RatisMultiShardConsensusEngineConfig;
+import io.notdynamo.ratis.ShardRaftGroupConfig;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
@@ -69,15 +70,8 @@ public final class NodeMain {
                         kvApi = new ReplicaQuorumKvServiceHandler(router);
                     }
                     case RAFT -> {
-                        RatisConsensusEngineConfig consensusConfig = new RatisConsensusEngineConfig(
-                            config.nodeId(),
-                            settings.clusterNodeIds,
-                            settings::ratisTargetForNode,
-                            config.dataDir().resolve("ratis"),
-                            settings.ratisGroupName,
-                            settings.ratisRequestTimeoutMillis
-                        );
-                        consensusEngine = RatisConsensusEngine.open(consensusConfig, nodeServer.keyValueStore());
+                        RatisMultiShardConsensusEngineConfig consensusConfig = settings.multiShardConsensusConfig(shardPartitionMap);
+                        consensusEngine = RatisMultiShardConsensusEngine.open(consensusConfig, nodeServer.keyValueStore());
                         RatisKvRouter router = new RatisKvRouter(
                             config.nodeId(),
                             nodeServer.kvService(),
@@ -547,6 +541,21 @@ public final class NodeMain {
             throw new IllegalStateException(
                 "failed to fetch partition map from control-plane endpoint " + controlPlanePartitionMapEndpoint,
                 lastFailure
+            );
+        }
+
+        private RatisMultiShardConsensusEngineConfig multiShardConsensusConfig(ShardPartitionMap shardPartitionMap) {
+            List<ShardRaftGroupConfig> shardGroups = new ArrayList<>(shardPartitionMap.shardCount());
+            for (int shardId = 0; shardId < shardPartitionMap.shardCount(); shardId++) {
+                var descriptor = shardPartitionMap.descriptorForShard(shardId);
+                shardGroups.add(new ShardRaftGroupConfig(shardId, descriptor.groupId(), descriptor.replicaNodeIds()));
+            }
+            return new RatisMultiShardConsensusEngineConfig(
+                nodeId,
+                shardGroups,
+                this::ratisTargetForNode,
+                dataDir.resolve("ratis"),
+                ratisRequestTimeoutMillis
             );
         }
 
