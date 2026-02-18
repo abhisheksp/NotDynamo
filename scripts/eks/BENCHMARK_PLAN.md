@@ -7,8 +7,8 @@ Cover benchmark categories that map to real deployment paths, with machine-reada
 Categories:
 
 1. External client via `kubectl port-forward` (workstation-driven E2E)
-2. In-cluster benchmark job (pod-driven E2E over cluster network)
-3. Optional external load balancer path (future hardening/perf phase)
+2. External client via Kubernetes `LoadBalancer`/NLB (production-like ingress hop)
+3. In-cluster benchmark job (pod-driven E2E over cluster network)
 
 ## Phase 1: EKS Correctness + Smoke (now)
 
@@ -28,7 +28,7 @@ Categories:
 
 ## Phase 2: E2E Benchmark Categories (now)
 
-### Category A: External client via port-forward
+### Category A1: External client via port-forward
 
 Run networked E2E benchmark against EKS through `kubectl port-forward` (private service).
 
@@ -47,6 +47,26 @@ For loops where you want correctness gating first:
 Artifacts:
 - `reports/benchmarks/aws/e2e_http_external_*.json`
 - `reports/benchmarks/aws/e2e_http_external_*.md`
+- `/tmp/notdynamo-e2e-http-*.log`
+
+### Category A2: External client via LoadBalancer/NLB
+
+Run networked E2E benchmark against EKS through managed load balancer ingress.
+
+```bash
+./scripts/eks/eks_bench_http.sh \
+  --name notdynamo-eks \
+  --region us-west-2 \
+  --endpoint-mode load-balancer \
+  --lb-type nlb \
+  --lb-scheme internet-facing
+```
+
+By default, the script temporarily patches the service to `LoadBalancer`, runs benchmark, then restores the service to its original type.
+
+Artifacts:
+- `reports/benchmarks/aws/e2e_http_external_lb_*.json`
+- `reports/benchmarks/aws/e2e_http_external_lb_*.md`
 - `/tmp/notdynamo-e2e-http-*.log`
 
 ### Category B: In-cluster benchmark job
@@ -74,6 +94,12 @@ Run both categories and get one summary:
 
 ```bash
 ./scripts/eks/eks_bench_matrix.sh --name notdynamo-eks --region us-west-2
+
+# run matrix with external category through LB/NLB
+./scripts/eks/eks_bench_matrix.sh \
+  --name notdynamo-eks \
+  --region us-west-2 \
+  --external-mode load-balancer
 ```
 
 Artifacts:
@@ -87,15 +113,16 @@ Both workstation-driven and in-cluster benchmark paths are available. The next s
 ### Required additions
 
 1. Increase in-cluster worker count and parameter sweeps for horizontal scaling envelopes.
-2. Add optional load-balancer path benchmark if needed for external-network SLO characterization.
-3. Add richer aggregation (per-pod latency histograms, percentile merge) for larger runs.
+2. Add richer aggregation (per-pod latency histograms, percentile merge) for larger runs.
+3. Add automated sweep profiles for port-forward vs load-balancer vs in-cluster comparability.
 
 ## Acceptance criteria for AWS benchmark phase
 
-1. No public data endpoint is required.
+1. No public data endpoint is required for smoke tests or port-forward benchmark mode.
 2. Benchmarks can run entirely within VPC/cluster network (in-cluster job mode).
-3. One-command setup/deploy/smoke/bench/teardown workflow.
-4. Cost controls:
+3. External load-balancer benchmark mode is available for production-like ingress path testing.
+4. One-command setup/deploy/smoke/bench/teardown workflow.
+5. Cost controls:
    - cluster teardown command always executed at end,
    - optional ECR cleanup,
    - orphan EBS cleanup retained.

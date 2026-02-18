@@ -105,7 +105,20 @@ cd /Users/abhishek/workspace/projects/kivi2/NotDynamo
   --read-ratio 0.90 \
   --preload false
 
-# 5) Run in-cluster E2E benchmark job (recommended for higher-signal perf)
+# 5) Run E2E benchmark through external LoadBalancer/NLB (production-like ingress hop)
+#    By default this temporarily patches service type to LoadBalancer and restores it after the run.
+./scripts/eks/eks_bench_http.sh \
+  --name notdynamo-eks \
+  --region us-west-2 \
+  --endpoint-mode load-balancer \
+  --lb-type nlb \
+  --lb-scheme internet-facing \
+  --operations 200000 \
+  --threads 32 \
+  --read-ratio 0.90 \
+  --preload false
+
+# 6) Run in-cluster E2E benchmark job (recommended for higher-signal perf)
 ./scripts/eks/eks_bench_job_up.sh \
   --name notdynamo-eks \
   --region us-west-2 \
@@ -118,7 +131,13 @@ cd /Users/abhishek/workspace/projects/kivi2/NotDynamo
   --name notdynamo-eks \
   --region us-west-2
 
-# 6) Teardown when done (stop billing)
+# Optional: run matrix with external category via LoadBalancer/NLB
+./scripts/eks/eks_bench_matrix.sh \
+  --name notdynamo-eks \
+  --region us-west-2 \
+  --external-mode load-balancer
+
+# 7) Teardown when done (stop billing)
 ./scripts/eks/eks_down.sh \
   --name notdynamo-eks \
   --region us-west-2
@@ -145,7 +164,8 @@ Delete ECR repo too:
 ```
 
 - `eks_down.sh` deletes app namespace, EKS cluster, and by default performs best-effort cleanup of orphaned EBS volumes tagged to the cluster.
-- `eks_bench_http.sh` runs end-to-end HTTP benchmark without exposing a public data endpoint.
+- `eks_bench_http.sh` supports `--endpoint-mode port-forward` (default) and `--endpoint-mode load-balancer`.
+- In load-balancer mode, service exposure is temporary by default; use `--lb-keep-service-lb` only when you explicitly want it to remain exposed.
 - `eks_bench_job_up.sh` runs in-cluster benchmark workers and writes aggregated reports.
 - `eks_bench_job_down.sh` removes benchmark jobs created for in-cluster benchmarking.
 - `eks_bench_matrix.sh` runs both benchmark categories and emits one summary report.

@@ -11,6 +11,13 @@ SERVICE_PORT=8080
 
 RUN_EXTERNAL=1
 RUN_INCLUSTER=1
+EXTERNAL_ENDPOINT_MODE="port-forward"
+EXTERNAL_LB_WAIT_TIMEOUT_SEC=900
+EXTERNAL_LB_SCHEME="internet-facing"
+EXTERNAL_LB_TYPE="nlb"
+EXTERNAL_LB_HOST=""
+EXTERNAL_LB_MANAGE_SERVICE=1
+EXTERNAL_LB_KEEP_SERVICE=0
 
 OPERATIONS=200000
 KEYSPACE=20000
@@ -34,7 +41,7 @@ Usage: eks_bench_matrix.sh [options]
 Runs benchmark categories for EKS and writes one matrix summary report.
 
 Categories:
-  1) External client via kubectl port-forward (workstation-driven)
+  1) External client via port-forward or LoadBalancer/NLB (workstation-driven)
   2) In-cluster benchmark job (pod-driven)
 
 Cluster/service options:
@@ -47,6 +54,16 @@ Cluster/service options:
 Category toggles:
   --skip-external              Skip workstation-driven benchmark
   --skip-incluster             Skip in-cluster benchmark
+  --external-mode <mode>       port-forward|load-balancer (default: port-forward)
+  --external-lb-wait-timeout-sec <n>
+                                LB endpoint readiness timeout (default: 900)
+  --external-lb-scheme <mode>  internet-facing|internal (default: internet-facing)
+  --external-lb-type <type>    nlb|classic (default: nlb)
+  --external-lb-host <host>    LB host/IP override (skip ingress discovery)
+  --external-lb-no-manage-service
+                                Do not patch service type/annotations in LB mode
+  --external-lb-keep-service-lb
+                                Keep service exposed as LB after benchmark
 
 Common benchmark options:
   --operations <n>             Total operations (default: 200000)
@@ -97,6 +114,34 @@ while (( $# > 0 )); do
       ;;
     --skip-incluster)
       RUN_INCLUSTER=0
+      shift
+      ;;
+    --external-mode)
+      EXTERNAL_ENDPOINT_MODE="$2"
+      shift 2
+      ;;
+    --external-lb-wait-timeout-sec)
+      EXTERNAL_LB_WAIT_TIMEOUT_SEC="$2"
+      shift 2
+      ;;
+    --external-lb-scheme)
+      EXTERNAL_LB_SCHEME="$2"
+      shift 2
+      ;;
+    --external-lb-type)
+      EXTERNAL_LB_TYPE="$2"
+      shift 2
+      ;;
+    --external-lb-host)
+      EXTERNAL_LB_HOST="$2"
+      shift 2
+      ;;
+    --external-lb-no-manage-service)
+      EXTERNAL_LB_MANAGE_SERVICE=0
+      shift
+      ;;
+    --external-lb-keep-service-lb)
+      EXTERNAL_LB_KEEP_SERVICE=1
       shift
       ;;
     --operations)
@@ -165,13 +210,26 @@ done
 
 for n in \
   "$SERVICE_PORT" "$OPERATIONS" "$KEYSPACE" "$THREADS" "$VALUE_BYTES" \
-  "$CONNECT_TIMEOUT_MS" "$REQUEST_TIMEOUT_MS" "$INCLUSTER_PARALLELISM" "$INCLUSTER_COMPLETIONS"
+  "$CONNECT_TIMEOUT_MS" "$REQUEST_TIMEOUT_MS" "$INCLUSTER_PARALLELISM" "$INCLUSTER_COMPLETIONS" \
+  "$EXTERNAL_LB_WAIT_TIMEOUT_SEC"
 do
   if [[ ! "$n" =~ ^[0-9]+$ ]] || (( n <= 0 )); then
     echo "numeric options must be positive integers" >&2
     exit 1
   fi
 done
+if [[ "$EXTERNAL_ENDPOINT_MODE" != "port-forward" && "$EXTERNAL_ENDPOINT_MODE" != "load-balancer" ]]; then
+  echo "--external-mode must be one of: port-forward, load-balancer" >&2
+  exit 1
+fi
+if [[ "$EXTERNAL_LB_SCHEME" != "internet-facing" && "$EXTERNAL_LB_SCHEME" != "internal" ]]; then
+  echo "--external-lb-scheme must be one of: internet-facing, internal" >&2
+  exit 1
+fi
+if [[ "$EXTERNAL_LB_TYPE" != "nlb" && "$EXTERNAL_LB_TYPE" != "classic" ]]; then
+  echo "--external-lb-type must be one of: nlb, classic" >&2
+  exit 1
+fi
 
 if (( RUN_EXTERNAL == 0 && RUN_INCLUSTER == 0 )); then
   echo "at least one category must be enabled" >&2
@@ -190,6 +248,14 @@ mkdir -p "$REPORT_DIR"
 
 EXTERNAL_JSON="$REPORT_DIR/e2e_http_external_${RUN_TS}.json"
 EXTERNAL_MD="$REPORT_DIR/e2e_http_external_${RUN_TS}.md"
+EXTERNAL_CATEGORY_KEY="external_client_port_forward"
+EXTERNAL_CATEGORY_LABEL="External client via port-forward"
+if [[ "$EXTERNAL_ENDPOINT_MODE" == "load-balancer" ]]; then
+  EXTERNAL_JSON="$REPORT_DIR/e2e_http_external_lb_${RUN_TS}.json"
+  EXTERNAL_MD="$REPORT_DIR/e2e_http_external_lb_${RUN_TS}.md"
+  EXTERNAL_CATEGORY_KEY="external_client_load_balancer"
+  EXTERNAL_CATEGORY_LABEL="External client via LoadBalancer/NLB"
+fi
 INCLUSTER_JSON="$REPORT_DIR/e2e_http_incluster_${RUN_TS}.json"
 INCLUSTER_MD="$REPORT_DIR/e2e_http_incluster_${RUN_TS}.md"
 MATRIX_JSON="$REPORT_DIR/benchmark_matrix_${RUN_TS}.json"
@@ -208,25 +274,45 @@ INCLUSTER_STATUS="SKIPPED"
 INCLUSTER_RC=0
 
 if (( RUN_EXTERNAL == 1 )); then
-  set +e
-  "$ROOT_DIR/scripts/eks/eks_bench_http.sh" \
-    --name "$CLUSTER_NAME" \
-    --region "$REGION" \
-    --namespace "$NAMESPACE" \
-    --service "$SERVICE_NAME" \
-    --service-port "$SERVICE_PORT" \
-    --operations "$OPERATIONS" \
-    --keyspace "$KEYSPACE" \
-    --threads "$THREADS" \
-    --read-ratio "$READ_RATIO" \
-    --distribution "$DISTRIBUTION" \
-    --zipf-theta "$ZIPF_THETA" \
-    --value-bytes "$VALUE_BYTES" \
-    --preload "$PRELOAD" \
-    --connect-timeout-ms "$CONNECT_TIMEOUT_MS" \
-    --request-timeout-ms "$REQUEST_TIMEOUT_MS" \
-    --output-file "$EXTERNAL_JSON" \
+  EXTERNAL_ARGS=(
+    --name "$CLUSTER_NAME"
+    --region "$REGION"
+    --namespace "$NAMESPACE"
+    --service "$SERVICE_NAME"
+    --service-port "$SERVICE_PORT"
+    --endpoint-mode "$EXTERNAL_ENDPOINT_MODE"
+    --operations "$OPERATIONS"
+    --keyspace "$KEYSPACE"
+    --threads "$THREADS"
+    --read-ratio "$READ_RATIO"
+    --distribution "$DISTRIBUTION"
+    --zipf-theta "$ZIPF_THETA"
+    --value-bytes "$VALUE_BYTES"
+    --preload "$PRELOAD"
+    --connect-timeout-ms "$CONNECT_TIMEOUT_MS"
+    --request-timeout-ms "$REQUEST_TIMEOUT_MS"
+    --output-file "$EXTERNAL_JSON"
     --human-report-file "$EXTERNAL_MD"
+  )
+  if [[ "$EXTERNAL_ENDPOINT_MODE" == "load-balancer" ]]; then
+    EXTERNAL_ARGS+=(
+      --lb-wait-timeout-sec "$EXTERNAL_LB_WAIT_TIMEOUT_SEC"
+      --lb-scheme "$EXTERNAL_LB_SCHEME"
+      --lb-type "$EXTERNAL_LB_TYPE"
+    )
+    if [[ -n "$EXTERNAL_LB_HOST" ]]; then
+      EXTERNAL_ARGS+=(--lb-host "$EXTERNAL_LB_HOST")
+    fi
+    if (( EXTERNAL_LB_MANAGE_SERVICE == 0 )); then
+      EXTERNAL_ARGS+=(--lb-no-manage-service)
+    fi
+    if (( EXTERNAL_LB_KEEP_SERVICE == 1 )); then
+      EXTERNAL_ARGS+=(--lb-keep-service-lb)
+    fi
+  fi
+
+  set +e
+  "$ROOT_DIR/scripts/eks/eks_bench_http.sh" "${EXTERNAL_ARGS[@]}"
   EXTERNAL_RC=$?
   set -e
   if [[ -f "$EXTERNAL_JSON" ]]; then
@@ -353,8 +439,9 @@ cat >"$MATRIX_JSON" <<JSON
   "cluster_name": "$CLUSTER_NAME",
   "region": "$REGION",
   "namespace": "$NAMESPACE",
+  "external_mode": "$EXTERNAL_ENDPOINT_MODE",
   "categories": {
-    "external_client_port_forward": {
+    "${EXTERNAL_CATEGORY_KEY}": {
       "enabled": "$RUN_EXTERNAL",
       "status": "$EXTERNAL_STATUS",
       "exit_code": "$EXTERNAL_RC",
@@ -362,7 +449,11 @@ cat >"$MATRIX_JSON" <<JSON
       "report_md": "$EXTERNAL_MD_REL",
       "throughput_rps": "$EXTERNAL_TPS",
       "latency_ms_p99": "$EXTERNAL_P99",
-      "error_rate_percent": "$EXTERNAL_ERROR_RATE"
+      "error_rate_percent": "$EXTERNAL_ERROR_RATE",
+      "endpoint_mode": "$EXTERNAL_ENDPOINT_MODE",
+      "lb_scheme": "$EXTERNAL_LB_SCHEME",
+      "lb_type": "$EXTERNAL_LB_TYPE",
+      "lb_manage_service": "$EXTERNAL_LB_MANAGE_SERVICE"
     },
     "in_cluster_job": {
       "enabled": "$RUN_INCLUSTER",
@@ -386,12 +477,13 @@ JSON
   echo "- Cluster: \`$CLUSTER_NAME\`"
   echo "- Region: \`$REGION\`"
   echo "- Namespace: \`$NAMESPACE\`"
+  echo "- External mode: \`$EXTERNAL_ENDPOINT_MODE\`"
   echo
   echo "## Categories"
   echo
   echo "| Category | Enabled | Status | Throughput (rps) | p99 (ms) | Error rate (%) | Report |"
   echo "|---|---|---|---|---|---|---|"
-  echo "| External client via port-forward | $RUN_EXTERNAL | $EXTERNAL_STATUS | ${EXTERNAL_TPS:-} | ${EXTERNAL_P99:-} | ${EXTERNAL_ERROR_RATE:-} | $EXTERNAL_MD_DISPLAY |"
+  echo "| $EXTERNAL_CATEGORY_LABEL | $RUN_EXTERNAL | $EXTERNAL_STATUS | ${EXTERNAL_TPS:-} | ${EXTERNAL_P99:-} | ${EXTERNAL_ERROR_RATE:-} | $EXTERNAL_MD_DISPLAY |"
   echo "| In-cluster benchmark job | $RUN_INCLUSTER | $INCLUSTER_STATUS | ${INCLUSTER_TPS:-} | ${INCLUSTER_P99:-} | ${INCLUSTER_ERROR_RATE:-} | $INCLUSTER_MD_DISPLAY |"
 } >"$MATRIX_MD"
 

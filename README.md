@@ -133,15 +133,17 @@ Use scripted lifecycle for cost-controlled create/deploy/bench/teardown.
 ./scripts/eks/eks_deploy.sh --name notdynamo-eks --region us-west-2 --provider nerdctl
 ./scripts/eks/eks_smoke.sh --name notdynamo-eks --region us-west-2
 ./scripts/eks/eks_bench_http.sh --name notdynamo-eks --region us-west-2 --operations 10000 --threads 16 --read-ratio 0.90 --preload false
+./scripts/eks/eks_bench_http.sh --name notdynamo-eks --region us-west-2 --endpoint-mode load-balancer --lb-type nlb --lb-scheme internet-facing --operations 10000 --threads 16 --read-ratio 0.90 --preload false
 ./scripts/eks/eks_bench_job_up.sh --name notdynamo-eks --region us-west-2 --operations 10000 --parallelism 4 --completions 4 --preload false
 ./scripts/eks/eks_bench_matrix.sh --name notdynamo-eks --region us-west-2 --operations 10000 --preload false
+./scripts/eks/eks_bench_matrix.sh --name notdynamo-eks --region us-west-2 --external-mode load-balancer --operations 10000 --preload false
 ./scripts/eks/eks_down.sh --name notdynamo-eks --region us-west-2 --delete-ecr-repo
 ```
 
 Security defaults:
 
 - Data service in EKS uses `ClusterIP` (no public load balancer)
-- Access for smoke/bench uses `kubectl port-forward`
+- Access for smoke uses `kubectl port-forward`; benchmark supports both `port-forward` and optional `LoadBalancer/NLB` mode
 - EKS API endpoint is restricted by CIDR by default
 
 ## Benchmark Snapshot (Latest)
@@ -149,6 +151,7 @@ Security defaults:
 Benchmark categories currently supported on EKS:
 
 - External client via port-forward: `scripts/eks/eks_bench_http.sh`
+- External client via LoadBalancer/NLB: `scripts/eks/eks_bench_http.sh --endpoint-mode load-balancer`
 - In-cluster benchmark job: `scripts/eks/eks_bench_job_up.sh`
 - Category matrix summary: `scripts/eks/eks_bench_matrix.sh`
 

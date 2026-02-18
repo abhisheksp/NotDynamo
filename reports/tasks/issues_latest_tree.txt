@@ -1,10 +1,9 @@
 ◐ nd-jui ● P1 [epic] E21 Program: Single-AZ True Sharding and Replication
 ├── ○ nd-jui.10 ● P2 E31 Single-AZ horizontal scaling sweeps
 ├── ○ nd-jui.11 ● P2 E32 EKS benchmark runbook (budget-safe setup/teardown)
-├── ◐ nd-jui.9 ● P2 E30 External benchmark path via LoadBalancer/NLB
 └── ○ nd-jui.12 ● P3 [epic] E33 Multi-AZ resilience phase (deferred)
 
 --------------------------------------------------------------------------------
-Total: 5 issues (3 open, 2 in progress)
+Total: 4 issues (3 open, 1 in progress)
 
 Status: ○ open  ◐ in_progress  ● blocked  ✓ closed  ❄ deferred
