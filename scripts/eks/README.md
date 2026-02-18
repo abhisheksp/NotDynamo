@@ -13,7 +13,7 @@ These scripts provide a low-friction EKS setup/deploy/smoke/teardown loop for No
 Install required tools:
 
 ```bash
-brew install awscli eksctl kubernetes-cli
+brew install awscli eksctl kubernetes-cli jq
 ```
 
 Container runtime for image build/push:
@@ -137,6 +137,15 @@ cd /Users/abhishek/workspace/projects/kivi2/NotDynamo
   --region us-west-2 \
   --external-mode load-balancer
 
+# Optional: run horizontal scaling sweeps (node count x data replicas)
+./scripts/eks/eks_scaling_sweep.sh \
+  --name notdynamo-eks \
+  --region us-west-2 \
+  --node-counts 2,3,4 \
+  --data-replicas 3,6 \
+  --operations 10000 \
+  --preload false
+
 # 7) Teardown when done (stop billing)
 ./scripts/eks/eks_down.sh \
   --name notdynamo-eks \
@@ -169,6 +178,7 @@ Delete ECR repo too:
 - `eks_bench_job_up.sh` runs in-cluster benchmark workers and writes aggregated reports.
 - `eks_bench_job_down.sh` removes benchmark jobs created for in-cluster benchmarking.
 - `eks_bench_matrix.sh` runs both benchmark categories and emits one summary report.
+- `eks_scaling_sweep.sh` runs node/pod scaling sweeps and emits per-run matrix artifacts plus sweep summaries (JSON/Markdown/CSV).
 - `eks_bench_http.sh` defaults to `--preload true`; use `--preload false` for faster smoke-level benchmark iteration.
 - each benchmark run writes both JSON and human-readable Markdown reports.
 - Benchmark roadmap: `scripts/eks/BENCHMARK_PLAN.md`.

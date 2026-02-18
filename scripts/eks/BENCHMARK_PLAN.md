@@ -106,15 +106,31 @@ Artifacts:
 - `reports/benchmarks/aws/benchmark_matrix_*.json`
 - `reports/benchmarks/aws/benchmark_matrix_*.md`
 
-## Phase 3: Scale AWS Benchmarking (later)
+## Phase 3: Scale AWS Benchmarking (now)
 
-Both workstation-driven and in-cluster benchmark paths are available. The next step is to scale in-cluster worker cardinality and improve tail-latency aggregation quality for larger runs.
+Run controlled node-count and data-replica sweeps with one command:
+
+```bash
+./scripts/eks/eks_scaling_sweep.sh \
+  --name notdynamo-eks \
+  --region us-west-2 \
+  --node-counts 2,3,4 \
+  --data-replicas 3,6 \
+  --operations 10000 \
+  --preload false
+```
+
+Artifacts:
+- `reports/benchmarks/aws/scaling_sweep_*.json`
+- `reports/benchmarks/aws/scaling_sweep_*.md`
+- `reports/benchmarks/aws/scaling_sweep_*.csv`
+- `reports/benchmarks/aws/scaling_sweep_*_runs/run_*/benchmark_matrix.json|md`
 
 ### Required additions
 
-1. Increase in-cluster worker count and parameter sweeps for horizontal scaling envelopes.
-2. Add richer aggregation (per-pod latency histograms, percentile merge) for larger runs.
-3. Add automated sweep profiles for port-forward vs load-balancer vs in-cluster comparability.
+1. Add richer aggregation (per-pod latency histograms, percentile merge) for larger runs.
+2. Add automated sweep profiles for port-forward vs load-balancer vs in-cluster comparability.
+3. Add repeat-run statistical confidence (multiple trials per sweep point).
 
 ## Acceptance criteria for AWS benchmark phase
 

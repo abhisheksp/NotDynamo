@@ -33,6 +33,8 @@ REQUEST_TIMEOUT_MS=5000
 INCLUSTER_PARALLELISM=4
 INCLUSTER_COMPLETIONS=4
 INCLUSTER_KEEP_JOB=0
+MATRIX_JSON_OVERRIDE=""
+MATRIX_MD_OVERRIDE=""
 
 usage() {
   cat <<'USAGE'
@@ -81,6 +83,11 @@ In-cluster category options:
   --incluster-parallelism <n>  Job parallelism (default: 4)
   --incluster-completions <n>  Job completions (default: 4)
   --incluster-keep-job         Keep in-cluster benchmark job resources
+
+Output options:
+  --matrix-output-file <path>  Override matrix JSON output file
+  --matrix-human-report-file <path>
+                               Override matrix Markdown output file
 
   --help                       Show help
 USAGE
@@ -196,6 +203,14 @@ while (( $# > 0 )); do
       INCLUSTER_KEEP_JOB=1
       shift
       ;;
+    --matrix-output-file)
+      MATRIX_JSON_OVERRIDE="$2"
+      shift 2
+      ;;
+    --matrix-human-report-file)
+      MATRIX_MD_OVERRIDE="$2"
+      shift 2
+      ;;
     --help)
       usage
       exit 0
@@ -262,6 +277,28 @@ MATRIX_JSON="$REPORT_DIR/benchmark_matrix_${RUN_TS}.json"
 MATRIX_MD="$REPORT_DIR/benchmark_matrix_${RUN_TS}.md"
 MATRIX_LATEST_JSON="$REPORT_DIR/benchmark_matrix_latest.json"
 MATRIX_LATEST_MD="$REPORT_DIR/benchmark_matrix_latest.md"
+if [[ -n "$MATRIX_JSON_OVERRIDE" ]]; then
+  MATRIX_JSON="$MATRIX_JSON_OVERRIDE"
+fi
+if [[ -n "$MATRIX_MD_OVERRIDE" ]]; then
+  MATRIX_MD="$MATRIX_MD_OVERRIDE"
+fi
+if [[ -z "$MATRIX_MD_OVERRIDE" && -n "$MATRIX_JSON_OVERRIDE" ]]; then
+  if [[ "$MATRIX_JSON" == *.json ]]; then
+    MATRIX_MD="${MATRIX_JSON%.json}.md"
+  else
+    MATRIX_MD="${MATRIX_JSON}.md"
+  fi
+fi
+if [[ -z "$MATRIX_JSON_OVERRIDE" && -n "$MATRIX_MD_OVERRIDE" ]]; then
+  if [[ "$MATRIX_MD" == *.md ]]; then
+    MATRIX_JSON="${MATRIX_MD%.md}.json"
+  else
+    MATRIX_JSON="${MATRIX_MD}.json"
+  fi
+fi
+mkdir -p "$(dirname "$MATRIX_JSON")"
+mkdir -p "$(dirname "$MATRIX_MD")"
 
 if ! command -v jq >/dev/null 2>&1; then
   echo "missing required command: jq" >&2
