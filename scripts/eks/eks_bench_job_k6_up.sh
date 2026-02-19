@@ -440,6 +440,9 @@ fmt_int() {
 extract_metric() {
   local file="$1"
   local key="$2"
+  if [[ ! -f "$file" ]]; then
+    return 0
+  fi
   (rg "^${key}=" "$file" | tail -n1 | cut -d'=' -f2-) || true
 }
 
@@ -581,6 +584,57 @@ EOF_SUMMARY
     printf "memory_percent_max=%.3f\n", mem_pct_max + 0
   }
   ' "$nodes_top_file" >"$out_file"
+}
+
+sample_telemetry_snapshot() {
+  local prev_bench_count=0
+  local new_bench_count=0
+  local file=""
+
+  prev_bench_count="$(extract_metric "$BENCH_TOP_SUMMARY_FILE" "pod_count")"
+  if ! is_uint "${prev_bench_count:-}"; then
+    prev_bench_count=0
+  fi
+
+  for file in "$BENCH_PODS_FILE" "$DATA_PODS_FILE" "$PODS_TOP_FILE" "$PODS_TOP_ERR_FILE" "$BENCH_TOP_SUMMARY_FILE" "$DATA_TOP_SUMMARY_FILE"; do
+    if [[ -f "$file" ]]; then
+      cp "$file" "${file}.prev"
+    fi
+  done
+
+  capture_pod_placement "$POD_PLACEMENT_FILE"
+  capture_pod_list "job-name=$RUN_JOB_NAME" "$BENCH_PODS_FILE"
+  capture_pod_list "$DATA_POD_SELECTOR" "$DATA_PODS_FILE"
+
+  if kctl -n "$NAMESPACE" top pods --no-headers >"$PODS_TOP_FILE" 2>"$PODS_TOP_ERR_FILE"; then
+    TELEMETRY_PODS_TOP_AVAILABLE="true"
+  fi
+  write_top_group_summary "$PODS_TOP_FILE" "$BENCH_PODS_FILE" "$BENCH_TOP_SUMMARY_FILE"
+  write_top_group_summary "$PODS_TOP_FILE" "$DATA_PODS_FILE" "$DATA_TOP_SUMMARY_FILE"
+
+  if kctl top nodes --no-headers >"$NODES_TOP_FILE" 2>"$NODES_TOP_ERR_FILE"; then
+    TELEMETRY_NODES_TOP_AVAILABLE="true"
+  fi
+  write_nodes_top_summary "$NODES_TOP_FILE" "$NODES_TOP_SUMMARY_FILE"
+
+  new_bench_count="$(extract_metric "$BENCH_TOP_SUMMARY_FILE" "pod_count")"
+  if ! is_uint "${new_bench_count:-}"; then
+    new_bench_count=0
+  fi
+
+  # Preserve the best non-zero benchmark pod sample; do not let post-completion
+  # snapshots overwrite useful in-flight generator telemetry.
+  if (( prev_bench_count > 0 && new_bench_count == 0 )); then
+    for file in "$BENCH_PODS_FILE" "$DATA_PODS_FILE" "$PODS_TOP_FILE" "$PODS_TOP_ERR_FILE" "$BENCH_TOP_SUMMARY_FILE" "$DATA_TOP_SUMMARY_FILE"; do
+      if [[ -f "${file}.prev" ]]; then
+        mv "${file}.prev" "$file"
+      fi
+    done
+  else
+    for file in "$BENCH_PODS_FILE" "$DATA_PODS_FILE" "$PODS_TOP_FILE" "$PODS_TOP_ERR_FILE" "$BENCH_TOP_SUMMARY_FILE" "$DATA_TOP_SUMMARY_FILE"; do
+      rm -f "${file}.prev"
+    done
+  fi
 }
 
 extract_k6_summary() {
@@ -793,6 +847,11 @@ WAIT_ELAPSED_SEC=0
 WAIT_STEP_SEC=2
 
 while (( WAIT_ELAPSED_SEC < WAIT_TIMEOUT_SEC )); do
+  if (( TELEMETRY_SAMPLE_COUNT < TELEMETRY_SAMPLE_ATTEMPTS )); then
+    sample_telemetry_snapshot
+    TELEMETRY_SAMPLE_COUNT=$((TELEMETRY_SAMPLE_COUNT + 1))
+  fi
+
   JOB_STATUS_JSON="$(kctl -n "$NAMESPACE" get job "$RUN_JOB_NAME" -o json 2>/dev/null || true)"
   if [[ -n "$JOB_STATUS_JSON" ]]; then
     JOB_SUCCEEDED_COUNT="$(jq -r '.status.succeeded // 0' <<<"$JOB_STATUS_JSON" 2>/dev/null || echo 0)"
@@ -810,21 +869,10 @@ while (( WAIT_ELAPSED_SEC < WAIT_TIMEOUT_SEC )); do
   WAIT_ELAPSED_SEC=$((WAIT_ELAPSED_SEC + WAIT_STEP_SEC))
 done
 
-TELEMETRY_SAMPLE_COUNT=1
-capture_pod_placement "$POD_PLACEMENT_FILE"
-capture_pod_list "job-name=$RUN_JOB_NAME" "$BENCH_PODS_FILE"
-capture_pod_list "$DATA_POD_SELECTOR" "$DATA_PODS_FILE"
-
-if kctl -n "$NAMESPACE" top pods --no-headers >"$PODS_TOP_FILE" 2>"$PODS_TOP_ERR_FILE"; then
-  TELEMETRY_PODS_TOP_AVAILABLE="true"
+if (( TELEMETRY_SAMPLE_COUNT == 0 )); then
+  sample_telemetry_snapshot
+  TELEMETRY_SAMPLE_COUNT=1
 fi
-write_top_group_summary "$PODS_TOP_FILE" "$BENCH_PODS_FILE" "$BENCH_TOP_SUMMARY_FILE"
-write_top_group_summary "$PODS_TOP_FILE" "$DATA_PODS_FILE" "$DATA_TOP_SUMMARY_FILE"
-
-if kctl top nodes --no-headers >"$NODES_TOP_FILE" 2>"$NODES_TOP_ERR_FILE"; then
-  TELEMETRY_NODES_TOP_AVAILABLE="true"
-fi
-write_nodes_top_summary "$NODES_TOP_FILE" "$NODES_TOP_SUMMARY_FILE"
 
 PODS_RAW="$(kctl -n "$NAMESPACE" get pods -l "job-name=$RUN_JOB_NAME" -o jsonpath='{range .items[*]}{.metadata.name}{"\n"}{end}' || true)"
 
