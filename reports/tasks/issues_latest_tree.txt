@@ -1,7 +1,10 @@
 ◐ nd-jui ● P1 [epic] E21 Program: Single-AZ True Sharding and Replication
+├── ○ nd-jui.15 ● P2 E36 External-path NLB sweeps at representative scales
+├── ○ nd-jui.16 ● P2 E37 Generator capacity validation
+├── ○ nd-jui.17 ● P2 E38 Vertical + horizontal scaling matrix
 └── ○ nd-jui.12 ● P3 [epic] E33 Multi-AZ resilience phase (deferred)
 
 --------------------------------------------------------------------------------
-Total: 2 issues (1 open, 1 in progress)
+Total: 5 issues (4 open, 1 in progress)
 
 Status: ○ open  ◐ in_progress  ● blocked  ✓ closed  ❄ deferred
