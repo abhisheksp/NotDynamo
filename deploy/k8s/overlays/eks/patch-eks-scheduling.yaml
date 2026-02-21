@@ -1,0 +1,22 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: notdynamo-data
+spec:
+  template:
+    spec:
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: topology.kubernetes.io/zone
+          # EKS PVCs are AZ-pinned; ScheduleAnyway avoids deadlocks during scale/restart.
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              app: notdynamo-data
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          # Also spread across hosts inside each AZ to avoid hot-spotting all shards on a few nodes.
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              app: notdynamo-data

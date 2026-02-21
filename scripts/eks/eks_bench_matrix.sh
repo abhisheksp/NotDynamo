@@ -33,6 +33,10 @@ REQUEST_TIMEOUT_MS=5000
 INCLUSTER_PARALLELISM=4
 INCLUSTER_COMPLETIONS=4
 INCLUSTER_KEEP_JOB=0
+INCLUSTER_SKIP_BUILD=0
+INCLUSTER_IMAGE=""
+INCLUSTER_BENCH_NODE_LABEL=""
+INCLUSTER_BENCH_TAINT_EFFECT="NoSchedule"
 MATRIX_JSON_OVERRIDE=""
 MATRIX_MD_OVERRIDE=""
 
@@ -83,6 +87,14 @@ In-cluster category options:
   --incluster-parallelism <n>  Job parallelism (default: 4)
   --incluster-completions <n>  Job completions (default: 4)
   --incluster-keep-job         Keep in-cluster benchmark job resources
+  --incluster-skip-build       Reuse existing benchmark image (requires --incluster-image)
+  --incluster-image <image>    Benchmark image for in-cluster category
+  --incluster-bench-node-label <key=value>
+                               Schedule in-cluster benchmark pods only on nodes with this label
+                               and add matching toleration
+  --incluster-bench-taint-effect <effect>
+                               Toleration effect for benchmark node taint
+                               (default: NoSchedule)
 
 Output options:
   --matrix-output-file <path>  Override matrix JSON output file
@@ -203,6 +215,22 @@ while (( $# > 0 )); do
       INCLUSTER_KEEP_JOB=1
       shift
       ;;
+    --incluster-skip-build)
+      INCLUSTER_SKIP_BUILD=1
+      shift
+      ;;
+    --incluster-image)
+      INCLUSTER_IMAGE="$2"
+      shift 2
+      ;;
+    --incluster-bench-node-label)
+      INCLUSTER_BENCH_NODE_LABEL="$2"
+      shift 2
+      ;;
+    --incluster-bench-taint-effect)
+      INCLUSTER_BENCH_TAINT_EFFECT="$2"
+      shift 2
+      ;;
     --matrix-output-file)
       MATRIX_JSON_OVERRIDE="$2"
       shift 2
@@ -245,9 +273,17 @@ if [[ "$EXTERNAL_LB_TYPE" != "nlb" && "$EXTERNAL_LB_TYPE" != "classic" ]]; then
   echo "--external-lb-type must be one of: nlb, classic" >&2
   exit 1
 fi
+if [[ "$INCLUSTER_BENCH_TAINT_EFFECT" != "NoSchedule" && "$INCLUSTER_BENCH_TAINT_EFFECT" != "PreferNoSchedule" && "$INCLUSTER_BENCH_TAINT_EFFECT" != "NoExecute" ]]; then
+  echo "--incluster-bench-taint-effect must be one of: NoSchedule, PreferNoSchedule, NoExecute" >&2
+  exit 1
+fi
 
 if (( RUN_EXTERNAL == 0 && RUN_INCLUSTER == 0 )); then
   echo "at least one category must be enabled" >&2
+  exit 1
+fi
+if (( INCLUSTER_SKIP_BUILD == 1 )) && [[ -z "$INCLUSTER_IMAGE" ]]; then
+  echo "--incluster-skip-build requires --incluster-image <image>" >&2
   exit 1
 fi
 
@@ -387,6 +423,18 @@ if (( RUN_INCLUSTER == 1 )); then
   if (( INCLUSTER_KEEP_JOB == 1 )); then
     INCLUSTER_ARGS+=(--keep-job)
   fi
+  if (( INCLUSTER_SKIP_BUILD == 1 )); then
+    INCLUSTER_ARGS+=(--skip-build)
+  fi
+  if [[ -n "$INCLUSTER_IMAGE" ]]; then
+    INCLUSTER_ARGS+=(--image "$INCLUSTER_IMAGE")
+  fi
+  if [[ -n "$INCLUSTER_BENCH_NODE_LABEL" ]]; then
+    INCLUSTER_ARGS+=(
+      --bench-node-label "$INCLUSTER_BENCH_NODE_LABEL"
+      --bench-taint-effect "$INCLUSTER_BENCH_TAINT_EFFECT"
+    )
+  fi
 
   set +e
   "$ROOT_DIR/scripts/eks/eks_bench_job_up.sh" "${INCLUSTER_ARGS[@]}"
@@ -436,10 +484,14 @@ fi
 INCLUSTER_TPS=""
 INCLUSTER_P99=""
 INCLUSTER_ERROR_RATE=""
+INCLUSTER_TELEM_HINT=""
+INCLUSTER_TELEM_CPU_RATIO=""
 if [[ -f "$INCLUSTER_JSON" ]]; then
   INCLUSTER_TPS="$(extract_json_value "$INCLUSTER_JSON" '.results.throughput_rps_aggregate')"
   INCLUSTER_P99="$(extract_json_value "$INCLUSTER_JSON" '.results.latency_ms_p99_max_pod')"
   INCLUSTER_ERROR_RATE="$(extract_json_value "$INCLUSTER_JSON" '.results.error_rate_percent')"
+  INCLUSTER_TELEM_HINT="$(extract_json_value "$INCLUSTER_JSON" '.telemetry.signals.attribution_hint')"
+  INCLUSTER_TELEM_CPU_RATIO="$(extract_json_value "$INCLUSTER_JSON" '.telemetry.signals.generator_to_service_cpu_ratio')"
 fi
 
 EXTERNAL_JSON_REL=""
@@ -477,6 +529,10 @@ cat >"$MATRIX_JSON" <<JSON
   "region": "$REGION",
   "namespace": "$NAMESPACE",
   "external_mode": "$EXTERNAL_ENDPOINT_MODE",
+  "incluster_skip_build": "$INCLUSTER_SKIP_BUILD",
+  "incluster_image": "$INCLUSTER_IMAGE",
+  "incluster_bench_node_label": "$INCLUSTER_BENCH_NODE_LABEL",
+  "incluster_bench_taint_effect": "$INCLUSTER_BENCH_TAINT_EFFECT",
   "categories": {
     "${EXTERNAL_CATEGORY_KEY}": {
       "enabled": "$RUN_EXTERNAL",
@@ -496,11 +552,17 @@ cat >"$MATRIX_JSON" <<JSON
       "enabled": "$RUN_INCLUSTER",
       "status": "$INCLUSTER_STATUS",
       "exit_code": "$INCLUSTER_RC",
+      "skip_build": "$INCLUSTER_SKIP_BUILD",
+      "image": "$INCLUSTER_IMAGE",
+      "bench_node_label": "$INCLUSTER_BENCH_NODE_LABEL",
+      "bench_taint_effect": "$INCLUSTER_BENCH_TAINT_EFFECT",
       "report_json": "$INCLUSTER_JSON_REL",
       "report_md": "$INCLUSTER_MD_REL",
       "throughput_rps_aggregate": "$INCLUSTER_TPS",
       "latency_ms_p99_max_pod": "$INCLUSTER_P99",
-      "error_rate_percent": "$INCLUSTER_ERROR_RATE"
+      "error_rate_percent": "$INCLUSTER_ERROR_RATE",
+      "telemetry_attribution_hint": "$INCLUSTER_TELEM_HINT",
+      "telemetry_generator_to_service_cpu_ratio": "$INCLUSTER_TELEM_CPU_RATIO"
     }
   }
 }
@@ -515,6 +577,12 @@ JSON
   echo "- Region: \`$REGION\`"
   echo "- Namespace: \`$NAMESPACE\`"
   echo "- External mode: \`$EXTERNAL_ENDPOINT_MODE\`"
+  if (( INCLUSTER_SKIP_BUILD == 1 )); then
+    echo "- In-cluster image reuse: \`$INCLUSTER_IMAGE\`"
+  fi
+  if [[ -n "$INCLUSTER_BENCH_NODE_LABEL" ]]; then
+    echo "- In-cluster benchmark node label: \`$INCLUSTER_BENCH_NODE_LABEL\` (\`$INCLUSTER_BENCH_TAINT_EFFECT\`)"
+  fi
   echo
   echo "## Categories"
   echo
@@ -522,6 +590,15 @@ JSON
   echo "|---|---|---|---|---|---|---|"
   echo "| $EXTERNAL_CATEGORY_LABEL | $RUN_EXTERNAL | $EXTERNAL_STATUS | ${EXTERNAL_TPS:-} | ${EXTERNAL_P99:-} | ${EXTERNAL_ERROR_RATE:-} | $EXTERNAL_MD_DISPLAY |"
   echo "| In-cluster benchmark job | $RUN_INCLUSTER | $INCLUSTER_STATUS | ${INCLUSTER_TPS:-} | ${INCLUSTER_P99:-} | ${INCLUSTER_ERROR_RATE:-} | $INCLUSTER_MD_DISPLAY |"
+  if [[ -n "$INCLUSTER_TELEM_HINT" || -n "$INCLUSTER_TELEM_CPU_RATIO" ]]; then
+    echo
+    echo "## In-Cluster Telemetry Signals"
+    echo
+    echo "| Signal | Value |"
+    echo "|---|---|"
+    echo "| Attribution hint | ${INCLUSTER_TELEM_HINT:-} |"
+    echo "| Generator/Service CPU ratio | ${INCLUSTER_TELEM_CPU_RATIO:-} |"
+  fi
 } >"$MATRIX_MD"
 
 cp "$MATRIX_JSON" "$MATRIX_LATEST_JSON"

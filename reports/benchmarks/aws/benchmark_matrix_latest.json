@@ -1,30 +1,45 @@
 {
   "benchmark": "eks_benchmark_matrix",
-  "status": "PASS",
-  "timestamp_utc": "2026-02-18T03:19:36Z",
+  "status": "WARN",
+  "timestamp_utc": "2026-02-19T14:56:54Z",
   "cluster_name": "notdynamo-eks",
   "region": "us-west-2",
   "namespace": "notdynamo",
+  "external_mode": "port-forward",
+  "incluster_skip_build": "1",
+  "incluster_image": "139643733075.dkr.ecr.us-west-2.amazonaws.com/notdynamo/notdynamo-bench:bench-20260218T220656Z",
+  "incluster_bench_node_label": "notdynamo.io/workload=benchmark",
+  "incluster_bench_taint_effect": "NoSchedule",
   "categories": {
     "external_client_port_forward": {
-      "enabled": "1",
-      "status": "PASS",
+      "enabled": "0",
+      "status": "SKIPPED",
       "exit_code": "0",
-      "report_json": "reports/benchmarks/aws/e2e_http_external_20260218T030626Z.json",
-      "report_md": "reports/benchmarks/aws/e2e_http_external_20260218T030626Z.md",
-      "throughput_rps": "308.86",
-      "latency_ms_p99": "99.886",
-      "error_rate_percent": "0.0000"
+      "report_json": "",
+      "report_md": "",
+      "throughput_rps": "",
+      "latency_ms_p99": "",
+      "error_rate_percent": "",
+      "endpoint_mode": "port-forward",
+      "lb_scheme": "internet-facing",
+      "lb_type": "nlb",
+      "lb_manage_service": "1"
     },
     "in_cluster_job": {
       "enabled": "1",
-      "status": "PASS",
+      "status": "WARN",
       "exit_code": "0",
-      "report_json": "reports/benchmarks/aws/e2e_http_incluster_20260218T030626Z.json",
-      "report_md": "reports/benchmarks/aws/e2e_http_incluster_20260218T030626Z.md",
-      "throughput_rps_aggregate": "1253.72",
-      "latency_ms_p99_max_pod": "119.817",
-      "error_rate_percent": "0.0000"
+      "skip_build": "1",
+      "image": "139643733075.dkr.ecr.us-west-2.amazonaws.com/notdynamo/notdynamo-bench:bench-20260218T220656Z",
+      "bench_node_label": "notdynamo.io/workload=benchmark",
+      "bench_taint_effect": "NoSchedule",
+      "report_json": "reports/benchmarks/aws/e2e_http_incluster_20260219T145317Z.json",
+      "report_md": "reports/benchmarks/aws/e2e_http_incluster_20260219T145317Z.md",
+      "throughput_rps_aggregate": "2.41",
+      "latency_ms_p99_max_pod": "7502.850",
+      "error_rate_percent": "8.0000",
+      "telemetry_attribution_hint": "service-pressure-dominant",
+      "telemetry_generator_to_service_cpu_ratio": "0.010"
     }
   }
 }

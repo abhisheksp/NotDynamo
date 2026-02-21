@@ -13,7 +13,8 @@ usage() {
   cat <<'USAGE'
 Usage: eks_bench_job_down.sh [options]
 
-Deletes in-cluster benchmark job resources created by eks_bench_job_up.sh.
+Deletes in-cluster benchmark job resources created by eks_bench_job_up.sh
+and eks_bench_job_k6_up.sh.
 
 Options:
   --name <cluster-name>    EKS cluster name (default: notdynamo-eks)
@@ -92,10 +93,15 @@ if ! kubectl get namespace "$NAMESPACE" >/dev/null 2>&1; then
 fi
 
 if [[ -n "$JOB_NAME" ]]; then
+  SCRIPT_CONFIGMAP_NAME="$(kubectl -n "$NAMESPACE" get job "$JOB_NAME" -o jsonpath='{.spec.template.spec.volumes[?(@.name=="bench-script")].configMap.name}' 2>/dev/null || true)"
   kubectl -n "$NAMESPACE" delete job "$JOB_NAME" --ignore-not-found
+  if [[ -n "$SCRIPT_CONFIGMAP_NAME" ]]; then
+    kubectl -n "$NAMESPACE" delete configmap "$SCRIPT_CONFIGMAP_NAME" --ignore-not-found >/dev/null 2>&1 || true
+  fi
   echo "Deleted benchmark job (if present): $JOB_NAME"
   exit 0
 fi
 
 kubectl -n "$NAMESPACE" delete job -l "$SELECTOR" --ignore-not-found
+kubectl -n "$NAMESPACE" delete configmap -l "$SELECTOR,benchmark-driver=k6" --ignore-not-found >/dev/null 2>&1 || true
 echo "Deleted benchmark jobs with selector: $SELECTOR"

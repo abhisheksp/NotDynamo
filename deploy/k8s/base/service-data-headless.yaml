@@ -4,6 +4,9 @@ metadata:
   name: notdynamo-data-headless
 spec:
   clusterIP: None
+  # Keep stable per-pod DNS entries even during readiness flaps so inter-node
+  # forwarding and Raft peer links do not fail hostname resolution.
+  publishNotReadyAddresses: true
   selector:
     app: notdynamo-data
   ports:

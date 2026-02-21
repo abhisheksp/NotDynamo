@@ -739,6 +739,8 @@ NODES_TOP_ERR_FILE="$TELEMETRY_DIR/nodes_top_snapshot.err"
 BENCH_TOP_SUMMARY_FILE="$TELEMETRY_DIR/bench_top_summary.txt"
 DATA_TOP_SUMMARY_FILE="$TELEMETRY_DIR/data_top_summary.txt"
 NODES_TOP_SUMMARY_FILE="$TELEMETRY_DIR/nodes_top_summary.txt"
+WRITE_STAGE_TELEMETRY_FILE="$TELEMETRY_DIR/write_stage_telemetry_samples.txt"
+: >"$WRITE_STAGE_TELEMETRY_FILE"
 
 TELEMETRY_SAMPLE_COUNT=0
 TELEMETRY_PODS_TOP_AVAILABLE="false"
@@ -966,6 +968,30 @@ while IFS= read -r POD_NAME; do
   fi
 done <<<"$PODS_RAW"
 
+while IFS= read -r DATA_POD_NAME; do
+  if [[ -z "$DATA_POD_NAME" ]]; then
+    continue
+  fi
+  DATA_LOG_FILE="$RUN_DIR/${DATA_POD_NAME}.data.log"
+  if ! kctl -n "$NAMESPACE" logs "$DATA_POD_NAME" --tail=4000 >"$DATA_LOG_FILE" 2>"$RUN_DIR/${DATA_POD_NAME}.data.err"; then
+    continue
+  fi
+  WRITE_STAGE_LINE="$(rg 'notdynamo_write_stage_telemetry ' "$DATA_LOG_FILE" | tail -n1 || true)"
+  if [[ -z "$WRITE_STAGE_LINE" ]]; then
+    continue
+  fi
+  WRITE_STAGE_SAMPLE="${WRITE_STAGE_LINE#*notdynamo_write_stage_telemetry }"
+  if [[ -z "$WRITE_STAGE_SAMPLE" ]]; then
+    continue
+  fi
+  echo "${DATA_POD_NAME}|${WRITE_STAGE_SAMPLE}" >>"$WRITE_STAGE_TELEMETRY_FILE"
+done <"$DATA_PODS_FILE"
+
+WRITE_STAGE_SAMPLE_COUNT="$(wc -l < "$WRITE_STAGE_TELEMETRY_FILE" | tr -d '[:space:]')"
+if ! is_uint "${WRITE_STAGE_SAMPLE_COUNT:-}"; then
+  WRITE_STAGE_SAMPLE_COUNT=0
+fi
+
 SUM_OPERATIONS_INT="$(fmt_int "$SUM_OPERATIONS")"
 SUM_SUCCESS_COUNT_INT="$(fmt_int "$SUM_SUCCESS_COUNT")"
 SUM_ERROR_COUNT_INT="$(fmt_int "$SUM_ERROR_COUNT")"
@@ -1000,6 +1026,7 @@ NODES_TOP_ERR_REL="${NODES_TOP_ERR_FILE#$ROOT_DIR/}"
 BENCH_TOP_SUMMARY_REL="${BENCH_TOP_SUMMARY_FILE#$ROOT_DIR/}"
 DATA_TOP_SUMMARY_REL="${DATA_TOP_SUMMARY_FILE#$ROOT_DIR/}"
 NODES_TOP_SUMMARY_REL="${NODES_TOP_SUMMARY_FILE#$ROOT_DIR/}"
+WRITE_STAGE_TELEMETRY_REL="${WRITE_STAGE_TELEMETRY_FILE#$ROOT_DIR/}"
 
 TELEM_BENCH_PODS="$(extract_metric "$BENCH_TOP_SUMMARY_FILE" "pod_count")"
 TELEM_BENCH_CPU_SUM="$(extract_metric "$BENCH_TOP_SUMMARY_FILE" "cpu_mcores_sum")"
@@ -1065,6 +1092,28 @@ while IFS= read -r SAMPLE; do
   ERROR_SAMPLES_MD="${ERROR_SAMPLES_MD}- \`$SAMPLE\`\n"
   SAMPLE_INDEX=$((SAMPLE_INDEX + 1))
 done <"$ERROR_SAMPLES_FILE"
+
+WRITE_STAGE_SAMPLES_JSON=""
+WRITE_STAGE_SAMPLES_MD=""
+WRITE_STAGE_SAMPLE_INDEX=0
+while IFS= read -r WRITE_STAGE_LINE; do
+  if [[ -z "$WRITE_STAGE_LINE" ]]; then
+    continue
+  fi
+  WRITE_STAGE_POD="${WRITE_STAGE_LINE%%|*}"
+  WRITE_STAGE_PAYLOAD="${WRITE_STAGE_LINE#*|}"
+  WRITE_STAGE_PAYLOAD_ESCAPED="${WRITE_STAGE_PAYLOAD//\\/\\\\}"
+  WRITE_STAGE_PAYLOAD_ESCAPED="${WRITE_STAGE_PAYLOAD_ESCAPED//\"/\\\"}"
+  WRITE_STAGE_POD_ESCAPED="${WRITE_STAGE_POD//\"/\\\"}"
+  WRITE_STAGE_ITEM="{\"pod\":\"$WRITE_STAGE_POD_ESCAPED\",\"sample\":\"$WRITE_STAGE_PAYLOAD_ESCAPED\"}"
+  if (( WRITE_STAGE_SAMPLE_INDEX == 0 )); then
+    WRITE_STAGE_SAMPLES_JSON="$WRITE_STAGE_ITEM"
+  else
+    WRITE_STAGE_SAMPLES_JSON="$WRITE_STAGE_SAMPLES_JSON, $WRITE_STAGE_ITEM"
+  fi
+  WRITE_STAGE_SAMPLES_MD="${WRITE_STAGE_SAMPLES_MD}- \`$WRITE_STAGE_POD\`: \`$WRITE_STAGE_PAYLOAD\`\n"
+  WRITE_STAGE_SAMPLE_INDEX=$((WRITE_STAGE_SAMPLE_INDEX + 1))
+done <"$WRITE_STAGE_TELEMETRY_FILE"
 
 cat >"$OUTPUT_FILE" <<JSON
 {
@@ -1151,6 +1200,11 @@ cat >"$OUTPUT_FILE" <<JSON
       "attribution_hint": "$TELEM_ATTRIBUTION_HINT",
       "attribution_reason": "$TELEM_ATTRIBUTION_REASON"
     },
+    "write_stage_telemetry": {
+      "sample_count": "$WRITE_STAGE_SAMPLE_COUNT",
+      "samples_file": "$WRITE_STAGE_TELEMETRY_REL",
+      "samples": [${WRITE_STAGE_SAMPLES_JSON}]
+    },
     "artifacts": {
       "pod_placement": "$POD_PLACEMENT_REL",
       "pods_top_snapshot": "$PODS_TOP_REL",
@@ -1159,7 +1213,8 @@ cat >"$OUTPUT_FILE" <<JSON
       "nodes_top_error": "$NODES_TOP_ERR_REL",
       "generator_top_summary": "$BENCH_TOP_SUMMARY_REL",
       "service_top_summary": "$DATA_TOP_SUMMARY_REL",
-      "nodes_top_summary": "$NODES_TOP_SUMMARY_REL"
+      "nodes_top_summary": "$NODES_TOP_SUMMARY_REL",
+      "write_stage_telemetry_samples": "$WRITE_STAGE_TELEMETRY_REL"
     }
   },
   "error_samples": [${ERROR_SAMPLES_JSON}],
@@ -1247,6 +1302,13 @@ JSON
   echo "| Cluster node count (sampled) | $TELEM_NODE_COUNT |"
   echo "| Cluster CPU percent max | $TELEM_NODE_CPU_PERCENT_MAX |"
   echo "| Cluster memory percent max | $TELEM_NODE_MEM_PERCENT_MAX |"
+  echo "| Write-stage telemetry samples | $WRITE_STAGE_SAMPLE_COUNT |"
+  if [[ -n "$WRITE_STAGE_SAMPLES_MD" ]]; then
+    echo
+    echo "## Write-Stage Telemetry Samples"
+    echo
+    printf "%b" "$WRITE_STAGE_SAMPLES_MD"
+  fi
   if [[ -n "$ERROR_SAMPLES_MD" ]]; then
     echo
     echo "## Error Samples"
@@ -1266,6 +1328,7 @@ JSON
   echo "- Generator top summary: \`$BENCH_TOP_SUMMARY_REL\`"
   echo "- Service top summary: \`$DATA_TOP_SUMMARY_REL\`"
   echo "- Nodes top summary: \`$NODES_TOP_SUMMARY_REL\`"
+  echo "- Write-stage telemetry samples: \`$WRITE_STAGE_TELEMETRY_REL\`"
 } >"$HUMAN_REPORT_FILE"
 
 cp "$OUTPUT_FILE" "$LATEST_JSON_FILE"

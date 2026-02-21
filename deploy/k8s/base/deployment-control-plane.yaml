@@ -64,3 +64,11 @@ spec:
               value: "3"
             - name: NOTDYNAMO_STATEFULSET_NAME
               value: "notdynamo-data"
+            - name: NOTDYNAMO_REBALANCE_INTERVAL_MS
+              value: "60000"
+            - name: NOTDYNAMO_REBALANCE_MAX_MOVES_PER_PASS
+              value: "3"
+            - name: NOTDYNAMO_REBALANCE_MAX_CHURN_PERCENT_5M
+              value: "10"
+            - name: NOTDYNAMO_REBALANCE_TIMEOUT_WEIGHT
+              value: "5.0"

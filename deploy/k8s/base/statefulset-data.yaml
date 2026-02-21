@@ -43,28 +43,25 @@ spec:
             - name: ratis
               containerPort: 10090
           startupProbe:
-            httpGet:
-              path: /healthz
+            tcpSocket:
               port: http
             periodSeconds: 5
-            timeoutSeconds: 2
-            failureThreshold: 60
+            timeoutSeconds: 5
+            failureThreshold: 90
           readinessProbe:
-            httpGet:
-              path: /healthz
+            tcpSocket:
               port: http
             initialDelaySeconds: 5
             periodSeconds: 5
-            timeoutSeconds: 2
-            failureThreshold: 6
+            timeoutSeconds: 5
+            failureThreshold: 12
           livenessProbe:
-            httpGet:
-              path: /healthz
+            tcpSocket:
               port: http
             initialDelaySeconds: 15
             periodSeconds: 10
-            timeoutSeconds: 2
-            failureThreshold: 6
+            timeoutSeconds: 5
+            failureThreshold: 12
           env:
             - name: POD_NAME
               valueFrom:
@@ -80,6 +77,8 @@ spec:
               value: "9090"
             - name: NOTDYNAMO_HTTP_PORT
               value: "8080"
+            - name: NOTDYNAMO_HTTP_WORKER_THREADS
+              value: "64"
             - name: NOTDYNAMO_SHARD_COUNT
               value: "128"
             - name: NOTDYNAMO_VIRTUAL_NODES_PER_SHARD
@@ -89,7 +88,7 @@ spec:
             - name: NOTDYNAMO_RPC_MODE
               value: "grpc"
             - name: NOTDYNAMO_RPC_TIMEOUT_MS
-              value: "750"
+              value: "5000"
             - name: NOTDYNAMO_RATIS_PORT
               value: "10090"
             - name: NOTDYNAMO_RATIS_GROUP_NAME
@@ -100,6 +99,14 @@ spec:
               value: "raft"
             - name: NOTDYNAMO_WRITE_QUORUM_ACKS
               value: "2"
+            - name: NOTDYNAMO_WRITE_GLOBAL_INFLIGHT_LIMIT
+              value: "256"
+            - name: NOTDYNAMO_WRITE_SHARD_INFLIGHT_MIN
+              value: "8"
+            - name: NOTDYNAMO_WRITE_ADMISSION_WAIT_MS
+              value: "2"
+            - name: NOTDYNAMO_RATIS_MAX_INFLIGHT_PER_SHARD
+              value: "16"
             - name: NOTDYNAMO_READ_CONSISTENCY
               value: "eventual"
             - name: NOTDYNAMO_EVENTUAL_FRESHNESS_MILLIS
@@ -112,6 +119,10 @@ spec:
               value: "http://notdynamo-control-plane:9090/v1/partition-map"
             - name: NOTDYNAMO_CONTROL_PLANE_PARTITION_MAP_TIMEOUT_MS
               value: "1500"
+            - name: NOTDYNAMO_CONTROL_PLANE_PARTITION_MAP_REFRESH_INTERVAL_MS
+              value: "2000"
+            - name: NOTDYNAMO_CONTROL_PLANE_WRITE_LOAD_REPORT_INTERVAL_MS
+              value: "10000"
             - name: NOTDYNAMO_CLUSTER_SIZE
               value: "3"
             - name: NOTDYNAMO_STATEFULSET_NAME

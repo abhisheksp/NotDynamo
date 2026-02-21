@@ -5,3 +5,4 @@ resources:
 patches:
   - path: patch-eks-data-service.yaml
   - path: patch-eks-data-storage.yaml
+  - path: patch-eks-scheduling.yaml

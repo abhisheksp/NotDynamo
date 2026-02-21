@@ -195,23 +195,23 @@ public final class GrpcNodeRpcClient implements NodeRpcClient {
         return switch (grpcCode) {
             case INVALID_ARGUMENT -> Error.newBuilder()
                 .setCode(StatusCode.STATUS_CODE_INVALID_ARGUMENT)
-                .setMessage("remote invalid argument for node " + nodeId + ": " + safeMessage(e))
+                .setMessage(withGrpcCode(grpcCode, "remote invalid argument for node " + nodeId + ": " + safeMessage(e)))
                 .build();
             case NOT_FOUND -> Error.newBuilder()
                 .setCode(StatusCode.STATUS_CODE_NOT_FOUND)
-                .setMessage("remote key not found for node " + nodeId + ": " + safeMessage(e))
+                .setMessage(withGrpcCode(grpcCode, "remote key not found for node " + nodeId + ": " + safeMessage(e)))
                 .build();
             case DEADLINE_EXCEEDED -> Error.newBuilder()
                 .setCode(StatusCode.STATUS_CODE_TIMEOUT)
-                .setMessage("remote request timed out for node " + nodeId + ": " + safeMessage(e))
+                .setMessage(withGrpcCode(grpcCode, "remote request timed out for node " + nodeId + ": " + safeMessage(e)))
                 .build();
             case UNAVAILABLE -> Error.newBuilder()
                 .setCode(StatusCode.STATUS_CODE_UNAVAILABLE)
-                .setMessage("remote node unavailable " + nodeId + ": " + safeMessage(e))
+                .setMessage(withGrpcCode(grpcCode, "remote node unavailable " + nodeId + ": " + safeMessage(e)))
                 .build();
             default -> Error.newBuilder()
                 .setCode(StatusCode.STATUS_CODE_INTERNAL)
-                .setMessage("remote request failed for node " + nodeId + ": " + safeMessage(e))
+                .setMessage(withGrpcCode(grpcCode, "remote request failed for node " + nodeId + ": " + safeMessage(e)))
                 .build();
         };
     }
@@ -219,7 +219,7 @@ public final class GrpcNodeRpcClient implements NodeRpcClient {
     private static Error internal(String nodeId, RuntimeException e) {
         return Error.newBuilder()
             .setCode(StatusCode.STATUS_CODE_INTERNAL)
-            .setMessage("internal rpc client error for node " + nodeId + ": " + safeMessage(e))
+            .setMessage("grpc=CLIENT_INTERNAL internal rpc client error for node " + nodeId + ": " + safeMessage(e))
             .build();
     }
 
@@ -229,5 +229,10 @@ public final class GrpcNodeRpcClient implements NodeRpcClient {
             return throwable.getClass().getSimpleName();
         }
         return message;
+    }
+
+    private static String withGrpcCode(Status.Code grpcCode, String message) {
+        String code = grpcCode == null ? "UNKNOWN" : grpcCode.name();
+        return "grpc=" + code + " " + message;
     }
 }

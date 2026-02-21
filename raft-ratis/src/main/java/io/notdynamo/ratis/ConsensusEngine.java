@@ -1,5 +1,7 @@
 package io.notdynamo.ratis;
 
+import java.util.Map;
+
 public interface ConsensusEngine extends AutoCloseable {
     long put(byte[] key, byte[] value);
 
@@ -17,6 +19,24 @@ public interface ConsensusEngine extends AutoCloseable {
             throw new IllegalArgumentException("shardId must be >= 0");
         }
         return delete(key);
+    }
+
+    default String leaderIdForShard(int shardId) {
+        if (shardId < 0) {
+            throw new IllegalArgumentException("shardId must be >= 0");
+        }
+        return "";
+    }
+
+    default Map<Integer, String> leaderIdSnapshot() {
+        return Map.of();
+    }
+
+    default long lastAppliedIndexForShard(int shardId) {
+        if (shardId < 0) {
+            throw new IllegalArgumentException("shardId must be >= 0");
+        }
+        return 0L;
     }
 
     @Override

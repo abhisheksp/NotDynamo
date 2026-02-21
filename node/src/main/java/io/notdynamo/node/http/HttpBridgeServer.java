@@ -46,7 +46,14 @@ public final class HttpBridgeServer implements AutoCloseable {
     }
 
     public void start() {
-        server.setExecutor(Executors.newFixedThreadPool(Math.max(4, Runtime.getRuntime().availableProcessors())));
+        start(defaultWorkerThreads());
+    }
+
+    public void start(int workerThreads) {
+        if (workerThreads <= 0) {
+            throw new IllegalArgumentException("workerThreads must be > 0");
+        }
+        server.setExecutor(Executors.newFixedThreadPool(workerThreads));
         server.start();
     }
 
@@ -199,6 +206,10 @@ public final class HttpBridgeServer implements AutoCloseable {
 
     private static String escapeJson(String value) {
         return value.replace("\\", "\\\\").replace("\"", "\\\"");
+    }
+
+    private static int defaultWorkerThreads() {
+        return Math.max(32, Runtime.getRuntime().availableProcessors() * 16);
     }
 
     private static final class ObserverCapture<T> implements StreamObserver<T> {

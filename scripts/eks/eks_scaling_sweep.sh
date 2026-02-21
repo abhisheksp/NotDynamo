@@ -42,6 +42,10 @@ REQUEST_TIMEOUT_MS=5000
 INCLUSTER_PARALLELISM=4
 INCLUSTER_COMPLETIONS=4
 INCLUSTER_KEEP_JOB=0
+INCLUSTER_SKIP_BUILD=0
+INCLUSTER_IMAGE=""
+INCLUSTER_BENCH_NODE_LABEL=""
+INCLUSTER_BENCH_TAINT_EFFECT="NoSchedule"
 
 OUTPUT_PREFIX=""
 LATEST_JSON_FILE=""
@@ -80,6 +84,7 @@ Sweep dimensions:
 
 Benchmark categories:
   --include-external               Include external benchmark in matrix (default: disabled)
+  --skip-external                  Explicitly disable external benchmark category
   --skip-incluster                 Skip in-cluster benchmark in matrix
   --external-mode <mode>           port-forward|load-balancer (default: port-forward)
   --external-lb-wait-timeout-sec <n>
@@ -104,6 +109,14 @@ Benchmark knobs:
   --incluster-parallelism <n>      In-cluster job parallelism (default: 4)
   --incluster-completions <n>      In-cluster job completions (default: 4)
   --incluster-keep-job             Keep in-cluster job resources after each run
+  --incluster-skip-build           Reuse existing benchmark image (requires --incluster-image)
+  --incluster-image <image>        Benchmark image to use for in-cluster jobs
+  --incluster-bench-node-label <key=value>
+                                   Schedule in-cluster benchmark pods only on nodes with this label
+                                   and add matching toleration
+  --incluster-bench-taint-effect <effect>
+                                   Toleration effect for benchmark node taint
+                                   (default: NoSchedule)
 
 Output:
   --output-prefix <path>           Writes <path>.json|md|csv and run dir <path>_runs
@@ -175,6 +188,10 @@ while (( $# > 0 )); do
       ;;
     --include-external)
       RUN_EXTERNAL=1
+      shift
+      ;;
+    --skip-external)
+      RUN_EXTERNAL=0
       shift
       ;;
     --skip-incluster)
@@ -261,6 +278,22 @@ while (( $# > 0 )); do
       INCLUSTER_KEEP_JOB=1
       shift
       ;;
+    --incluster-skip-build)
+      INCLUSTER_SKIP_BUILD=1
+      shift
+      ;;
+    --incluster-image)
+      INCLUSTER_IMAGE="$2"
+      shift 2
+      ;;
+    --incluster-bench-node-label)
+      INCLUSTER_BENCH_NODE_LABEL="$2"
+      shift 2
+      ;;
+    --incluster-bench-taint-effect)
+      INCLUSTER_BENCH_TAINT_EFFECT="$2"
+      shift 2
+      ;;
     --output-prefix)
       OUTPUT_PREFIX="$2"
       shift 2
@@ -315,6 +348,10 @@ if [[ "$EXTERNAL_LB_TYPE" != "nlb" && "$EXTERNAL_LB_TYPE" != "classic" ]]; then
   echo "--external-lb-type must be one of: nlb, classic" >&2
   exit 1
 fi
+if [[ "$INCLUSTER_BENCH_TAINT_EFFECT" != "NoSchedule" && "$INCLUSTER_BENCH_TAINT_EFFECT" != "PreferNoSchedule" && "$INCLUSTER_BENCH_TAINT_EFFECT" != "NoExecute" ]]; then
+  echo "--incluster-bench-taint-effect must be one of: NoSchedule, PreferNoSchedule, NoExecute" >&2
+  exit 1
+fi
 if [[ "$DISTRIBUTION" != "uniform" && "$DISTRIBUTION" != "sequential" && "$DISTRIBUTION" != "zipf" ]]; then
   echo "--distribution must be one of: uniform, sequential, zipf" >&2
   exit 1
@@ -331,23 +368,30 @@ if (( RUN_EXTERNAL == 0 && RUN_INCLUSTER == 0 )); then
   echo "at least one benchmark category must be enabled" >&2
   exit 1
 fi
+if (( INCLUSTER_SKIP_BUILD == 1 )) && [[ -z "$INCLUSTER_IMAGE" ]]; then
+  echo "--incluster-skip-build requires --incluster-image <image>" >&2
+  exit 1
+fi
 
 parse_csv_positive_ints() {
   local csv="$1"
   local label="$2"
-  local -n out_arr_ref="$3"
+  local out_var_name="$3"
+  local parsed_values=()
 
-  IFS=',' read -r -a out_arr_ref <<<"$csv"
-  if (( ${#out_arr_ref[@]} == 0 )); then
+  IFS=',' read -r -a parsed_values <<<"$csv"
+  if (( ${#parsed_values[@]} == 0 )); then
     echo "$label must contain at least one value" >&2
     exit 1
   fi
-  for value in "${out_arr_ref[@]}"; do
+  for value in "${parsed_values[@]}"; do
     if [[ ! "$value" =~ ^[0-9]+$ ]] || (( value <= 0 )); then
       echo "invalid $label value: $value" >&2
       exit 1
     fi
   done
+
+  eval "$out_var_name=(\"\${parsed_values[@]}\")"
 }
 
 require_bin() {
@@ -495,8 +539,8 @@ mkdir -p "$(dirname "$LATEST_MD_FILE")"
 mkdir -p "$(dirname "$LATEST_CSV_FILE")"
 mkdir -p "$RUN_ROOT"
 
-RUNS_JSONL="$(mktemp /tmp/notdynamo-scaling-sweep-runs.XXXXXX.jsonl)"
-echo "run_index,node_count,data_replicas,status,matrix_exit_code,external_mode,external_tps,external_p99_ms,incluster_tps,incluster_p99_ms,incluster_error_rate,report_json,report_md" >"$SWEEP_CSV"
+RUNS_JSONL="$(mktemp /tmp/notdynamo-scaling-sweep-runs.XXXXXX)"
+echo "run_index,node_count,data_replicas,status,matrix_exit_code,external_mode,external_tps,external_p99_ms,incluster_tps,incluster_p99_ms,incluster_error_rate,incluster_telem_hint,incluster_telem_cpu_ratio,report_json,report_md" >"$SWEEP_CSV"
 
 BEST_THROUGHPUT="0"
 BEST_RUN_INDEX=""
@@ -569,6 +613,18 @@ for node_count in "${NODE_COUNTS_ARRAY[@]}"; do
     if (( INCLUSTER_KEEP_JOB == 1 )); then
       matrix_args+=(--incluster-keep-job)
     fi
+    if (( INCLUSTER_SKIP_BUILD == 1 )); then
+      matrix_args+=(--incluster-skip-build)
+    fi
+    if [[ -n "$INCLUSTER_IMAGE" ]]; then
+      matrix_args+=(--incluster-image "$INCLUSTER_IMAGE")
+    fi
+    if [[ -n "$INCLUSTER_BENCH_NODE_LABEL" ]]; then
+      matrix_args+=(
+        --incluster-bench-node-label "$INCLUSTER_BENCH_NODE_LABEL"
+        --incluster-bench-taint-effect "$INCLUSTER_BENCH_TAINT_EFFECT"
+      )
+    fi
 
     echo "Running benchmark matrix for node_count=$node_count data_replicas=$data_replicas ..."
     set +e
@@ -583,6 +639,8 @@ for node_count in "${NODE_COUNTS_ARRAY[@]}"; do
     incluster_tps=""
     incluster_p99=""
     incluster_error_rate=""
+    incluster_telem_hint=""
+    incluster_telem_cpu_ratio=""
     report_json_rel="$(to_repo_relative "$matrix_json")"
     report_md_rel="$(to_repo_relative "$matrix_md")"
 
@@ -600,6 +658,8 @@ for node_count in "${NODE_COUNTS_ARRAY[@]}"; do
       incluster_tps="$(jq -r '.categories.in_cluster_job.throughput_rps_aggregate // empty' "$matrix_json")"
       incluster_p99="$(jq -r '.categories.in_cluster_job.latency_ms_p99_max_pod // empty' "$matrix_json")"
       incluster_error_rate="$(jq -r '.categories.in_cluster_job.error_rate_percent // empty' "$matrix_json")"
+      incluster_telem_hint="$(jq -r '.categories.in_cluster_job.telemetry_attribution_hint // empty' "$matrix_json")"
+      incluster_telem_cpu_ratio="$(jq -r '.categories.in_cluster_job.telemetry_generator_to_service_cpu_ratio // empty' "$matrix_json")"
     elif (( matrix_rc == 0 )); then
       status="UNKNOWN"
     fi
@@ -632,7 +692,7 @@ for node_count in "${NODE_COUNTS_ARRAY[@]}"; do
       BEST_DATA_REPLICAS="$data_replicas"
     fi
 
-    echo "$RUN_INDEX,$node_count,$data_replicas,$status,$matrix_rc,$external_mode_value,$external_tps,$external_p99,$incluster_tps,$incluster_p99,$incluster_error_rate,$report_json_rel,$report_md_rel" >>"$SWEEP_CSV"
+    echo "$RUN_INDEX,$node_count,$data_replicas,$status,$matrix_rc,$external_mode_value,$external_tps,$external_p99,$incluster_tps,$incluster_p99,$incluster_error_rate,$incluster_telem_hint,$incluster_telem_cpu_ratio,$report_json_rel,$report_md_rel" >>"$SWEEP_CSV"
 
     run_json="$(
       jq -n \
@@ -647,6 +707,8 @@ for node_count in "${NODE_COUNTS_ARRAY[@]}"; do
         --arg incluster_tps "$incluster_tps" \
         --arg incluster_p99 "$incluster_p99" \
         --arg incluster_error_rate "$incluster_error_rate" \
+        --arg incluster_telem_hint "$incluster_telem_hint" \
+        --arg incluster_telem_cpu_ratio "$incluster_telem_cpu_ratio" \
         --arg report_json "$report_json_rel" \
         --arg report_md "$report_md_rel" \
         '{
@@ -661,6 +723,8 @@ for node_count in "${NODE_COUNTS_ARRAY[@]}"; do
           incluster_tps: (if $incluster_tps == "" then null else ($incluster_tps|tonumber) end),
           incluster_p99_ms: (if $incluster_p99 == "" then null else ($incluster_p99|tonumber) end),
           incluster_error_rate_percent: (if $incluster_error_rate == "" then null else ($incluster_error_rate|tonumber) end),
+          incluster_telemetry_attribution_hint: (if $incluster_telem_hint == "" then null else $incluster_telem_hint end),
+          incluster_telemetry_generator_to_service_cpu_ratio: (if $incluster_telem_cpu_ratio == "" then null else ($incluster_telem_cpu_ratio|tonumber) end),
           report_json: $report_json,
           report_md: $report_md
         }'
@@ -696,6 +760,10 @@ jq -n \
   --arg run_external "$RUN_EXTERNAL" \
   --arg run_incluster "$RUN_INCLUSTER" \
   --arg external_mode_config "$EXTERNAL_MODE" \
+  --arg incluster_skip_build "$INCLUSTER_SKIP_BUILD" \
+  --arg incluster_image "$INCLUSTER_IMAGE" \
+  --arg incluster_bench_node_label "$INCLUSTER_BENCH_NODE_LABEL" \
+  --arg incluster_bench_taint_effect "$INCLUSTER_BENCH_TAINT_EFFECT" \
   --arg original_nodegroup_desired "$ORIGINAL_NODEGROUP_DESIRED" \
   --arg original_nodegroup_min "$ORIGINAL_NODEGROUP_MIN" \
   --arg original_nodegroup_max "$ORIGINAL_NODEGROUP_MAX" \
@@ -717,7 +785,11 @@ jq -n \
     benchmark_categories: {
       external_enabled: ($run_external == "1"),
       external_mode: (if $run_external == "1" then $external_mode_config else "disabled" end),
-      incluster_enabled: ($run_incluster == "1")
+      incluster_enabled: ($run_incluster == "1"),
+      incluster_skip_build: ($incluster_skip_build == "1"),
+      incluster_image: (if $incluster_image == "" then null else $incluster_image end),
+      incluster_bench_node_label: (if $incluster_bench_node_label == "" then null else $incluster_bench_node_label end),
+      incluster_bench_taint_effect: $incluster_bench_taint_effect
     },
     original_scale: {
       nodegroup_desired: ($original_nodegroup_desired|tonumber),
@@ -754,17 +826,23 @@ jq -n \
   echo "- Runs executed: \`$RUN_INDEX\`"
   echo "- Status: \`$OVERALL_STATUS\`"
   echo "- Restore on exit: \`$RESTORE_ON_EXIT\`"
+  if (( INCLUSTER_SKIP_BUILD == 1 )); then
+    echo "- In-cluster image reuse: \`$INCLUSTER_IMAGE\`"
+  fi
+  if [[ -n "$INCLUSTER_BENCH_NODE_LABEL" ]]; then
+    echo "- In-cluster benchmark node label: \`$INCLUSTER_BENCH_NODE_LABEL\` (\`$INCLUSTER_BENCH_TAINT_EFFECT\`)"
+  fi
   if [[ -n "$BEST_RUN_INDEX" ]]; then
     echo "- Best throughput run: \`run=$BEST_RUN_INDEX node_count=$BEST_NODE_COUNT data_replicas=$BEST_DATA_REPLICAS throughput_rps=$BEST_THROUGHPUT\`"
   fi
   echo
   echo "## Results Matrix"
   echo
-  echo "| Run | Node count | Data replicas | Status | Matrix exit | External mode | External TPS | External p99 (ms) | In-cluster TPS | In-cluster p99 (ms) | In-cluster error (%) | Report |"
-  echo "|---|---|---|---|---|---|---|---|---|---|---|---|"
+  echo "| Run | Node count | Data replicas | Status | Matrix exit | External mode | External TPS | External p99 (ms) | In-cluster TPS | In-cluster p99 (ms) | In-cluster error (%) | Telem hint | Gen/Svc CPU ratio | Report |"
+  echo "|---|---|---|---|---|---|---|---|---|---|---|---|---|---|"
   awk -F',' 'NR>1 {
-    report=$13
-    printf "| %s | %s | %s | %s | %s | %s | %s | %s | %s | %s | %s | `%s` |\n", $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,report
+    report=$14
+    printf "| %s | %s | %s | %s | %s | %s | %s | %s | %s | %s | %s | %s | %s | `%s` |\n", $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,report
   }' "$SWEEP_CSV"
   echo
   echo "## Artifacts"

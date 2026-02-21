@@ -43,6 +43,8 @@ REQUEST_TIMEOUT_MS=5000
 INCLUSTER_PARALLELISM=4
 INCLUSTER_COMPLETIONS=4
 INCLUSTER_KEEP_JOB=0
+INCLUSTER_BENCH_NODE_LABEL=""
+INCLUSTER_BENCH_TAINT_EFFECT="NoSchedule"
 
 KEEP_CLUSTER=0
 DELETE_ECR_REPO=0
@@ -106,6 +108,12 @@ Benchmark options:
   --incluster-parallelism <n>     In-cluster parallelism (default: 4)
   --incluster-completions <n>     In-cluster completions (default: 4)
   --incluster-keep-job            Keep in-cluster benchmark jobs
+  --incluster-bench-node-label <key=value>
+                                  Schedule in-cluster benchmark pods only on nodes with this label
+                                  and add matching toleration
+  --incluster-bench-taint-effect <effect>
+                                  Toleration effect for benchmark node taint
+                                  (default: NoSchedule)
 
 Teardown options:
   --keep-cluster                  Skip teardown and cleanup audit
@@ -279,6 +287,14 @@ while (( $# > 0 )); do
       INCLUSTER_KEEP_JOB=1
       shift
       ;;
+    --incluster-bench-node-label)
+      INCLUSTER_BENCH_NODE_LABEL="$2"
+      shift 2
+      ;;
+    --incluster-bench-taint-effect)
+      INCLUSTER_BENCH_TAINT_EFFECT="$2"
+      shift 2
+      ;;
     --keep-cluster)
       KEEP_CLUSTER=1
       shift
@@ -343,6 +359,10 @@ if [[ "$EXTERNAL_LB_SCHEME" != "internet-facing" && "$EXTERNAL_LB_SCHEME" != "in
 fi
 if [[ "$EXTERNAL_LB_TYPE" != "nlb" && "$EXTERNAL_LB_TYPE" != "classic" ]]; then
   echo "--external-lb-type must be one of: nlb, classic" >&2
+  exit 1
+fi
+if [[ "$INCLUSTER_BENCH_TAINT_EFFECT" != "NoSchedule" && "$INCLUSTER_BENCH_TAINT_EFFECT" != "PreferNoSchedule" && "$INCLUSTER_BENCH_TAINT_EFFECT" != "NoExecute" ]]; then
+  echo "--incluster-bench-taint-effect must be one of: NoSchedule, PreferNoSchedule, NoExecute" >&2
   exit 1
 fi
 if [[ "$DISTRIBUTION" != "uniform" && "$DISTRIBUTION" != "sequential" && "$DISTRIBUTION" != "zipf" ]]; then
@@ -587,6 +607,12 @@ if (( SMOKE_OK == 1 )); then
   fi
   if (( INCLUSTER_KEEP_JOB == 1 )); then
     BENCH_CMD+=(--incluster-keep-job)
+  fi
+  if [[ -n "$INCLUSTER_BENCH_NODE_LABEL" ]]; then
+    BENCH_CMD+=(
+      --incluster-bench-node-label "$INCLUSTER_BENCH_NODE_LABEL"
+      --incluster-bench-taint-effect "$INCLUSTER_BENCH_TAINT_EFFECT"
+    )
   fi
 
   if run_step "eks_bench_matrix" "${BENCH_CMD[@]}"; then

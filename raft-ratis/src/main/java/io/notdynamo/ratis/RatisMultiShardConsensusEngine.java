@@ -16,6 +16,8 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import org.apache.ratis.RaftConfigKeys;
 import org.apache.ratis.client.RaftClient;
 import org.apache.ratis.client.RaftClientConfigKeys;
@@ -29,6 +31,7 @@ import org.apache.ratis.protocol.RaftGroup;
 import org.apache.ratis.protocol.RaftGroupId;
 import org.apache.ratis.protocol.RaftPeer;
 import org.apache.ratis.protocol.RaftPeerId;
+import org.apache.ratis.protocol.exceptions.AlreadyExistsException;
 import org.apache.ratis.rpc.SupportedRpcType;
 import org.apache.ratis.server.RaftServer;
 import org.apache.ratis.server.RaftServerConfigKeys;
@@ -37,6 +40,7 @@ import org.apache.ratis.statemachine.StateMachine;
 import org.apache.ratis.statemachine.TransactionContext;
 import org.apache.ratis.statemachine.impl.BaseStateMachine;
 import org.apache.ratis.thirdparty.com.google.protobuf.ByteString;
+import org.apache.ratis.util.SizeInBytes;
 import org.apache.ratis.util.TimeDuration;
 
 public final class RatisMultiShardConsensusEngine implements ConsensusEngine {
@@ -67,6 +71,7 @@ public final class RatisMultiShardConsensusEngine implements ConsensusEngine {
         Objects.requireNonNull(config, "config must not be null");
         Objects.requireNonNull(keyValueStore, "keyValueStore must not be null");
         ensureStorageDir(config.storageDir());
+        suppressNettyInfoLogs();
 
         String localAddress = normalizeAddress(config.addressResolver().apply(config.localNodeId()), config.localNodeId());
         HostPort localHostPort = parseHostPort(localAddress, config.localNodeId());
@@ -102,6 +107,10 @@ public final class RatisMultiShardConsensusEngine implements ConsensusEngine {
             }
             return new RatisMultiShardConsensusEngine(server, runtimeByShard, config.requestTimeoutMillis());
         } catch (RuntimeException | IOException e) {
+            System.err.println("notdynamo.ratis.startup_failed=true");
+            System.err.println("notdynamo.ratis.startup_failed.node_id=" + config.localNodeId());
+            System.err.println("notdynamo.ratis.startup_failed.message=" + rootMessage(e));
+            e.printStackTrace(System.err);
             closeClients(runtimeByShard.values());
             closeServerQuietly(server);
             throw new IllegalStateException("failed to start multi-shard ratis consensus engine", e);
@@ -128,6 +137,7 @@ public final class RatisMultiShardConsensusEngine implements ConsensusEngine {
         return submit(shardId, RatisCommandCodec.encodeDelete(key));
     }
 
+    @Override
     public String leaderIdForShard(int shardId) {
         ShardRuntime runtime = runtimeForShard(shardId);
         try {
@@ -141,6 +151,27 @@ public final class RatisMultiShardConsensusEngine implements ConsensusEngine {
         }
     }
 
+    @Override
+    public Map<Integer, String> leaderIdSnapshot() {
+        Map<Integer, String> snapshot = new LinkedHashMap<>(runtimeByShard.size());
+        for (Map.Entry<Integer, ShardRuntime> entry : runtimeByShard.entrySet()) {
+            int shardId = entry.getKey();
+            ShardRuntime runtime = entry.getValue();
+            try {
+                RaftServer.Division division = server.getDivision(runtime.group().getGroupId());
+                if (division == null || division.getInfo().getLeaderId() == null) {
+                    snapshot.put(shardId, "");
+                } else {
+                    snapshot.put(shardId, division.getInfo().getLeaderId().toString());
+                }
+            } catch (IOException e) {
+                throw new IllegalStateException("failed to query leader snapshot for shard " + shardId, e);
+            }
+        }
+        return Map.copyOf(snapshot);
+    }
+
+    @Override
     public long lastAppliedIndexForShard(int shardId) {
         ShardRuntime runtime = runtimeForShard(shardId);
         try {
@@ -292,10 +323,21 @@ public final class RatisMultiShardConsensusEngine implements ConsensusEngine {
             if (plan.group().getGroupId().equals(initialGroupId)) {
                 continue;
             }
-            GroupManagementRequest request = GroupManagementRequest.newAdd(clientId, localPeerId, callId++, plan.group());
-            RaftClientReply reply = server.groupManagement(request);
-            if (reply == null || !reply.isSuccess()) {
-                throw new IllegalStateException("failed to add shard group " + plan.groupName() + " via group management");
+            try {
+                GroupManagementRequest request = GroupManagementRequest.newAdd(clientId, localPeerId, callId++, plan.group());
+                RaftClientReply reply = server.groupManagement(request);
+                if (reply == null) {
+                    throw new IllegalStateException("failed to add shard group " + plan.groupName() + " via group management");
+                }
+                if (!reply.isSuccess()) {
+                    if (isGroupAlreadyExists(reply.getException())) {
+                        continue;
+                    }
+                    throw new IllegalStateException("failed to add shard group " + plan.groupName() + " via group management");
+                }
+            } catch (AlreadyExistsException e) {
+                // Idempotent startup: group may already be present in recovered server map.
+                continue;
             }
         }
     }
@@ -324,6 +366,11 @@ public final class RatisMultiShardConsensusEngine implements ConsensusEngine {
         NettyConfigKeys.Server.setPort(properties, hostPort.port());
         NettyConfigKeys.Server.setHost(properties, hostPort.host());
         RaftServerConfigKeys.setStorageDir(properties, List.of(config.storageDir().toFile()));
+        // Keep per-group direct-memory buffers bounded so 128-shard startup does not exceed JVM direct memory.
+        RaftServerConfigKeys.Log.setSegmentSizeMax(properties, SizeInBytes.valueOf("1MB"));
+        RaftServerConfigKeys.Log.setPreallocatedSize(properties, SizeInBytes.valueOf("1MB"));
+        RaftServerConfigKeys.Log.Appender.setBufferByteLimit(properties, SizeInBytes.valueOf("128KB"));
+        RaftServerConfigKeys.Log.setWriteBufferSize(properties, SizeInBytes.valueOf("512KB"));
         RaftClientConfigKeys.Rpc.setRequestTimeout(
             properties,
             TimeDuration.valueOf(config.requestTimeoutMillis(), TimeUnit.MILLISECONDS)
@@ -353,10 +400,19 @@ public final class RatisMultiShardConsensusEngine implements ConsensusEngine {
         if (server == null) {
             return;
         }
+        Thread closeThread = new Thread(() -> {
+            try {
+                server.close();
+            } catch (IOException ignored) {
+                // best effort shutdown on startup failure path
+            }
+        }, "notdynamo-ratis-close");
+        closeThread.setDaemon(true);
+        closeThread.start();
         try {
-            server.close();
-        } catch (IOException ignored) {
-            // best effort shutdown on startup failure path
+            closeThread.join(3000L);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
         }
     }
 
@@ -366,6 +422,13 @@ public final class RatisMultiShardConsensusEngine implements ConsensusEngine {
         } catch (IOException e) {
             throw new IllegalStateException("failed to create ratis storage dir " + storageDir, e);
         }
+    }
+
+    private static void suppressNettyInfoLogs() {
+        Logger.getLogger("org.apache.ratis.thirdparty.io.netty").setLevel(Level.WARNING);
+        Logger.getLogger("org.apache.ratis.thirdparty.io.netty.handler").setLevel(Level.WARNING);
+        Logger.getLogger("org.apache.ratis.thirdparty.io.netty.handler.logging").setLevel(Level.WARNING);
+        Logger.getLogger("org.apache.ratis.thirdparty.io.netty.handler.logging.LoggingHandler").setLevel(Level.WARNING);
     }
 
     private static String normalizeAddress(String address, String nodeId) {
@@ -402,6 +465,17 @@ public final class RatisMultiShardConsensusEngine implements ConsensusEngine {
         }
         String message = last.getMessage();
         return message == null || message.isBlank() ? last.getClass().getSimpleName() : message;
+    }
+
+    private static boolean isGroupAlreadyExists(Throwable throwable) {
+        Throwable cursor = throwable;
+        while (cursor != null) {
+            if (cursor instanceof AlreadyExistsException) {
+                return true;
+            }
+            cursor = cursor.getCause();
+        }
+        return false;
     }
 
     private record HostPort(String host, int port) {}
