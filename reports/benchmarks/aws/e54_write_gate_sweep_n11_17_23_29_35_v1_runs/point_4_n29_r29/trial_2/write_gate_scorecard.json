@@ -1,0 +1,68 @@
+{
+  "benchmark": "e2e_http_incluster_k6",
+  "category": "in-cluster-job",
+  "timestamp_utc": "2026-02-21T14:20:37Z",
+  "input_benchmark_json": "/Users/abhishek/workspace/projects/kivi2/NotDynamo/reports/benchmarks/aws/e2e_http_incluster_k6_latest.json",
+  "input_report": "reports/benchmarks/aws/incluster_runs/notdynamo-bench-k6-20260221141820",
+  "scorecard": {
+    "success_tps": 2380.68,
+    "error_rate_percent": 32.0219,
+    "put_error_count": 554814,
+    "put_timeout_count": 26354,
+    "put_timeout_fraction_of_put_errors": 0.0475006038059602,
+    "forward_error_count": 329303,
+    "consensus_reply_error_count": 225511,
+    "forward_error_fraction": 0.5935376540606402,
+    "consensus_reply_error_fraction": 0.40646234593935987,
+    "forward_hop_ratio_avg": 0.6339837586206896,
+    "generator_to_service_cpu_ratio": 0.170
+  },
+  "hotspots": [
+    {
+      "shard_id": 3,
+      "error_events": 86439
+    },
+    {
+      "shard_id": 7,
+      "error_events": 62626
+    },
+    {
+      "shard_id": 2,
+      "error_events": 59768
+    },
+    {
+      "shard_id": 9,
+      "error_events": 50779
+    },
+    {
+      "shard_id": 5,
+      "error_events": 46219
+    },
+    {
+      "shard_id": 21,
+      "error_events": 45881
+    },
+    {
+      "shard_id": 0,
+      "error_events": 45792
+    },
+    {
+      "shard_id": 1,
+      "error_events": 41378
+    },
+    {
+      "shard_id": 30,
+      "error_events": 39147
+    },
+    {
+      "shard_id": 29,
+      "error_events": 38492
+    }
+  ],
+  "acceptance_gate": {
+    "success_tps_gte_1000": true,
+    "error_rate_percent_lte_15": false,
+    "put_timeout_fraction_lte_0_60": true,
+    "generator_ratio_lt_0_25": true
+  }
+}

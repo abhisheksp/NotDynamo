@@ -8,6 +8,7 @@ REGION="${AWS_REGION:-us-west-2}"
 NAMESPACE="notdynamo"
 NODEGROUP_NAME="notdynamo-ng"
 DATA_STATEFULSET="notdynamo-data"
+CONTROL_PLANE_DEPLOYMENT="notdynamo-control-plane"
 SERVICE_NAME="notdynamo-data"
 
 NODE_COUNTS="11,17,23,29,35"
@@ -44,6 +45,10 @@ ORIGINAL_NODEGROUP_DESIRED=""
 ORIGINAL_NODEGROUP_MIN=""
 ORIGINAL_NODEGROUP_MAX=""
 ORIGINAL_DATA_REPLICAS=""
+ORIGINAL_SHARD_COUNT=""
+EFFECTIVE_SHARD_COUNT=""
+SHARD_COUNT_MIN_REQUIRED=""
+MAX_DATA_REPLICAS_IN_SWEEP=""
 RESTORE_ARMED=0
 
 usage() {
@@ -64,6 +69,7 @@ Options:
   --namespace <ns>                Namespace (default: notdynamo)
   --nodegroup-name <name>         Managed nodegroup name (default: notdynamo-ng)
   --data-statefulset <name>       Data StatefulSet name (default: notdynamo-data)
+  --control-plane-deployment <n>  Control-plane deployment (default: notdynamo-control-plane)
   --service <name>                Service name (default: notdynamo-data)
 
   --node-counts <csv>             Node counts, e.g. 11,17,23,29,35
@@ -116,6 +122,10 @@ while (( $# > 0 )); do
       ;;
     --data-statefulset)
       DATA_STATEFULSET="$2"
+      shift 2
+      ;;
+    --control-plane-deployment)
+      CONTROL_PLANE_DEPLOYMENT="$2"
       shift 2
       ;;
     --service)
@@ -279,6 +289,53 @@ infer_node_hourly_usd() {
   esac
 }
 
+resource_env_value() {
+  local kind="$1"
+  local name="$2"
+  local env_name="$3"
+  kubectl -n "$NAMESPACE" get "$kind" "$name" -o json | jq -r \
+    --arg env_name "$env_name" \
+    '[.spec.template.spec.containers[]?.env[]? | select(.name == $env_name) | .value][0] // empty'
+}
+
+ensure_shard_count_coverage() {
+  local max_data_replicas="$1"
+
+  local replication_factor
+  replication_factor="$(resource_env_value statefulset "$DATA_STATEFULSET" "NOTDYNAMO_REPLICATION_FACTOR")"
+  if [[ ! "$replication_factor" =~ ^[0-9]+$ ]] || (( replication_factor <= 0 )); then
+    replication_factor=3
+  fi
+
+  local current_shard_count
+  current_shard_count="$(resource_env_value statefulset "$DATA_STATEFULSET" "NOTDYNAMO_SHARD_COUNT")"
+  if [[ ! "$current_shard_count" =~ ^[0-9]+$ ]] || (( current_shard_count <= 0 )); then
+    current_shard_count=64
+  fi
+
+  SHARD_COUNT_MIN_REQUIRED=$(( max_data_replicas - replication_factor + 1 ))
+  if (( SHARD_COUNT_MIN_REQUIRED < 1 )); then
+    SHARD_COUNT_MIN_REQUIRED=1
+  fi
+  EFFECTIVE_SHARD_COUNT="$current_shard_count"
+
+  if (( current_shard_count >= SHARD_COUNT_MIN_REQUIRED )); then
+    return 0
+  fi
+
+  EFFECTIVE_SHARD_COUNT="$SHARD_COUNT_MIN_REQUIRED"
+  echo \
+    "Adjusting NOTDYNAMO_SHARD_COUNT from $current_shard_count to $EFFECTIVE_SHARD_COUNT for lockstep coverage (max_replicas=$max_data_replicas rf=$replication_factor)"
+  kubectl -n "$NAMESPACE" set env statefulset/"$DATA_STATEFULSET" NOTDYNAMO_SHARD_COUNT="$EFFECTIVE_SHARD_COUNT" >/dev/null
+  if kubectl -n "$NAMESPACE" get deployment "$CONTROL_PLANE_DEPLOYMENT" >/dev/null 2>&1; then
+    kubectl -n "$NAMESPACE" set env deployment/"$CONTROL_PLANE_DEPLOYMENT" NOTDYNAMO_SHARD_COUNT="$EFFECTIVE_SHARD_COUNT" >/dev/null
+  fi
+  kubectl -n "$NAMESPACE" rollout status "statefulset/$DATA_STATEFULSET" --timeout="${ROLLOUT_TIMEOUT_SEC}s" >/dev/null
+  if kubectl -n "$NAMESPACE" get deployment "$CONTROL_PLANE_DEPLOYMENT" >/dev/null 2>&1; then
+    kubectl -n "$NAMESPACE" rollout status "deployment/$CONTROL_PLANE_DEPLOYMENT" --timeout="${ROLLOUT_TIMEOUT_SEC}s" >/dev/null
+  fi
+}
+
 cluster_exists() {
   aws eks describe-cluster --name "$CLUSTER_NAME" --region "$REGION" >/dev/null 2>&1
 }
@@ -300,25 +357,41 @@ scale_nodegroup() {
     --region "$REGION" \
     --nodegroup-name "$NODEGROUP_NAME"
 
-  kubectl wait \
-    --for=condition=Ready \
-    node \
-    -l "eks.amazonaws.com/nodegroup=${NODEGROUP_NAME}" \
-    --timeout="${NODE_READY_TIMEOUT_SEC}s" >/dev/null
+  local selector="eks.amazonaws.com/nodegroup=${NODEGROUP_NAME}"
+  local deadline=$((SECONDS + NODE_READY_TIMEOUT_SEC))
+  while (( SECONDS < deadline )); do
+    local nodes_json
+    nodes_json="$(kubectl get nodes -l "$selector" -o json)"
+    local node_count ready_count
+    node_count="$(jq -r '.items | length' <<<"$nodes_json")"
+    ready_count="$(jq -r '[.items[] | select(any(.status.conditions[]?; .type=="Ready" and .status=="True"))] | length' <<<"$nodes_json")"
+    if [[ "$node_count" =~ ^[0-9]+$ && "$ready_count" =~ ^[0-9]+$ ]]; then
+      if (( node_count >= desired && ready_count >= desired )); then
+        return 0
+      fi
+    fi
+    sleep 5
+  done
 
-  local ready_count
-  ready_count="$(kubectl get nodes -l "eks.amazonaws.com/nodegroup=${NODEGROUP_NAME}" --no-headers 2>/dev/null | wc -l | tr -d ' ')"
-  if [[ -z "$ready_count" || "$ready_count" -lt "$desired" ]]; then
-    echo "expected at least $desired ready nodes in nodegroup '$NODEGROUP_NAME', found $ready_count" >&2
-    return 1
-  fi
+  local final_nodes final_ready
+  final_nodes="$(kubectl get nodes -l "$selector" --no-headers 2>/dev/null | wc -l | tr -d ' ')"
+  final_ready="$(kubectl get nodes -l "$selector" -o json | jq -r '[.items[] | select(any(.status.conditions[]?; .type=="Ready" and .status=="True"))] | length')"
+  echo "timed out waiting for nodegroup '$NODEGROUP_NAME' to reach $desired ready nodes (nodes=$final_nodes ready=$final_ready)" >&2
+  return 1
 }
 
 scale_data_plane() {
   local replicas="$1"
   echo "Scaling statefulset/$DATA_STATEFULSET to replicas=$replicas"
+  kubectl -n "$NAMESPACE" set env statefulset/"$DATA_STATEFULSET" NOTDYNAMO_CLUSTER_SIZE="$replicas" >/dev/null
+  if kubectl -n "$NAMESPACE" get deployment "$CONTROL_PLANE_DEPLOYMENT" >/dev/null 2>&1; then
+    kubectl -n "$NAMESPACE" set env deployment/"$CONTROL_PLANE_DEPLOYMENT" NOTDYNAMO_CLUSTER_SIZE="$replicas" >/dev/null
+  fi
   kubectl -n "$NAMESPACE" scale statefulset "$DATA_STATEFULSET" --replicas "$replicas" >/dev/null
   kubectl -n "$NAMESPACE" rollout status "statefulset/$DATA_STATEFULSET" --timeout="${ROLLOUT_TIMEOUT_SEC}s" >/dev/null
+  if kubectl -n "$NAMESPACE" get deployment "$CONTROL_PLANE_DEPLOYMENT" >/dev/null 2>&1; then
+    kubectl -n "$NAMESPACE" rollout status "deployment/$CONTROL_PLANE_DEPLOYMENT" --timeout="${ROLLOUT_TIMEOUT_SEC}s" >/dev/null
+  fi
 }
 
 restore_scale() {
@@ -340,6 +413,16 @@ restore_scale() {
   if [[ -n "$ORIGINAL_DATA_REPLICAS" ]]; then
     kubectl -n "$NAMESPACE" scale statefulset "$DATA_STATEFULSET" --replicas "$ORIGINAL_DATA_REPLICAS" >/dev/null
     kubectl -n "$NAMESPACE" rollout status "statefulset/$DATA_STATEFULSET" --timeout="${ROLLOUT_TIMEOUT_SEC}s" >/dev/null
+  fi
+  if [[ -n "$ORIGINAL_SHARD_COUNT" ]]; then
+    kubectl -n "$NAMESPACE" set env statefulset/"$DATA_STATEFULSET" NOTDYNAMO_SHARD_COUNT="$ORIGINAL_SHARD_COUNT" >/dev/null
+    if kubectl -n "$NAMESPACE" get deployment "$CONTROL_PLANE_DEPLOYMENT" >/dev/null 2>&1; then
+      kubectl -n "$NAMESPACE" set env deployment/"$CONTROL_PLANE_DEPLOYMENT" NOTDYNAMO_SHARD_COUNT="$ORIGINAL_SHARD_COUNT" >/dev/null
+    fi
+    kubectl -n "$NAMESPACE" rollout status "statefulset/$DATA_STATEFULSET" --timeout="${ROLLOUT_TIMEOUT_SEC}s" >/dev/null
+    if kubectl -n "$NAMESPACE" get deployment "$CONTROL_PLANE_DEPLOYMENT" >/dev/null 2>&1; then
+      kubectl -n "$NAMESPACE" rollout status "deployment/$CONTROL_PLANE_DEPLOYMENT" --timeout="${ROLLOUT_TIMEOUT_SEC}s" >/dev/null
+    fi
   fi
   set -e
 }
@@ -402,11 +485,27 @@ fi
 
 parse_csv_positive_ints "$NODE_COUNTS" "node-counts" NODE_COUNTS_ARRAY
 
+max_node_count=0
+for n in "${NODE_COUNTS_ARRAY[@]}"; do
+  if (( n > max_node_count )); then
+    max_node_count="$n"
+  fi
+done
+if [[ "$DATA_REPLICAS_MODE" == "lockstep" ]]; then
+  MAX_DATA_REPLICAS_IN_SWEEP="$max_node_count"
+else
+  MAX_DATA_REPLICAS_IN_SWEEP="$DATA_REPLICAS_FIXED"
+fi
+
 ORIGINAL_NODEGROUP_DESIRED="$(aws eks describe-nodegroup --cluster-name "$CLUSTER_NAME" --region "$REGION" --nodegroup-name "$NODEGROUP_NAME" --query 'nodegroup.scalingConfig.desiredSize' --output text)"
 ORIGINAL_NODEGROUP_MIN="$(aws eks describe-nodegroup --cluster-name "$CLUSTER_NAME" --region "$REGION" --nodegroup-name "$NODEGROUP_NAME" --query 'nodegroup.scalingConfig.minSize' --output text)"
 ORIGINAL_NODEGROUP_MAX="$(aws eks describe-nodegroup --cluster-name "$CLUSTER_NAME" --region "$REGION" --nodegroup-name "$NODEGROUP_NAME" --query 'nodegroup.scalingConfig.maxSize' --output text)"
 NODE_TYPE="$(aws eks describe-nodegroup --cluster-name "$CLUSTER_NAME" --region "$REGION" --nodegroup-name "$NODEGROUP_NAME" --query 'nodegroup.instanceTypes[0]' --output text)"
 ORIGINAL_DATA_REPLICAS="$(kubectl -n "$NAMESPACE" get statefulset "$DATA_STATEFULSET" -o jsonpath='{.spec.replicas}')"
+ORIGINAL_SHARD_COUNT="$(resource_env_value statefulset "$DATA_STATEFULSET" "NOTDYNAMO_SHARD_COUNT")"
+if [[ ! "$ORIGINAL_SHARD_COUNT" =~ ^[0-9]+$ ]] || (( ORIGINAL_SHARD_COUNT <= 0 )); then
+  ORIGINAL_SHARD_COUNT=""
+fi
 RESTORE_ARMED=1
 trap 'rc=$?; restore_scale; exit $rc' EXIT
 
@@ -416,12 +515,6 @@ fi
 if [[ -z "$NODE_HOURLY_USD" ]]; then
   echo "warning: no hourly estimate known for node type '$NODE_TYPE'; skipping budget guard" >&2
 else
-  max_node_count=0
-  for n in "${NODE_COUNTS_ARRAY[@]}"; do
-    if (( n > max_node_count )); then
-      max_node_count="$n"
-    fi
-  done
   node_volume_hourly="$(awk -v gib="$NODE_VOLUME_GIB" -v per_gb_month="$EBS_GP3_GB_MONTH_USD" 'BEGIN { printf "%.6f", (gib * per_gb_month) / 730.0 }')"
   max_hourly="$(awk \
     -v cp="$EKS_CONTROL_PLANE_HOURLY_USD" \
@@ -439,6 +532,8 @@ else
     echo "warning: proceeding over budget cap: estimated daily max=$max_daily USD cap=$MAX_DAILY_USD USD" >&2
   fi
 fi
+
+ensure_shard_count_coverage "$MAX_DATA_REPLICAS_IN_SWEEP"
 
 RUN_TS="$(date -u +%Y%m%dT%H%M%SZ)"
 RUN_TS_HUMAN="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
@@ -717,6 +812,9 @@ jq -n \
   --arg original_nodegroup_min "$ORIGINAL_NODEGROUP_MIN" \
   --arg original_nodegroup_max "$ORIGINAL_NODEGROUP_MAX" \
   --arg original_data_replicas "$ORIGINAL_DATA_REPLICAS" \
+  --arg max_data_replicas "$MAX_DATA_REPLICAS_IN_SWEEP" \
+  --arg required_min_shards "$SHARD_COUNT_MIN_REQUIRED" \
+  --arg effective_shards "$EFFECTIVE_SHARD_COUNT" \
   --arg best_node_count "$best_node_count" \
   --arg best_data_replicas "$best_data_replicas" \
   --arg best_median_success_tps "$best_median_success_tps" \
@@ -762,6 +860,11 @@ jq -n \
       max_daily_estimate_compute_only: (if $max_daily_estimate == "" then null else ($max_daily_estimate|tonumber) end)
     },
     restore_on_exit: ($restore_on_exit == "1"),
+    shard_count: {
+      max_data_replicas_in_sweep: ($max_data_replicas|tonumber),
+      required_min: ($required_min_shards|tonumber),
+      effective: ($effective_shards|tonumber)
+    },
     original_scale: {
       nodegroup_desired: ($original_nodegroup_desired|tonumber),
       nodegroup_min: ($original_nodegroup_min|tonumber),
@@ -795,6 +898,7 @@ jq -n \
   echo "- Node counts: \`$NODE_COUNTS\`"
   echo "- Repeats per point: \`$REPEATS\`"
   echo "- Data replicas mode: \`$DATA_REPLICAS_MODE\`"
+  echo "- Shard count effective: \`$EFFECTIVE_SHARD_COUNT\` (required min for sweep: \`$SHARD_COUNT_MIN_REQUIRED\`)"
   if [[ -n "$DATA_REPLICAS_FIXED" ]]; then
     echo "- Fixed data replicas: \`$DATA_REPLICAS_FIXED\`"
   fi

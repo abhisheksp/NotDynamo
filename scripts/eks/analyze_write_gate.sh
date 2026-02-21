@@ -147,8 +147,8 @@ if [[ -n "$OUTPUT_MD" ]]; then
   {
     echo "# NotDynamo Write Gate Scorecard"
     echo
-    echo "- Input: \\`$(realpath "$INPUT_JSON")\\`"
-    echo "- Timestamp (UTC): \\`$(printf '%s' "$SCORECARD_JSON" | jq -r '.timestamp_utc // "unknown"')\\`"
+    printf -- '- Input: `%s`\n' "$INPUT_JSON_ABS"
+    printf -- '- Timestamp (UTC): `%s`\n' "$(printf '%s' "$SCORECARD_JSON" | jq -r '.timestamp_utc // "unknown"')"
     echo
     echo "## Key Metrics"
     echo

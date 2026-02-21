@@ -1,11 +1,11 @@
 # Task Checkpoint
 
-- Timestamp (UTC): `2026-02-21 14:48:18Z`
+- Timestamp (UTC): `2026-02-21 13:33:21Z`
 - Issue: `nd-jui.33`
 - Claimed now: `0`
 - Status override: `in_progress`
 - Closed now: `0`
-- Note: `Completed full E54 lockstep sweep on EKS for points 11,17,23,29,35 (2 trials each). Best median success TPS=2711.87 at 35/35; success TPS >=1000 achieved for 17/23/29/35; timeout fraction and generator ratio gates passed at all >=17 points, but error_rate_percent<=15 gate failed at every point (best median 35.149%). Sweep artifacts: reports/benchmarks/aws/e54_write_gate_sweep_n11_17_23_29_35_v1.{json,md,csv}.`
+- Note: `Validated E54 sweep execution on 3/5/7 and fixed sweep automation: node readiness wait, cluster-size env propagation, shard-count coverage auto-adjust (min shards = max replicas - RF + 1), and restore of shard-count on exit.`
 
 ## Issue Snapshot
 
@@ -20,7 +20,6 @@ Run lockstep node/data replica sweeps with RF=3 and standardized write gate prof
 NOTES
 [2026-02-21 02:57:10Z] Started E54 execution: added eks_write_gate_sweep.sh for repeated write-gate runs per node-count point with median aggregation and budget guardrails.
 [2026-02-21 13:33:21Z] Validated E54 sweep execution on 3/5/7 and fixed sweep automation: node readiness wait, cluster-size env propagation, shard-count coverage auto-adjust (min shards = max replicas - RF + 1), and restore of shard-count on exit.
-[2026-02-21 14:48:18Z] Completed full E54 lockstep sweep on EKS for points 11,17,23,29,35 (2 trials each). Best median success TPS=2711.87 at 35/35; success TPS >=1000 achieved for 17/23/29/35; timeout fraction and generator ratio gates passed at all >=17 points, but error_rate_percent<=15 gate failed at every point (best median 35.149%). Sweep artifacts: reports/benchmarks/aws/e54_write_gate_sweep_n11_17_23_29_35_v1.{json,md,csv}.
 
 ACCEPTANCE CRITERIA
 Sweep report includes success_tps/error/timeout_fraction/leader_variance/service_cpu saturation for 11,17,23,29,35 points.
@@ -51,10 +50,8 @@ PARENT
 ```text
 codex/e20-true-raft-integration
 7269b5f E49-E54: write-path scaling controls, rebalance loop, and write-gate sweep
- M deploy/k8s/overlays/eks/patch-eks-scheduling.yaml
  M reports/benchmarks/aws/e2e_http_incluster_k6_latest.json
  M reports/benchmarks/aws/e2e_http_incluster_k6_latest.md
- M reports/checkpoints/nd-jui.33_latest.md
  M reports/tasks/issues_latest.jsonl
  M scripts/eks/analyze_write_gate.sh
  M scripts/eks/eks_write_gate_run.sh
@@ -111,26 +108,6 @@ codex/e20-true-raft-integration
 ?? reports/benchmarks/aws/e2e_http_incluster_k6_20260221T132405Z.md
 ?? reports/benchmarks/aws/e2e_http_incluster_k6_20260221T132601Z.json
 ?? reports/benchmarks/aws/e2e_http_incluster_k6_20260221T132601Z.md
-?? reports/benchmarks/aws/e2e_http_incluster_k6_20260221T133802Z.json
-?? reports/benchmarks/aws/e2e_http_incluster_k6_20260221T133802Z.md
-?? reports/benchmarks/aws/e2e_http_incluster_k6_20260221T134006Z.json
-?? reports/benchmarks/aws/e2e_http_incluster_k6_20260221T134006Z.md
-?? reports/benchmarks/aws/e2e_http_incluster_k6_20260221T134813Z.json
-?? reports/benchmarks/aws/e2e_http_incluster_k6_20260221T134813Z.md
-?? reports/benchmarks/aws/e2e_http_incluster_k6_20260221T135024Z.json
-?? reports/benchmarks/aws/e2e_http_incluster_k6_20260221T135024Z.md
-?? reports/benchmarks/aws/e2e_http_incluster_k6_20260221T140102Z.json
-?? reports/benchmarks/aws/e2e_http_incluster_k6_20260221T140102Z.md
-?? reports/benchmarks/aws/e2e_http_incluster_k6_20260221T140317Z.json
-?? reports/benchmarks/aws/e2e_http_incluster_k6_20260221T140317Z.md
-?? reports/benchmarks/aws/e2e_http_incluster_k6_20260221T141601Z.json
-?? reports/benchmarks/aws/e2e_http_incluster_k6_20260221T141601Z.md
-?? reports/benchmarks/aws/e2e_http_incluster_k6_20260221T141820Z.json
-?? reports/benchmarks/aws/e2e_http_incluster_k6_20260221T141820Z.md
-?? reports/benchmarks/aws/e2e_http_incluster_k6_20260221T143726Z.json
-?? reports/benchmarks/aws/e2e_http_incluster_k6_20260221T143726Z.md
-?? reports/benchmarks/aws/e2e_http_incluster_k6_20260221T143955Z.json
-?? reports/benchmarks/aws/e2e_http_incluster_k6_20260221T143955Z.md
 ?? reports/benchmarks/aws/e43_lockstep_isolated_20260219T075725Z.csv
 ?? reports/benchmarks/aws/e43_lockstep_isolated_20260219T075725Z_runs/
 ?? reports/benchmarks/aws/e43_lockstep_isolated_20260219T080941Z.csv
@@ -205,10 +182,6 @@ codex/e20-true-raft-integration
 ?? reports/benchmarks/aws/e48_k6_trace_20260219T210318Z.md
 ?? reports/benchmarks/aws/e54_gate_n3_run1.json
 ?? reports/benchmarks/aws/e54_gate_n3_run1.md
-?? reports/benchmarks/aws/e54_write_gate_sweep_n11_17_23_29_35_v1.csv
-?? reports/benchmarks/aws/e54_write_gate_sweep_n11_17_23_29_35_v1.json
-?? reports/benchmarks/aws/e54_write_gate_sweep_n11_17_23_29_35_v1.md
-?? reports/benchmarks/aws/e54_write_gate_sweep_n11_17_23_29_35_v1_runs/
 ?? reports/benchmarks/aws/e54_write_gate_sweep_n3_5_7.csv
 ?? reports/benchmarks/aws/e54_write_gate_sweep_n3_5_7_runs/
 ?? reports/benchmarks/aws/e54_write_gate_sweep_n3_5_7_v2.csv
@@ -295,16 +268,6 @@ codex/e20-true-raft-integration
 ?? reports/benchmarks/aws/incluster_runs/notdynamo-bench-k6-20260221131832/
 ?? reports/benchmarks/aws/incluster_runs/notdynamo-bench-k6-20260221132405/
 ?? reports/benchmarks/aws/incluster_runs/notdynamo-bench-k6-20260221132601/
-?? reports/benchmarks/aws/incluster_runs/notdynamo-bench-k6-20260221133802/
-?? reports/benchmarks/aws/incluster_runs/notdynamo-bench-k6-20260221134006/
-?? reports/benchmarks/aws/incluster_runs/notdynamo-bench-k6-20260221134813/
-?? reports/benchmarks/aws/incluster_runs/notdynamo-bench-k6-20260221135024/
-?? reports/benchmarks/aws/incluster_runs/notdynamo-bench-k6-20260221140102/
-?? reports/benchmarks/aws/incluster_runs/notdynamo-bench-k6-20260221140317/
-?? reports/benchmarks/aws/incluster_runs/notdynamo-bench-k6-20260221141601/
-?? reports/benchmarks/aws/incluster_runs/notdynamo-bench-k6-20260221141820/
-?? reports/benchmarks/aws/incluster_runs/notdynamo-bench-k6-20260221143726/
-?? reports/benchmarks/aws/incluster_runs/notdynamo-bench-k6-20260221143955/
 ?? reports/benchmarks/aws/lockstep_incluster_qmax8_20260218T085005Z.csv
 ?? reports/benchmarks/aws/lockstep_incluster_qmax8_20260218T085005Z_runs/
 ?? reports/benchmarks/aws/lockstep_incluster_qmax8_20260218T085732Z.csv
@@ -375,7 +338,6 @@ codex/e20-true-raft-integration
 ?? reports/checkpoints/nd-jui.24_20260220T132743Z.md
 ?? reports/checkpoints/nd-jui.24_20260220T140231Z.md
 ?? reports/checkpoints/nd-jui.33_20260221T133321Z.md
-?? reports/checkpoints/nd-jui.33_20260221T144818Z.md
 ?? reports/checkpoints/nd-jui_20260218T223330Z.md
 ?? reports/checkpoints/nd-jui_20260219T090040Z.md
 ```

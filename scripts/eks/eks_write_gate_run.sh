@@ -47,8 +47,8 @@ Options:
   --service <name>             Service name (default: notdynamo-data)
   --keyspace <n>               Keyspace (default: 20000)
   --value-bytes <n>            Value bytes (default: 256)
-  --distribution <name>        uniform|sequential|zipf (default: uniform)
-  --zipf-theta <0..1>          Zipf theta (default: 0.90)
+  --distribution <name>        uniform|sequential (default: uniform)
+  --zipf-theta <0..1>          Reserved (ignored for k6 path; default: 0.90)
   --preload <true|false>       Preload phase (default: false)
   --skip-build                 Reuse existing benchmark image
   --image <image-ref>          k6 image override
@@ -168,7 +168,6 @@ cmd=(
   --value-bytes "$VALUE_BYTES"
   --read-ratio "$READ_RATIO"
   --distribution "$DISTRIBUTION"
-  --zipf-theta "$ZIPF_THETA"
   --preload "$PRELOAD"
   --vus "$VUS"
   --duration "$DURATION"
