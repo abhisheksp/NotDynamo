@@ -1,6 +1,6 @@
 {
   "metadata": {
-    "generated_at_utc": "2026-02-22T22:08:01Z",
+    "generated_at_utc": "2026-02-22T22:53:14Z",
     "report_type": "notdynamo_benchmark_wrapup",
     "sources": {
       "read_input_json": "/Users/abhishek/workspace/projects/kivi2/NotDynamo/reports/benchmarks/aws/e48_k6_read_hit_heavy_fix_20260219T222038Z.json",
@@ -71,6 +71,8 @@
     }
   },
   "read_upperbound": {
+    "evidence_scope": "single_point_existing_artifact",
+    "claim_strength": "evidence_only_not_proven_cluster_ceiling_across_scales",
     "source_summary": {
       "benchmark": "existing_read_upperbound_single_point",
       "status": "PASS",
@@ -311,7 +313,7 @@
   },
   "bottlenecks": {
     "read_path": {
-      "summary": "Read upper-bound should be interpreted using read-hit-heavy measured runs; check read_not_found_count and write_count to confirm pure read-hit behavior.",
+      "summary": "Read throughput currently uses single-point read-hit-heavy evidence only; it is not a proven cluster ceiling across N. Check read_not_found_count and write_count to confirm pure read-hit behavior.",
       "points_with_read_misses": [],
       "points_with_write_activity": []
     },

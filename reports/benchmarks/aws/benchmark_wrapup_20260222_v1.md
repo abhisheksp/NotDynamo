@@ -1,18 +1,19 @@
 # NotDynamo Benchmark Wrap-Up (Single-AZ EKS)
 
-- Generated (UTC): `2026-02-22T22:08:01Z`
+- Generated (UTC): `2026-02-22T22:53:14Z`
 - Formal benchmark path: `in-cluster-k6`
 - Throughput semantics: **cluster-wide aggregate TPS**
 
 ## Executive Summary
 
 - Read upper-bound evidence (existing single-point read-hit k6 run) best median success TPS: `N=3 => 9883.41` (attempted: `9883.41`)
+- Read result scope: **single-point evidence only** (not a proven multi-`N` cluster read ceiling).
 - Write upper-bound baseline (E54 write-heavy mixed, 90% writes / 10% reads) best median cluster success TPS: `N=35 => 2711.87`
 - Write attempted TPS split is reported as exact only if preserved by sweep artifacts; for E54 it may be estimated from success TPS + error rate + configured mix.
 
 ## Methodology and Benchmark Categories
 
-- Read upper-bound: existing single-point read-hit-heavy in-cluster k6 artifact reused for wrap-up (budget-limited fallback; no new E56 N-sweep in this session).
+- Read upper-bound: existing single-point read-hit-heavy in-cluster k6 artifact reused for wrap-up (budget-limited fallback; no new E56 N-sweep in this session). This is evidence, not a proven read ceiling across scales.
 - Write upper-bound baseline: reused E54 in-cluster write-heavy mixed sweep (formal gate profile).
 - External LoadBalancer/NLB path remains a visibility benchmark, not a gating benchmark, for this wrap-up.
 
@@ -74,7 +75,7 @@
 ## Benchmark Caveats
 
 - Read benchmark is an in-cluster path (benchmark pods inside EKS); it does not include external LB ingress hop.
-- Read upper-bound currently reflects **existing single-point evidence** only because the planned read N-sweep was skipped to stay within AWS spend limits.
+- Read upper-bound currently reflects **existing single-point evidence** only because the planned read N-sweep was skipped to stay within AWS spend limits; treat it as provisional until the read N-sweep is executed.
 - k6 GET `404` counts as success in the workload script. Read-hit upper-bound runs therefore explicitly report `read_not_found_count` and expect it to be zero (or documented if non-zero).
 - E54 write attempted read/write TPS split may be estimated if exact per-trial k6 JSONs were not preserved by the sweep artifacts.
 

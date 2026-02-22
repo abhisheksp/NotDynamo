@@ -410,6 +410,18 @@ jq -n \
       }
     },
     read_upperbound: {
+      evidence_scope: (
+        if (($r.sweep.mode // "") == "single_point_existing_artifact")
+        then "single_point_existing_artifact"
+        else "sweep"
+        end
+      ),
+      claim_strength: (
+        if (($r.sweep.mode // "") == "single_point_existing_artifact")
+        then "evidence_only_not_proven_cluster_ceiling_across_scales"
+        else "sweep_based_upperbound_candidate"
+        end
+      ),
       source_summary: {
         benchmark: ($r.benchmark // null),
         status: ($r.status // null),
@@ -459,7 +471,12 @@ jq -n \
     },
     bottlenecks: {
       read_path: {
-        summary: "Read upper-bound should be interpreted using read-hit-heavy measured runs; check read_not_found_count and write_count to confirm pure read-hit behavior.",
+        summary: (
+          if (($r.sweep.mode // "") == "single_point_existing_artifact")
+          then "Read throughput currently uses single-point read-hit-heavy evidence only; it is not a proven cluster ceiling across N. Check read_not_found_count and write_count to confirm pure read-hit behavior."
+          else "Read upper-bound should be interpreted using read-hit-heavy measured runs; check read_not_found_count and write_count to confirm pure read-hit behavior."
+          end
+        ),
         points_with_read_misses: [ $read_points[] | select((.read_not_found_count // 0) > 0) | {node_count, read_not_found_count} ],
         points_with_write_activity: [ $read_points[] | select((.write_count // 0) > 0) | {node_count, write_count} ]
       },
@@ -544,7 +561,7 @@ write_split_method="$(jq -r '.write_upperbound_baseline.attempted_split_fallback
 
 if [[ "$READ_INPUT_TYPE" == "read_k6_single_run" || "$READ_SWEEP_MODE" == "single_point_existing_artifact" ]]; then
   READ_EXEC_SUMMARY_LABEL="Read upper-bound evidence (existing single-point read-hit k6 run)"
-  READ_METHOD_BULLET="- Read upper-bound: existing single-point read-hit-heavy in-cluster k6 artifact reused for wrap-up (budget-limited fallback; no new E56 N-sweep in this session)."
+  READ_METHOD_BULLET="- Read upper-bound: existing single-point read-hit-heavy in-cluster k6 artifact reused for wrap-up (budget-limited fallback; no new E56 N-sweep in this session). This is evidence, not a proven read ceiling across scales."
   READ_SOURCE_LABEL="Read k6 artifact"
 else
   READ_EXEC_SUMMARY_LABEL="Read upper-bound (read-hit-heavy, preloaded)"
@@ -562,6 +579,9 @@ fi
   echo "## Executive Summary"
   echo
   echo "- $READ_EXEC_SUMMARY_LABEL best median success TPS: \`N=$read_best_node => $read_best_success\` (attempted: \`$read_best_attempted\`)"
+  if [[ "$READ_INPUT_TYPE" == "read_k6_single_run" || "$READ_SWEEP_MODE" == "single_point_existing_artifact" ]]; then
+    echo "- Read result scope: **single-point evidence only** (not a proven multi-\`N\` cluster read ceiling)."
+  fi
   echo "- Write upper-bound baseline (E54 write-heavy mixed, 90% writes / 10% reads) best median cluster success TPS: \`N=$write_best_node => $write_best_success\`"
   echo "- Write attempted TPS split is reported as exact only if preserved by sweep artifacts; for E54 it may be estimated from success TPS + error rate + configured mix."
   echo
@@ -619,7 +639,7 @@ fi
   echo
   echo "- Read benchmark is an in-cluster path (benchmark pods inside EKS); it does not include external LB ingress hop."
   if [[ "$READ_INPUT_TYPE" == "read_k6_single_run" || "$READ_SWEEP_MODE" == "single_point_existing_artifact" ]]; then
-    echo "- Read upper-bound currently reflects **existing single-point evidence** only because the planned read N-sweep was skipped to stay within AWS spend limits."
+    echo "- Read upper-bound currently reflects **existing single-point evidence** only because the planned read N-sweep was skipped to stay within AWS spend limits; treat it as provisional until the read N-sweep is executed."
   fi
   echo "- k6 GET \`404\` counts as success in the workload script. Read-hit upper-bound runs therefore explicitly report \`read_not_found_count\` and expect it to be zero (or documented if non-zero)."
   echo "- E54 write attempted read/write TPS split may be estimated if exact per-trial k6 JSONs were not preserved by the sweep artifacts."

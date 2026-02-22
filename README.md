@@ -171,7 +171,8 @@ Benchmark methodology snapshot:
 
 - Formal benchmark path is **in-cluster k6** (cluster-wide aggregate TPS, not per-pod TPS).
 - External LoadBalancer/NLB benchmarks are visibility runs, not the gating metric in the current wrap-up.
-- Read upper-bound currently uses **existing single-point read-hit evidence** because the planned read `N` sweep was skipped to stay within AWS spend limits.
+- Read throughput currently uses **existing single-point read-hit evidence** because the planned read `N` sweep was skipped to stay within AWS spend limits.
+- Treat the current read number as **evidence**, not a proven cluster read ceiling across scales, until the read `N` sweep is executed.
 
 ### Read Upper-Bound (Current Evidence)
 
@@ -184,7 +185,7 @@ Single-point read-hit-heavy k6 result (existing artifact, `N=3` data replicas):
 Notes:
 
 - This is a clean read-hit-heavy in-cluster k6 run (`write_count=0`, `read_not_found_count=0`).
-- A comparable read `N` sweep (`11,17,23,29,35`) is planned but not executed in this wrap-up due budget limits.
+- A comparable read `N` sweep (`11,17,23,29,35`) is planned but not executed in this wrap-up due budget limits, so this is not yet a proven multi-`N` ceiling.
 
 ### Write Upper-Bound Baseline (E54, Write-Heavy Mixed)
 
