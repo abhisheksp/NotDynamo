@@ -1,31 +1,24 @@
 # Task Checkpoint
 
 - Timestamp (UTC): `2026-02-22 18:48:23Z`
-- Issue: `nd-jui.33`
-- Claimed now: `0`
-- Status override: `none`
-- Closed now: `1`
-- Note: `E54 already completed earlier; closing before wrap-up tasks (E56-E59).`
+- Issue: `nd-jui.35`
+- Claimed now: `1`
+- Status override: `in_progress`
+- Closed now: `0`
+- Note: `Started E56 implementation: added staged read-hit upper-bound EKS sweep script and beginning validation.`
 
 ## Issue Snapshot
 
 ```text
-✓ nd-jui.33 · E54 Horizontal write scaling sweep (single-AZ)   [● P1 · CLOSED]
+◐ nd-jui.35 · E56 Read-hit upper-bound EKS sweep (staged preload + measured reads)   [● P1 · IN_PROGRESS]
 Owner: Abhishek Srinivasa Raju Padmavathi · Assignee: Abhishek Srinivasa Raju Padmavathi · Type: task
-Created: 2026-02-20 · Updated: 2026-02-22
-Close reason: Closed
+Created: 2026-02-22 · Updated: 2026-02-22
 
 DESCRIPTION
-Run lockstep node/data replica sweeps with RF=3 and standardized write gate profile; collect median per point.
+Run lockstep single-AZ EKS sweep for N=11,17,23,29,35 with staged preload-only k6 job followed by measured read-hit-heavy k6 runs (2 trials/point) and median aggregation.
 
 NOTES
-[2026-02-21 02:57:10Z] Started E54 execution: added eks_write_gate_sweep.sh for repeated write-gate runs per node-count point with median aggregation and budget guardrails.
-[2026-02-21 13:33:21Z] Validated E54 sweep execution on 3/5/7 and fixed sweep automation: node readiness wait, cluster-size env propagation, shard-count coverage auto-adjust (min shards = max replicas - RF + 1), and restore of shard-count on exit.
-[2026-02-21 14:48:18Z] Completed full E54 lockstep sweep on EKS for points 11,17,23,29,35 (2 trials each). Best median success TPS=2711.87 at 35/35; success TPS >=1000 achieved for 17/23/29/35; timeout fraction and generator ratio gates passed at all >=17 points, but error_rate_percent<=15 gate failed at every point (best median 35.149%). Sweep artifacts: reports/benchmarks/aws/e54_write_gate_sweep_n11_17_23_29_35_v1.{json,md,csv}.
-[2026-02-22 18:48:23Z] E54 already completed earlier; closing before wrap-up tasks (E56-E59).
-
-ACCEPTANCE CRITERIA
-Sweep report includes success_tps/error/timeout_fraction/leader_variance/service_cpu saturation for 11,17,23,29,35 points.
+[2026-02-22 18:48:23Z] Started E56 implementation: added staged read-hit upper-bound EKS sweep script and beginning validation.
 
 LABELS: benchmark, roadmap, single-az
 

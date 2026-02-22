@@ -1,0 +1,408 @@
+{
+  "metadata": {
+    "generated_at_utc": "2026-02-22T22:08:01Z",
+    "report_type": "notdynamo_benchmark_wrapup",
+    "sources": {
+      "read_input_json": "/Users/abhishek/workspace/projects/kivi2/NotDynamo/reports/benchmarks/aws/e48_k6_read_hit_heavy_fix_20260219T222038Z.json",
+      "read_input_type": "read_k6_single_run",
+      "write_sweep_json": "/Users/abhishek/workspace/projects/kivi2/NotDynamo/reports/benchmarks/aws/e54_write_gate_sweep_n11_17_23_29_35_v1.json"
+    }
+  },
+  "methodology": {
+    "benchmark_scope": "single-az-eks",
+    "formal_path": "in-cluster-k6",
+    "throughput_semantics": "cluster-wide aggregate tps",
+    "notes": [
+      "Read upper-bound uses an existing single-point read-hit-heavy k6 artifact (budget-limited fallback; no new E56 N-sweep was run in this session).",
+      "Write upper-bound baseline reuses E54 write-heavy mixed sweep (read_ratio=0.10), not pure 100% writes.",
+      "GET 404 is treated as success in the k6 workload script; read-hit sweep checks read_not_found_count separately."
+    ],
+    "read_upperbound_profile": {
+      "source_benchmark": "existing_read_upperbound_single_point",
+      "sweep": {
+        "node_counts": "3",
+        "repeats": 1,
+        "mode": "single_point_existing_artifact"
+      },
+      "benchmark_profile": {
+        "source_artifact_type": "k6_single_run",
+        "measured_stage": {
+          "read_ratio": 1.0,
+          "distribution": "uniform",
+          "duration": "120s",
+          "vus_per_pod": 64,
+          "parallelism": 8,
+          "completions": 8,
+          "keyspace": 500,
+          "value_bytes": 256,
+          "request_timeout_ms": 6000,
+          "preload": false,
+          "skip_main": false
+        }
+      },
+      "node_type": null,
+      "shard_count": null
+    },
+    "write_upperbound_baseline_profile": {
+      "source_benchmark": "eks_write_gate_scaling_sweep",
+      "sweep": {
+        "node_counts": "11,17,23,29,35",
+        "repeats": 2,
+        "data_replicas_mode": "lockstep",
+        "data_replicas_fixed": null
+      },
+      "benchmark_profile": {
+        "read_ratio": 0.10,
+        "vus": 32,
+        "duration": "90s",
+        "request_timeout_ms": 5000,
+        "keyspace": 20000,
+        "value_bytes": 256,
+        "distribution": "uniform",
+        "zipf_theta": 0.90,
+        "preload": false
+      },
+      "node_type": "t3.large",
+      "shard_count": {
+        "max_data_replicas_in_sweep": 35,
+        "required_min": 33,
+        "effective": 33
+      }
+    }
+  },
+  "read_upperbound": {
+    "source_summary": {
+      "benchmark": "existing_read_upperbound_single_point",
+      "status": "PASS",
+      "cluster_name": "notdynamo-eks",
+      "region": "us-west-2",
+      "node_type": null,
+      "best_point": {
+        "node_count": 3,
+        "data_replicas": 3,
+        "median_success_read_tps": 9883.41
+      },
+      "summary_csv": null,
+      "run_reports_root": "reports/benchmarks/aws/incluster_runs/notdynamo-bench-k6-20260219222110"
+    },
+    "points": [
+      {
+        "point_index": 1,
+        "node_count": 3,
+        "data_replicas": 3,
+        "status": "PASS",
+        "estimated_hourly_usd_compute_only": null,
+        "success_tps": 9883.41,
+        "attempted_tps": 9883.41,
+        "error_rate_percent": 0,
+        "p50_ms": 50.078,
+        "p95_ms": 61.183,
+        "p99_ms": 77.536,
+        "read_count": 1186486,
+        "write_count": 0,
+        "read_not_found_count": 0,
+        "generator_to_service_cpu_ratio": 0,
+        "service_cpu_mcores_sum": 30,
+        "generator_cpu_mcores_sum": 0,
+        "cluster_node_count": 14,
+        "acceptance_gate_median": {
+          "write_count_zero": true,
+          "read_not_found_zero": true,
+          "all_trials_write_count_zero": true,
+          "all_trials_read_not_found_zero": true
+        },
+        "preload": null
+      }
+    ],
+    "best_point": {
+      "point_index": 1,
+      "node_count": 3,
+      "data_replicas": 3,
+      "status": "PASS",
+      "estimated_hourly_usd_compute_only": null,
+      "success_tps": 9883.41,
+      "attempted_tps": 9883.41,
+      "error_rate_percent": 0.0000,
+      "p50_ms": 50.078,
+      "p95_ms": 61.183,
+      "p99_ms": 77.536,
+      "read_count": 1186486,
+      "write_count": 0,
+      "read_not_found_count": 0,
+      "generator_to_service_cpu_ratio": 0.000,
+      "service_cpu_mcores_sum": 30.000,
+      "generator_cpu_mcores_sum": 0.000,
+      "cluster_node_count": 14,
+      "acceptance_gate_median": {
+        "write_count_zero": true,
+        "read_not_found_zero": true,
+        "all_trials_write_count_zero": true,
+        "all_trials_read_not_found_zero": true
+      },
+      "preload": null
+    }
+  },
+  "write_upperbound_baseline": {
+    "source_summary": {
+      "benchmark": "eks_write_gate_scaling_sweep",
+      "status": "PASS",
+      "cluster_name": "notdynamo-eks",
+      "region": "us-west-2",
+      "node_type": "t3.large",
+      "best_point": {
+        "node_count": 35,
+        "data_replicas": 35,
+        "median_success_tps": 2711.87
+      },
+      "summary_csv": "reports/benchmarks/aws/e54_write_gate_sweep_n11_17_23_29_35_v1.csv",
+      "run_reports_root": "reports/benchmarks/aws/e54_write_gate_sweep_n11_17_23_29_35_v1_runs"
+    },
+    "attempted_split_fallback": {
+      "configured_read_ratio": 0.10,
+      "configured_write_ratio": 0.9,
+      "method_when_exact_missing": "attempted_total_tps = success_tps / (1 - error_rate_percent/100); split by configured read/write ratio"
+    },
+    "points": [
+      {
+        "point_index": 1,
+        "node_count": 11,
+        "data_replicas": 11,
+        "status": "PASS",
+        "estimated_hourly_usd_compute_only": 1.0152,
+        "success_tps": 195.865,
+        "attempted_tps_total": 340.651,
+        "attempted_tps_read": 34.065,
+        "attempted_tps_write": 306.586,
+        "attempted_split_mode": "estimated_from_success_tps_error_rate_and_configured_mix",
+        "error_rate_percent": 42.503,
+        "timeout_fraction": 0.232,
+        "forward_error_fraction": 0.923,
+        "consensus_reply_error_fraction": 0.077,
+        "forward_hop_ratio_avg": 0.753,
+        "generator_to_service_cpu_ratio": 0.055,
+        "acceptance_gate_median": {
+          "success_tps_gte_1000": false,
+          "error_rate_percent_lte_15": false,
+          "put_timeout_fraction_lte_0_60": true,
+          "generator_ratio_lt_0_25": true
+        }
+      },
+      {
+        "point_index": 2,
+        "node_count": 17,
+        "data_replicas": 17,
+        "status": "PASS",
+        "estimated_hourly_usd_compute_only": 1.5144,
+        "success_tps": 1299.3,
+        "attempted_tps_total": 2201.487,
+        "attempted_tps_read": 220.149,
+        "attempted_tps_write": 1981.338,
+        "attempted_split_mode": "estimated_from_success_tps_error_rate_and_configured_mix",
+        "error_rate_percent": 40.981,
+        "timeout_fraction": 0.063,
+        "forward_error_fraction": 0.714,
+        "consensus_reply_error_fraction": 0.286,
+        "forward_hop_ratio_avg": 0.668,
+        "generator_to_service_cpu_ratio": 0.127,
+        "acceptance_gate_median": {
+          "success_tps_gte_1000": true,
+          "error_rate_percent_lte_15": false,
+          "put_timeout_fraction_lte_0_60": true,
+          "generator_ratio_lt_0_25": true
+        }
+      },
+      {
+        "point_index": 3,
+        "node_count": 23,
+        "data_replicas": 23,
+        "status": "PASS",
+        "estimated_hourly_usd_compute_only": 2.0136,
+        "success_tps": 1590.23,
+        "attempted_tps_total": 3251.452,
+        "attempted_tps_read": 325.145,
+        "attempted_tps_write": 2926.307,
+        "attempted_split_mode": "estimated_from_success_tps_error_rate_and_configured_mix",
+        "error_rate_percent": 51.092,
+        "timeout_fraction": 0.024,
+        "forward_error_fraction": 0.56,
+        "consensus_reply_error_fraction": 0.44,
+        "forward_hop_ratio_avg": 0.613,
+        "generator_to_service_cpu_ratio": 0.158,
+        "acceptance_gate_median": {
+          "success_tps_gte_1000": true,
+          "error_rate_percent_lte_15": false,
+          "put_timeout_fraction_lte_0_60": true,
+          "generator_ratio_lt_0_25": true
+        }
+      },
+      {
+        "point_index": 4,
+        "node_count": 29,
+        "data_replicas": 29,
+        "status": "PASS",
+        "estimated_hourly_usd_compute_only": 2.5128,
+        "success_tps": 2079.705,
+        "attempted_tps_total": 3345.196,
+        "attempted_tps_read": 334.52,
+        "attempted_tps_write": 3010.676,
+        "attempted_split_mode": "estimated_from_success_tps_error_rate_and_configured_mix",
+        "error_rate_percent": 37.83,
+        "timeout_fraction": 0.048,
+        "forward_error_fraction": 0.591,
+        "consensus_reply_error_fraction": 0.409,
+        "forward_hop_ratio_avg": 0.636,
+        "generator_to_service_cpu_ratio": 0.143,
+        "acceptance_gate_median": {
+          "success_tps_gte_1000": true,
+          "error_rate_percent_lte_15": false,
+          "put_timeout_fraction_lte_0_60": true,
+          "generator_ratio_lt_0_25": true
+        }
+      },
+      {
+        "point_index": 5,
+        "node_count": 35,
+        "data_replicas": 35,
+        "status": "PASS",
+        "estimated_hourly_usd_compute_only": 3.0120,
+        "success_tps": 2711.87,
+        "attempted_tps_total": 4181.697,
+        "attempted_tps_read": 418.17,
+        "attempted_tps_write": 3763.527,
+        "attempted_split_mode": "estimated_from_success_tps_error_rate_and_configured_mix",
+        "error_rate_percent": 35.149,
+        "timeout_fraction": 0.021,
+        "forward_error_fraction": 0.637,
+        "consensus_reply_error_fraction": 0.363,
+        "forward_hop_ratio_avg": 0.645,
+        "generator_to_service_cpu_ratio": 0.127,
+        "acceptance_gate_median": {
+          "success_tps_gte_1000": true,
+          "error_rate_percent_lte_15": false,
+          "put_timeout_fraction_lte_0_60": true,
+          "generator_ratio_lt_0_25": true
+        }
+      }
+    ],
+    "best_point": {
+      "point_index": 5,
+      "node_count": 35,
+      "data_replicas": 35,
+      "status": "PASS",
+      "estimated_hourly_usd_compute_only": 3.0120,
+      "success_tps": 2711.87,
+      "attempted_tps_total": 4181.697,
+      "attempted_tps_read": 418.16966443822344,
+      "attempted_tps_write": 3763.527,
+      "attempted_split_mode": "estimated_from_success_tps_error_rate_and_configured_mix",
+      "error_rate_percent": 35.14905,
+      "timeout_fraction": 0.020982345615320204,
+      "forward_error_fraction": 0.6371072139898497,
+      "consensus_reply_error_fraction": 0.3628927860101503,
+      "forward_hop_ratio_avg": 0.6454783285714285,
+      "generator_to_service_cpu_ratio": 0.1265,
+      "acceptance_gate_median": {
+        "success_tps_gte_1000": true,
+        "error_rate_percent_lte_15": false,
+        "put_timeout_fraction_lte_0_60": true,
+        "generator_ratio_lt_0_25": true
+      }
+    }
+  },
+  "bottlenecks": {
+    "read_path": {
+      "summary": "Read upper-bound should be interpreted using read-hit-heavy measured runs; check read_not_found_count and write_count to confirm pure read-hit behavior.",
+      "points_with_read_misses": [],
+      "points_with_write_activity": []
+    },
+    "write_path": {
+      "summary": "Current write bottleneck remains non-timeout write errors dominated by forward path pressure; generator CPU ratio is low, so generator is not the primary limiter at tested scales.",
+      "evidence_by_point": [
+        {
+          "node_count": 11,
+          "success_tps": 195.865,
+          "error_rate_percent": 42.503,
+          "timeout_fraction": 0.232,
+          "forward_error_fraction": 0.923,
+          "consensus_reply_error_fraction": 0.077,
+          "forward_hop_ratio_avg": 0.753,
+          "generator_to_service_cpu_ratio": 0.055
+        },
+        {
+          "node_count": 17,
+          "success_tps": 1299.3,
+          "error_rate_percent": 40.981,
+          "timeout_fraction": 0.063,
+          "forward_error_fraction": 0.714,
+          "consensus_reply_error_fraction": 0.286,
+          "forward_hop_ratio_avg": 0.668,
+          "generator_to_service_cpu_ratio": 0.127
+        },
+        {
+          "node_count": 23,
+          "success_tps": 1590.23,
+          "error_rate_percent": 51.092,
+          "timeout_fraction": 0.024,
+          "forward_error_fraction": 0.56,
+          "consensus_reply_error_fraction": 0.44,
+          "forward_hop_ratio_avg": 0.613,
+          "generator_to_service_cpu_ratio": 0.158
+        },
+        {
+          "node_count": 29,
+          "success_tps": 2079.705,
+          "error_rate_percent": 37.83,
+          "timeout_fraction": 0.048,
+          "forward_error_fraction": 0.591,
+          "consensus_reply_error_fraction": 0.409,
+          "forward_hop_ratio_avg": 0.636,
+          "generator_to_service_cpu_ratio": 0.143
+        },
+        {
+          "node_count": 35,
+          "success_tps": 2711.87,
+          "error_rate_percent": 35.149,
+          "timeout_fraction": 0.021,
+          "forward_error_fraction": 0.637,
+          "consensus_reply_error_fraction": 0.363,
+          "forward_hop_ratio_avg": 0.645,
+          "generator_to_service_cpu_ratio": 0.127
+        }
+      ],
+      "high_confidence_observations": [
+        "Horizontal scaling improves cluster success TPS substantially in E54.",
+        "Write error rate remains materially above a 15% SLA gate across tested N values.",
+        "Timeout fraction falls at higher N, implying non-timeout failures dominate remaining errors.",
+        "Forward path metrics (forward_error_fraction and forward_hop_ratio_avg) remain high, indicating routing/leader-forward pressure."
+      ]
+    },
+    "generator_pressure": {
+      "read_points_generator_ratio_max": 0,
+      "write_points_generator_ratio_max": 0.158,
+      "interpretation": "If generator/service CPU ratio stays well below 1.0 and especially below 0.25 (write gate threshold), generator is unlikely to be the dominant bottleneck."
+    }
+  },
+  "next_steps": [
+    {
+      "id": "next-1",
+      "title": "Reduce write forward-hop pressure",
+      "rationale": "Write errors are still forward-path heavy; improving leader-aware routing and reducing forwarding should lower non-timeout failures."
+    },
+    {
+      "id": "next-2",
+      "title": "Add exact attempted write/read TPS capture to write sweep artifacts",
+      "rationale": "E54 required derived attempted TPS because per-trial k6 JSON paths were not preserved in the sweep run artifacts."
+    },
+    {
+      "id": "next-3",
+      "title": "Run external-LB visibility benchmark after in-cluster baseline",
+      "rationale": "Validates production-like ingress path overhead without changing in-cluster gating methodology."
+    }
+  ],
+  "artifacts": {
+    "source_files": {
+      "read_sweep_json": "/Users/abhishek/workspace/projects/kivi2/NotDynamo/reports/benchmarks/aws/e48_k6_read_hit_heavy_fix_20260219T222038Z.json",
+      "write_sweep_json": "/Users/abhishek/workspace/projects/kivi2/NotDynamo/reports/benchmarks/aws/e54_write_gate_sweep_n11_17_23_29_35_v1.json"
+    }
+  }
+}

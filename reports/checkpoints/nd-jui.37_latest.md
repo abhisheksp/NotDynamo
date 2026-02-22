@@ -1,33 +1,28 @@
 # Task Checkpoint
 
-- Timestamp (UTC): `2026-02-22 18:48:23Z`
-- Issue: `nd-jui.33`
+- Timestamp (UTC): `2026-02-22 22:09:31Z`
+- Issue: `nd-jui.37`
 - Claimed now: `0`
 - Status override: `none`
 - Closed now: `1`
-- Note: `E54 already completed earlier; closing before wrap-up tasks (E56-E59).`
+- Note: `README benchmark snapshot refresh complete.`
 
 ## Issue Snapshot
 
 ```text
-✓ nd-jui.33 · E54 Horizontal write scaling sweep (single-AZ)   [● P1 · CLOSED]
+✓ nd-jui.37 · E58 README benchmark snapshot refresh   [● P1 · CLOSED]
 Owner: Abhishek Srinivasa Raju Padmavathi · Assignee: Abhishek Srinivasa Raju Padmavathi · Type: task
-Created: 2026-02-20 · Updated: 2026-02-22
+Created: 2026-02-22 · Updated: 2026-02-22
 Close reason: Closed
 
 DESCRIPTION
-Run lockstep node/data replica sweeps with RF=3 and standardized write gate profile; collect median per point.
+Replace stale benchmark snapshot in README with current wrap-up summary, artifact links, caveats, and reproduction commands.
 
 NOTES
-[2026-02-21 02:57:10Z] Started E54 execution: added eks_write_gate_sweep.sh for repeated write-gate runs per node-count point with median aggregation and budget guardrails.
-[2026-02-21 13:33:21Z] Validated E54 sweep execution on 3/5/7 and fixed sweep automation: node readiness wait, cluster-size env propagation, shard-count coverage auto-adjust (min shards = max replicas - RF + 1), and restore of shard-count on exit.
-[2026-02-21 14:48:18Z] Completed full E54 lockstep sweep on EKS for points 11,17,23,29,35 (2 trials each). Best median success TPS=2711.87 at 35/35; success TPS >=1000 achieved for 17/23/29/35; timeout fraction and generator ratio gates passed at all >=17 points, but error_rate_percent<=15 gate failed at every point (best median 35.149%). Sweep artifacts: reports/benchmarks/aws/e54_write_gate_sweep_n11_17_23_29_35_v1.{json,md,csv}.
-[2026-02-22 18:48:23Z] E54 already completed earlier; closing before wrap-up tasks (E56-E59).
+[2026-02-22 22:09:30Z] Refreshed README benchmark snapshot to current wrap-up artifacts and metrics, including write N-sweep table and single-point read-hit evidence with AWS budget caveat and regeneration commands.
+[2026-02-22 22:09:31Z] README benchmark snapshot refresh complete.
 
-ACCEPTANCE CRITERIA
-Sweep report includes success_tps/error/timeout_fraction/leader_variance/service_cpu saturation for 11,17,23,29,35 points.
-
-LABELS: benchmark, roadmap, single-az
+LABELS: benchmark, docs, roadmap
 
 PARENT
   ↑ ◐ nd-jui: (EPIC) E21 Program: Single-AZ True Sharding and Replication ● P1
@@ -38,16 +33,14 @@ PARENT
 
 ```text
 
-📋 Ready work (8 issues with no blockers):
+📋 Ready work (6 issues with no blockers):
 
 1. [● P3] [epic] nd-jui.12: E33 Multi-AZ resilience phase (deferred)
 2. [● P2] [task] nd-jui.15: E36 External-path NLB sweeps at representative scales
 3. [● P2] [task] nd-jui.16: E37 Generator capacity validation
 4. [● P2] [task] nd-jui.17: E38 Vertical + horizontal scaling matrix
 5. [● P1] [task] nd-jui.34: E55 Milestone closeout profile freeze
-6. [● P1] [task] nd-jui.36: E57 Consolidated benchmark wrap-up report (read + write)
-7. [● P1] [task] nd-jui.37: E58 README benchmark snapshot refresh
-8. [● P1] [task] nd-jui.38: E59 Wrap-up verification, checkpoints, and publish
+6. [● P1] [task] nd-jui.38: E59 Wrap-up verification, checkpoints, and publish
 
 ```
 
@@ -56,10 +49,22 @@ PARENT
 ```text
 codex/e20-true-raft-integration
 a19a910 E54 sweep execution: scale 11-35, shard coverage guard, and EKS spread fix
+ M README.md
+ M reports/checkpoints/nd-jui.33_latest.md
  M reports/tasks/issues_latest.jsonl
  M reports/tasks/issues_latest_tree.txt
+?? reports/benchmarks/aws/benchmark_wrapup_20260222_v1.csv
+?? reports/benchmarks/aws/benchmark_wrapup_20260222_v1.json
+?? reports/benchmarks/aws/benchmark_wrapup_20260222_v1.md
+?? reports/benchmarks/aws/benchmark_wrapup_latest.csv
+?? reports/benchmarks/aws/benchmark_wrapup_latest.json
+?? reports/benchmarks/aws/benchmark_wrapup_latest.md
 ?? reports/benchmarks/aws/calib_incluster_20260218T091413Z.json
 ?? reports/benchmarks/aws/calib_incluster_20260218T091413Z.md
+?? reports/benchmarks/aws/cleanup_audit_20260222T220507Z.json
+?? reports/benchmarks/aws/cleanup_audit_20260222T220507Z.md
+?? reports/benchmarks/aws/cleanup_audit_latest.json
+?? reports/benchmarks/aws/cleanup_audit_latest.md
 ?? reports/benchmarks/aws/e2e_http_incluster_20260218T084607Z.json
 ?? reports/benchmarks/aws/e2e_http_incluster_20260218T084607Z.md
 ?? reports/benchmarks/aws/e2e_http_incluster_20260218T085108Z.json
@@ -360,6 +365,14 @@ a19a910 E54 sweep execution: scale 11-35, shard coverage guard, and EKS spread f
 ?? reports/checkpoints/nd-jui.24_20260220T140231Z.md
 ?? reports/checkpoints/nd-jui.33_20260222T184823Z.md
 ?? reports/checkpoints/nd-jui.35_20260222T184823Z.md
+?? reports/checkpoints/nd-jui.35_20260222T220925Z.md
+?? reports/checkpoints/nd-jui.35_latest.md
+?? reports/checkpoints/nd-jui.36_20260222T220926Z.md
+?? reports/checkpoints/nd-jui.36_20260222T220928Z.md
+?? reports/checkpoints/nd-jui.36_latest.md
+?? reports/checkpoints/nd-jui.37_20260222T220930Z.md
+?? reports/checkpoints/nd-jui.37_20260222T220931Z.md
+?? reports/checkpoints/nd-jui.37_latest.md
 ?? reports/checkpoints/nd-jui_20260218T223330Z.md
 ?? reports/checkpoints/nd-jui_20260219T090040Z.md
 ?? scripts/eks/build_benchmark_wrapup_report.sh

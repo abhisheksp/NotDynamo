@@ -1,12 +1,12 @@
 ◐ nd-jui ● P1 [epic] E21 Program: Single-AZ True Sharding and Replication
-├── ◐ nd-jui.33 ● P1 E54 Horizontal write scaling sweep (single-AZ)
 ├── ○ nd-jui.34 ● P1 E55 Milestone closeout profile freeze
+├── ● nd-jui.35 ● P1 E56 Read-hit upper-bound EKS sweep (staged preload + measured reads)
 ├── ○ nd-jui.15 ● P2 E36 External-path NLB sweeps at representative scales
 ├── ○ nd-jui.16 ● P2 E37 Generator capacity validation
 ├── ○ nd-jui.17 ● P2 E38 Vertical + horizontal scaling matrix
 └── ○ nd-jui.12 ● P3 [epic] E33 Multi-AZ resilience phase (deferred)
 
 --------------------------------------------------------------------------------
-Total: 7 issues (5 open, 2 in progress)
+Total: 7 issues (5 open, 1 in progress)
 
 Status: ○ open  ◐ in_progress  ● blocked  ✓ closed  ❄ deferred

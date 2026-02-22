@@ -159,26 +159,72 @@ Benchmark categories currently supported on EKS:
 - Horizontal scaling sweeps: `scripts/eks/eks_scaling_sweep.sh`
 - End-to-end runbook with cleanup audit: `scripts/eks/eks_runbook.sh`
 
-Latest end-to-end benchmark report:
+Current wrap-up artifacts (existing-results-only; no new AWS benchmarks in this wrap-up session):
 
-- Report file: `/reports/benchmarks/aws/e2e_http_20260217T101331Z.md`
-- Timestamp (UTC): `2026-02-17T10:14:22Z`
-- Scenario: E2E HTTP against EKS service via local port-forward
-- Config: `operations=10000`, `threads=16`, `read_ratio=0.90`, `preload=false`
+- Wrap-up report (latest): `/reports/benchmarks/aws/benchmark_wrapup_latest.md`
+- Wrap-up JSON (latest): `/reports/benchmarks/aws/benchmark_wrapup_latest.json`
+- Wrap-up CSV (latest): `/reports/benchmarks/aws/benchmark_wrapup_latest.csv`
+- Write upper-bound baseline sweep (E54): `/reports/benchmarks/aws/e54_write_gate_sweep_n11_17_23_29_35_v1.md`
+- Read-hit evidence (existing k6 artifact): `/reports/benchmarks/aws/e48_k6_read_hit_heavy_fix_20260219T222038Z.json`
 
-Results:
+Benchmark methodology snapshot:
 
-- Throughput: `202.93 rps`
-- Success throughput: `187.82 rps`
-- p50: `78.870 ms`
-- p95: `90.225 ms`
-- p99: `285.645 ms`
-- Error rate: `7.45%` (observed HTTP 500s)
+- Formal benchmark path is **in-cluster k6** (cluster-wide aggregate TPS, not per-pod TPS).
+- External LoadBalancer/NLB benchmarks are visibility runs, not the gating metric in the current wrap-up.
+- Read upper-bound currently uses **existing single-point read-hit evidence** because the planned read `N` sweep was skipped to stay within AWS spend limits.
+
+### Read Upper-Bound (Current Evidence)
+
+Single-point read-hit-heavy k6 result (existing artifact, `N=3` data replicas):
+
+| N | Success TPS | Attempted TPS | Error % | p95 (ms) | p99 (ms) | Read misses | Write count |
+|---:|---:|---:|---:|---:|---:|---:|---:|
+| 3 | 9883.41 | 9883.41 | 0.00 | 61.183 | 77.536 | 0 | 0 |
 
 Notes:
 
-- This run is a functional end-to-end baseline, not a hardware-maximized throughput run.
-- Current benchmark focus is correctness, repeatability, and regression tracking.
+- This is a clean read-hit-heavy in-cluster k6 run (`write_count=0`, `read_not_found_count=0`).
+- A comparable read `N` sweep (`11,17,23,29,35`) is planned but not executed in this wrap-up due budget limits.
+
+### Write Upper-Bound Baseline (E54, Write-Heavy Mixed)
+
+Single-AZ EKS lockstep sweep (`node_count == data_replicas`, RF=3), profile: `read_ratio=0.10`, `vus=32`, `duration=90s`.
+
+| N | Success TPS | Attempted TPS (total, est.) | Attempted TPS (write, est.) | Error % | Timeout frac | Forward split | Consensus split | Forward-hop ratio |
+|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| 11 | 195.865 | 340.651 | 306.586 | 42.503 | 0.232 | 0.923 | 0.077 | 0.753 |
+| 17 | 1299.300 | 2201.487 | 1981.338 | 40.981 | 0.063 | 0.714 | 0.286 | 0.668 |
+| 23 | 1590.230 | 3251.452 | 2926.307 | 51.092 | 0.024 | 0.560 | 0.440 | 0.613 |
+| 29 | 2079.705 | 3345.196 | 3010.676 | 37.830 | 0.048 | 0.591 | 0.409 | 0.636 |
+| 35 | 2711.870 | 4181.697 | 3763.527 | 35.149 | 0.021 | 0.637 | 0.363 | 0.645 |
+
+Notes:
+
+- This is the current write upper-bound **baseline** for NotDynamo, but it is **not a pure 100% write benchmark**.
+- Attempted TPS split is estimated from `success_tps + error_rate` and the configured `read_ratio=0.10` because exact per-trial k6 JSON paths were not preserved in the E54 sweep artifact bundle.
+- Throughput scales with `N`, but error rate remains high and write failures remain forward-path-heavy.
+
+### Reproduction / Regeneration
+
+Regenerate the wrap-up report from existing artifacts (no AWS cluster required):
+
+```bash
+./scripts/eks/build_benchmark_wrapup_report.sh \
+  --read-k6-json reports/benchmarks/aws/e48_k6_read_hit_heavy_fix_20260219T222038Z.json \
+  --write-sweep-json reports/benchmarks/aws/e54_write_gate_sweep_n11_17_23_29_35_v1.json \
+  --output-prefix reports/benchmarks/aws/benchmark_wrapup_$(date -u +%Y%m%d)_v1
+```
+
+When AWS budget allows, run the planned read-hit upper-bound `N` sweep:
+
+```bash
+./scripts/eks/eks_read_hit_upperbound_sweep.sh \
+  --name notdynamo-eks \
+  --region us-west-2 \
+  --node-counts 11,17,23,29,35 \
+  --repeats 2 \
+  --allow-over-budget
+```
 
 ## Repository Layout
 

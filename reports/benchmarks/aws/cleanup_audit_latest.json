@@ -1,0 +1,26 @@
+{
+  "benchmark": "eks_cleanup_audit",
+  "status": "WARN",
+  "timestamp_utc": "2026-02-22T22:05:07Z",
+  "cluster_name": "notdynamo-eks",
+  "region": "us-west-2",
+  "image_repo": "notdynamo/notdynamo",
+  "checks": {
+    "cluster_exists": false,
+    "ec2_instances": [],
+    "ebs_volumes": [],
+    "elbv2_load_balancers": [],
+    "elb_classic_load_balancers": [],
+    "cloudformation_stacks": [],
+    "ecr_repo_exists": true,
+    "expect_ecr_absent": false
+  },
+  "counts": {
+    "ec2_instances": 0,
+    "ebs_volumes": 0,
+    "elbv2_load_balancers": 0,
+    "elb_classic_load_balancers": 0,
+    "cloudformation_stacks": 0
+  },
+  "human_report": "reports/benchmarks/aws/cleanup_audit_20260222T220507Z.md"
+}
