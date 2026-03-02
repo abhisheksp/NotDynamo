@@ -1,0 +1,4 @@
+# benchmark_pods
+NAME                                      READY   STATUS      RESTARTS   AGE     IP               NODE                                           NOMINATED NODE   READINESS GATES
+notdynamo-bench-k6-20260219212011-fmmb2   0/1     Completed   0          6m38s   192.168.84.103   ip-192-168-74-164.us-west-2.compute.internal   <none>           <none>
+notdynamo-bench-k6-20260219212011-v7kpv   0/1     Completed   0          6m38s   192.168.78.238   ip-192-168-82-231.us-west-2.compute.internal   <none>           <none>

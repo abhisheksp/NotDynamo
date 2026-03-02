@@ -1,0 +1,6 @@
+{
+  "job": "notdynamo-manual-bench-20260218191042",
+  "sample_log": "reports/benchmarks/aws/notdynamo-manual-bench-20260218191042.metrics.log",
+  "pod_metrics": [
+  ]
+}

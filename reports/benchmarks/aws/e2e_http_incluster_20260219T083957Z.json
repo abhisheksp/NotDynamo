@@ -1,0 +1,97 @@
+{
+  "benchmark": "e2e_http_incluster",
+  "category": "in-cluster-job",
+  "status": "WARN",
+  "timestamp_utc": "2026-02-19T08:40:57Z",
+  "cluster_name": "notdynamo-eks",
+  "region": "us-west-2",
+  "namespace": "notdynamo",
+  "base_url": "http://notdynamo-data.notdynamo.svc.cluster.local:8080",
+  "job": {
+    "name": "notdynamo-bench-http-20260219083959",
+    "parallelism": "1",
+    "completions": "1",
+    "bench_node_label": "notdynamo.io/workload=benchmark",
+    "bench_taint_effect": "NoSchedule",
+    "job_completed": "true",
+    "pod_count": "1",
+    "pod_metric_failures": "0",
+    "ttl_seconds_after_finished": "900"
+  },
+  "config": {
+    "operations_total_requested": "500",
+    "operations_per_pod": "500",
+    "keyspace": "200",
+    "threads_per_pod": "2",
+    "read_ratio": "0.90",
+    "distribution": "uniform",
+    "zipf_theta": "0.90",
+    "value_bytes": "256",
+    "preload": "false",
+    "connect_timeout_ms": "1000",
+    "request_timeout_ms": "1500",
+    "data_pod_selector": "app=notdynamo-data",
+    "telemetry_sample_attempts": "15",
+    "telemetry_sample_interval_sec": "2"
+  },
+  "results": {
+    "operations_effective": "500",
+    "throughput_rps_aggregate": "9.96",
+    "success_throughput_rps_aggregate": "9.02",
+    "latency_ms_p50_max_pod": "50.005",
+    "latency_ms_p95_max_pod": "1501.150",
+    "latency_ms_p99_max_pod": "1502.477",
+    "success_count": "453",
+    "error_count": "47",
+    "error_rate_percent": "9.4000",
+    "read_count": "453",
+    "write_count": "47",
+    "read_not_found_count": "376"
+  },
+  "telemetry": {
+    "collection": {
+      "sample_attempts_configured": "15",
+      "sample_attempts_used": "4",
+      "sample_interval_sec": "2",
+      "pods_top_available": "true",
+      "nodes_top_available": "true"
+    },
+    "signals": {
+      "generator_pod_count": "1",
+      "generator_cpu_mcores_sum": "165.000",
+      "generator_cpu_mcores_avg": "165.000",
+      "generator_memory_mib_sum": "43.000",
+      "generator_memory_mib_avg": "43.000",
+      "service_pod_count": "29",
+      "service_cpu_mcores_sum": "800.000",
+      "service_cpu_mcores_avg": "27.586",
+      "service_memory_mib_sum": "5662.000",
+      "service_memory_mib_avg": "195.241",
+      "cluster_node_count": "31",
+      "cluster_cpu_mcores_sum": "2065.000",
+      "cluster_cpu_percent_max": "20.000",
+      "cluster_memory_mib_sum": "21013.000",
+      "cluster_memory_percent_max": "38.000",
+      "generator_to_service_cpu_ratio": "0.206",
+      "attribution_hint": "service-pressure-dominant",
+      "attribution_reason": "data pod CPU sum is >= 1.5x benchmark pod CPU sum during sample window"
+    },
+    "artifacts": {
+      "pod_placement": "reports/benchmarks/aws/incluster_runs/notdynamo-bench-http-20260219083959/pod_placement.txt",
+      "pods_top_snapshot": "reports/benchmarks/aws/incluster_runs/notdynamo-bench-http-20260219083959/telemetry/pods_top_snapshot.txt",
+      "pods_top_error": "reports/benchmarks/aws/incluster_runs/notdynamo-bench-http-20260219083959/telemetry/pods_top_snapshot.err",
+      "nodes_top_snapshot": "reports/benchmarks/aws/incluster_runs/notdynamo-bench-http-20260219083959/telemetry/nodes_top_snapshot.txt",
+      "nodes_top_error": "reports/benchmarks/aws/incluster_runs/notdynamo-bench-http-20260219083959/telemetry/nodes_top_snapshot.err",
+      "generator_top_summary": "reports/benchmarks/aws/incluster_runs/notdynamo-bench-http-20260219083959/telemetry/bench_top_summary.txt",
+      "service_top_summary": "reports/benchmarks/aws/incluster_runs/notdynamo-bench-http-20260219083959/telemetry/data_top_summary.txt",
+      "nodes_top_summary": "reports/benchmarks/aws/incluster_runs/notdynamo-bench-http-20260219083959/telemetry/nodes_top_summary.txt"
+    }
+  },
+  "error_samples": ["HttpTimeoutException:request_timed_out"],
+  "artifacts": {
+    "run_dir": "reports/benchmarks/aws/incluster_runs/notdynamo-bench-http-20260219083959",
+    "job_manifest": "reports/benchmarks/aws/incluster_runs/notdynamo-bench-http-20260219083959/job.yaml",
+    "pod_logs_glob": "reports/benchmarks/aws/incluster_runs/notdynamo-bench-http-20260219083959/*.log",
+    "telemetry_dir": "reports/benchmarks/aws/incluster_runs/notdynamo-bench-http-20260219083959/telemetry"
+  }
+}

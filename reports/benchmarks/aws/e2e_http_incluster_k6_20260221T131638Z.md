@@ -1,0 +1,96 @@
+# NotDynamo E2E HTTP In-Cluster Benchmark Report (k6)
+
+- Status: **WARN**
+- Timestamp (UTC): 2026-02-21T13:18:28Z
+- Category: `in-cluster-job`
+- Driver: `k6`
+- Cluster: `notdynamo-eks`
+- Region: `us-west-2`
+- Namespace: `notdynamo`
+- Base URL: `http://notdynamo-data.notdynamo.svc.cluster.local:8080`
+- Job: `notdynamo-bench-k6-20260221131638`
+
+## Configuration
+
+| Field | Value |
+|---|---|
+| Parallelism | 5 |
+| Completions | 5 |
+| Benchmark node label | none |
+| Benchmark taint effect | NoSchedule |
+| k6 VUs per pod | 32 |
+| k6 Duration | 90s |
+| k6 Setup timeout | 10m |
+| Keyspace | 20000 |
+| Read ratio | 0.10 |
+| Distribution | uniform |
+| Value bytes | 256 |
+| Preload | false |
+| Skip main | false |
+| Request timeout ms | 5000 |
+
+## Results
+
+| Metric | Value |
+|---|---|
+| Effective operations | 5191 |
+| Aggregate throughput (rps) | 54.83 |
+| Aggregate success throughput (rps) | 28.48 |
+| Max pod p50 latency (ms) | 4955.433 |
+| Max pod p95 latency (ms) | 5001.184 |
+| Max pod p99 latency (ms) | 5004.308 |
+| Success count | 2696 |
+| Error count | 2495 |
+| Error rate (%) | 48.0640 |
+| Read count | 491 |
+| Write count | 4700 |
+| Read not found count | 179 |
+| Preload attempted | 0 |
+| Preload success | 0 |
+| Preload failed | 0 |
+| Job completed | true |
+| Pod count | 5 |
+| Pod metric failures | 0 |
+
+## Telemetry Summary
+
+| Signal | Value |
+|---|---|
+| Sample attempts (used/configured) | 15 / 15 |
+| Pods top available | true |
+| Nodes top available | true |
+| Generator pod count (sampled) | 5 |
+| Generator CPU mcores sum | 82.000 |
+| Generator CPU mcores avg | 16.400 |
+| Service pod count (sampled) | 5 |
+| Service CPU mcores sum | 3009.000 |
+| Service CPU mcores avg | 601.800 |
+| Generator/Service CPU ratio | 0.027 |
+| Attribution hint | service-pressure-dominant |
+| Attribution reason | data pod CPU sum is >= 1.5x benchmark pod CPU sum during sample window |
+| Cluster node count (sampled) | 5 |
+| Cluster CPU percent max | 51.000 |
+| Cluster memory percent max | 29.000 |
+| Write-stage telemetry samples | 5 |
+
+## Write-Stage Telemetry Samples
+
+- `notdynamo-data-0`: `{"node":"notdynamo-data-0","observed_leader_override_writes":957,"observed_leader_lookup_failures":0,"observed_leader_lookup_skipped_non_replica":360,"observed_leader_override_retry_attempts":0,"observed_leader_override_retry_success":0,"observed_leader_snapshot_refresh_failures":0,"write_backpressure_rejections":0,"write_backpressure_rejections_by_shard":{},"write_admission_wait_exhausted_count":0,"write_inflight_limit":256,"write_shard_inflight_min":8,"write_shard_inflight_limit":256,"write_inflight_current":0,"consensus_reject_due_to_inflight_limit":0,"consensus_reject_due_to_inflight_limit_by_shard":{},"consensus_inflight_by_shard":{},"write_total_requests":1693,"write_forwarded_requests":1491,"forward_hop_ratio":0.880685,"forward_to_leader":{"success":871,"error":612,"timeout":558,"latency_ms_avg":2733.927,"latency_ms_max":5344.670},"consensus_submit":{"success":202,"error":0,"timeout":0,"latency_ms_avg":0.000,"latency_ms_max":0.000},"consensus_reply":{"success":120,"error":82,"timeout":82,"latency_ms_avg":2711.656,"latency_ms_max":5119.049},"put_total":{"success":991,"error":694,"timeout":640,"latency_ms_avg":2731.517,"latency_ms_max":5381.655},"delete_total":{"success":0,"error":0,"timeout":0,"latency_ms_avg":0.000,"latency_ms_max":0.000},"forward_error_by_shard":{"0":1,"1":18,"2":13,"3":32,"4":11,"5":26,"6":25,"7":12,"8":23,"9":15,"10":39,"11":7,"12":17,"13":35,"14":8,"15":27,"16":12,"17":17,"18":27,"19":9,"20":52,"21":10,"22":26,"23":10,"24":6,"25":38,"26":15,"27":11,"28":7,"29":11,"30":42,"31":10},"consensus_reply_error_by_shard":{"0":20,"4":4,"5":7,"10":8,"19":3,"20":18,"23":3,"25":7,"29":2,"30":10},"put_total_by_shard":{"0":183,"1":32,"2":30,"3":33,"4":39,"5":205,"6":31,"7":25,"8":23,"9":35,"10":143,"11":27,"12":28,"13":35,"14":38,"15":87,"16":21,"17":28,"18":32,"19":31,"20":105,"21":27,"22":32,"23":34,"24":36,"25":122,"26":27,"27":21,"28":23,"29":34,"30":89,"31":29},"put_timeout_by_shard":{"0":21,"1":18,"2":13,"3":32,"4":15,"5":25,"6":25,"7":12,"8":22,"9":15,"10":41,"11":7,"12":17,"13":31,"14":8,"15":24,"16":12,"17":17,"18":27,"19":12,"20":56,"21":10,"22":26,"23":13,"24":6,"25":38,"26":15,"27":11,"28":7,"29":13,"30":41,"31":10},"error_code_counts":{"consensus_reply:STATUS_CODE_TIMEOUT":82,"forward:STATUS_CODE_INTERNAL/grpc=CANCELLED":47,"forward:STATUS_CODE_TIMEOUT/grpc=DEADLINE_EXCEEDED":558,"forward:STATUS_CODE_UNAVAILABLE":7,"put_total:STATUS_CODE_INTERNAL/grpc=CANCELLED":47,"put_total:STATUS_CODE_TIMEOUT":82,"put_total:STATUS_CODE_TIMEOUT/grpc=DEADLINE_EXCEEDED":558,"put_total:STATUS_CODE_UNAVAILABLE":7}}`
+- `notdynamo-data-1`: `{"node":"notdynamo-data-1","observed_leader_override_writes":845,"observed_leader_lookup_failures":0,"observed_leader_lookup_skipped_non_replica":368,"observed_leader_override_retry_attempts":0,"observed_leader_override_retry_success":0,"observed_leader_snapshot_refresh_failures":0,"write_backpressure_rejections":4,"write_backpressure_rejections_by_shard":{"20":2,"25":2},"write_admission_wait_exhausted_count":4,"write_inflight_limit":256,"write_shard_inflight_min":8,"write_shard_inflight_limit":15,"write_inflight_current":13,"consensus_reject_due_to_inflight_limit":0,"consensus_reject_due_to_inflight_limit_by_shard":{},"consensus_inflight_by_shard":{"4":1,"6":3,"9":1,"11":1,"15":2,"20":2,"25":1,"30":2},"write_total_requests":2247,"write_forwarded_requests":922,"forward_hop_ratio":0.410325,"forward_to_leader":{"success":576,"error":344,"timeout":337,"latency_ms_avg":2563.884,"latency_ms_max":6260.051},"consensus_submit":{"success":1321,"error":0,"timeout":0,"latency_ms_avg":0.000,"latency_ms_max":0.000},"consensus_reply":{"success":573,"error":740,"timeout":736,"latency_ms_avg":3262.143,"latency_ms_max":5221.130},"put_total":{"success":1149,"error":1084,"timeout":1073,"latency_ms_avg":2974.716,"latency_ms_max":6317.043},"delete_total":{"success":0,"error":0,"timeout":0,"latency_ms_avg":0.000,"latency_ms_max":0.000},"forward_error_by_shard":{"0":2,"1":2,"2":10,"3":32,"4":13,"5":1,"6":23,"7":14,"8":25,"9":9,"10":14,"12":17,"13":30,"16":1,"17":19,"18":22,"19":10,"20":3,"22":18,"23":16,"24":14,"25":5,"26":3,"27":17,"28":17,"29":6,"30":1},"consensus_reply_error_by_shard":{"1":77,"4":7,"5":47,"6":71,"9":14,"10":18,"11":35,"14":13,"15":43,"16":62,"19":3,"20":74,"21":47,"25":40,"26":86,"30":60,"31":43},"put_total_by_shard":{"0":37,"1":115,"2":32,"3":32,"4":41,"5":219,"6":111,"7":28,"8":25,"9":38,"10":83,"11":106,"12":25,"13":30,"14":48,"15":63,"16":172,"17":34,"18":22,"19":29,"20":121,"21":138,"22":24,"23":41,"24":51,"25":84,"26":146,"27":37,"28":36,"29":27,"30":115,"31":123},"put_timeout_by_shard":{"0":2,"1":79,"2":10,"3":32,"4":20,"5":48,"6":91,"7":14,"8":23,"9":23,"10":32,"11":35,"12":17,"13":28,"14":13,"15":43,"16":63,"17":19,"18":22,"19":13,"20":75,"21":47,"22":18,"23":16,"24":14,"25":43,"26":89,"27":17,"28":17,"29":6,"30":61,"31":43},"error_code_counts":{"consensus_reply:STATUS_CODE_TIMEOUT":736,"consensus_reply:STATUS_CODE_UNAVAILABLE/cause=BACKPRESSURE":4,"forward:STATUS_CODE_INTERNAL/grpc=CANCELLED":3,"forward:STATUS_CODE_TIMEOUT/grpc=DEADLINE_EXCEEDED":337,"forward:STATUS_CODE_UNAVAILABLE":4,"put_total:STATUS_CODE_INTERNAL/grpc=CANCELLED":3,"put_total:STATUS_CODE_TIMEOUT":736,"put_total:STATUS_CODE_TIMEOUT/grpc=DEADLINE_EXCEEDED":337,"put_total:STATUS_CODE_UNAVAILABLE":4,"put_total:STATUS_CODE_UNAVAILABLE/cause=BACKPRESSURE":4}}`
+- `notdynamo-data-2`: `{"node":"notdynamo-data-2","observed_leader_override_writes":869,"observed_leader_lookup_failures":0,"observed_leader_lookup_skipped_non_replica":345,"observed_leader_override_retry_attempts":0,"observed_leader_override_retry_success":0,"observed_leader_snapshot_refresh_failures":0,"write_backpressure_rejections":0,"write_backpressure_rejections_by_shard":{},"write_admission_wait_exhausted_count":2,"write_inflight_limit":256,"write_shard_inflight_min":8,"write_shard_inflight_limit":32,"write_inflight_current":4,"consensus_reject_due_to_inflight_limit":2,"consensus_reject_due_to_inflight_limit_by_shard":{"2":2},"consensus_inflight_by_shard":{"2":1,"12":1,"17":1,"27":1},"write_total_requests":2272,"write_forwarded_requests":1079,"forward_hop_ratio":0.474912,"forward_to_leader":{"success":453,"error":616,"timeout":494,"latency_ms_avg":3400.166,"latency_ms_max":6136.499},"consensus_submit":{"success":1191,"error":0,"timeout":0,"latency_ms_avg":0.000,"latency_ms_max":0.000},"consensus_reply":{"success":738,"error":451,"timeout":449,"latency_ms_avg":2522.913,"latency_ms_max":5174.783},"put_total":{"success":1191,"error":1067,"timeout":943,"latency_ms_avg":2938.572,"latency_ms_max":6187.522},"delete_total":{"success":0,"error":0,"timeout":0,"latency_ms_avg":0.000,"latency_ms_max":0.000},"forward_error_by_shard":{"0":4,"1":40,"3":33,"4":9,"5":11,"6":54,"7":9,"8":39,"9":11,"10":6,"11":16,"13":25,"14":16,"15":9,"16":17,"17":46,"18":29,"19":7,"20":21,"21":10,"22":90,"23":14,"24":7,"25":7,"26":13,"27":40,"28":11,"29":5,"30":10,"31":7},"consensus_reply_error_by_shard":{"0":1,"1":17,"2":61,"5":2,"6":50,"7":60,"10":35,"11":16,"12":77,"15":4,"16":2,"17":23,"20":4,"22":52,"25":11,"26":3,"27":33},"put_total_by_shard":{"0":175,"1":108,"2":151,"3":33,"4":17,"5":45,"6":127,"7":155,"8":39,"9":31,"10":89,"11":109,"12":128,"13":25,"14":28,"15":86,"16":74,"17":111,"18":30,"19":24,"20":45,"21":39,"22":167,"23":36,"24":33,"25":94,"26":32,"27":117,"28":21,"29":27,"30":24,"31":38},"put_timeout_by_shard":{"0":5,"1":52,"2":59,"3":33,"4":9,"5":13,"6":99,"7":61,"8":37,"9":11,"10":41,"11":32,"12":77,"13":23,"14":16,"15":13,"16":19,"17":54,"18":29,"19":7,"20":25,"21":10,"22":77,"23":14,"24":7,"25":18,"26":16,"27":53,"28":11,"29":5,"30":10,"31":7},"error_code_counts":{"consensus_reply:STATUS_CODE_TIMEOUT":449,"consensus_reply:STATUS_CODE_UNAVAILABLE/cause=CONSENSUS_INFLIGHT_LIMIT":2,"forward:STATUS_CODE_INTERNAL/grpc=CANCELLED":118,"forward:STATUS_CODE_TIMEOUT/grpc=DEADLINE_EXCEEDED":494,"forward:STATUS_CODE_UNAVAILABLE":4,"put_total:STATUS_CODE_INTERNAL/grpc=CANCELLED":118,"put_total:STATUS_CODE_TIMEOUT":449,"put_total:STATUS_CODE_TIMEOUT/grpc=DEADLINE_EXCEEDED":494,"put_total:STATUS_CODE_UNAVAILABLE":4,"put_total:STATUS_CODE_UNAVAILABLE/cause=CONSENSUS_INFLIGHT_LIMIT":2}}`
+- `notdynamo-data-3`: `{"node":"notdynamo-data-3","observed_leader_override_writes":357,"observed_leader_lookup_failures":311,"observed_leader_lookup_skipped_non_replica":414,"observed_leader_override_retry_attempts":0,"observed_leader_override_retry_success":0,"observed_leader_snapshot_refresh_failures":311,"write_backpressure_rejections":0,"write_backpressure_rejections_by_shard":{},"write_admission_wait_exhausted_count":25,"write_inflight_limit":256,"write_shard_inflight_min":8,"write_shard_inflight_limit":42,"write_inflight_current":64,"consensus_reject_due_to_inflight_limit":25,"consensus_reject_due_to_inflight_limit_by_shard":{"8":10,"13":15},"consensus_inflight_by_shard":{"3":2,"8":15,"13":15,"17":3,"18":3,"27":1},"write_total_requests":1725,"write_forwarded_requests":950,"forward_hop_ratio":0.550725,"forward_to_leader":{"success":407,"error":522,"timeout":472,"latency_ms_avg":3368.486,"latency_ms_max":5105.781},"consensus_submit":{"success":750,"error":0,"timeout":0,"latency_ms_avg":0.000,"latency_ms_max":0.000},"consensus_reply":{"success":219,"error":493,"timeout":468,"latency_ms_avg":3501.439,"latency_ms_max":5084.828},"put_total":{"success":626,"error":1015,"timeout":940,"latency_ms_avg":3426.455,"latency_ms_max":5150.145},"delete_total":{"success":0,"error":0,"timeout":0,"latency_ms_avg":0.000,"latency_ms_max":0.000},"forward_error_by_shard":{"0":5,"1":19,"2":11,"3":90,"4":21,"5":10,"6":20,"7":22,"9":12,"10":8,"11":9,"12":17,"14":19,"15":7,"16":9,"17":19,"18":73,"19":8,"20":22,"21":7,"22":20,"24":10,"25":14,"26":24,"27":9,"29":12,"30":18,"31":7},"consensus_reply_error_by_shard":{"3":19,"8":116,"13":123,"17":37,"18":15,"22":29,"23":63,"27":36,"28":55},"put_total_by_shard":{"0":37,"1":34,"2":35,"3":111,"4":42,"5":24,"6":23,"7":42,"8":116,"9":30,"10":25,"11":22,"12":30,"13":123,"14":41,"15":16,"16":25,"17":69,"18":96,"19":25,"20":35,"21":24,"22":60,"23":164,"24":35,"25":32,"26":33,"27":72,"28":128,"29":37,"30":28,"31":27},"put_timeout_by_shard":{"0":5,"1":19,"2":10,"3":86,"4":21,"5":10,"6":20,"7":22,"8":106,"9":12,"10":8,"11":9,"12":17,"13":108,"14":19,"15":7,"16":9,"17":53,"18":74,"19":8,"20":22,"21":7,"22":41,"23":63,"24":10,"25":14,"26":24,"27":44,"28":55,"29":12,"30":18,"31":7},"error_code_counts":{"consensus_reply:STATUS_CODE_TIMEOUT":468,"consensus_reply:STATUS_CODE_UNAVAILABLE/cause=CONSENSUS_INFLIGHT_LIMIT":25,"forward:STATUS_CODE_INTERNAL/grpc=CANCELLED":49,"forward:STATUS_CODE_TIMEOUT/grpc=DEADLINE_EXCEEDED":472,"forward:STATUS_CODE_UNAVAILABLE":1,"put_total:STATUS_CODE_INTERNAL/grpc=CANCELLED":49,"put_total:STATUS_CODE_TIMEOUT":468,"put_total:STATUS_CODE_TIMEOUT/grpc=DEADLINE_EXCEEDED":472,"put_total:STATUS_CODE_UNAVAILABLE":1,"put_total:STATUS_CODE_UNAVAILABLE/cause=CONSENSUS_INFLIGHT_LIMIT":25}}`
+- `notdynamo-data-4`: `{"node":"notdynamo-data-4","observed_leader_override_writes":438,"observed_leader_lookup_failures":323,"observed_leader_lookup_skipped_non_replica":373,"observed_leader_override_retry_attempts":0,"observed_leader_override_retry_success":0,"observed_leader_snapshot_refresh_failures":323,"write_backpressure_rejections":0,"write_backpressure_rejections_by_shard":{},"write_admission_wait_exhausted_count":0,"write_inflight_limit":256,"write_shard_inflight_min":8,"write_shard_inflight_limit":42,"write_inflight_current":2,"consensus_reject_due_to_inflight_limit":0,"consensus_reject_due_to_inflight_limit_by_shard":{},"consensus_inflight_by_shard":{"4":1,"22":1},"write_total_requests":1947,"write_forwarded_requests":742,"forward_hop_ratio":0.381099,"forward_to_leader":{"success":303,"error":437,"timeout":350,"latency_ms_avg":3274.841,"latency_ms_max":5156.565},"consensus_submit":{"success":1205,"error":0,"timeout":0,"latency_ms_avg":0.000,"latency_ms_max":0.000},"consensus_reply":{"success":560,"error":644,"timeout":644,"latency_ms_avg":3289.469,"latency_ms_max":5721.328},"put_total":{"success":863,"error":1081,"timeout":994,"latency_ms_avg":3284.054,"latency_ms_max":5721.482},"delete_total":{"success":0,"error":0,"timeout":0,"latency_ms_avg":0.000,"latency_ms_max":0.000},"forward_error_by_shard":{"0":6,"1":17,"2":13,"3":4,"5":12,"6":24,"7":19,"8":27,"10":11,"11":7,"12":12,"13":37,"15":9,"16":7,"17":16,"18":4,"20":14,"21":11,"22":75,"23":10,"25":11,"26":15,"27":38,"28":11,"30":15,"31":12},"consensus_reply_error_by_shard":{"3":142,"4":68,"7":11,"9":55,"14":48,"17":27,"18":119,"19":46,"22":33,"24":47,"27":8,"29":40},"put_total_by_shard":{"0":29,"1":24,"2":28,"3":146,"4":143,"5":21,"6":33,"7":53,"8":27,"9":137,"10":28,"11":19,"12":22,"13":37,"14":121,"15":31,"16":23,"17":64,"18":139,"19":119,"20":25,"21":25,"22":125,"23":37,"24":167,"25":35,"26":26,"27":49,"28":27,"29":131,"30":24,"31":29},"put_timeout_by_shard":{"0":6,"1":17,"2":13,"3":146,"4":68,"5":12,"6":24,"7":23,"8":25,"9":55,"10":11,"11":7,"12":12,"13":34,"14":48,"15":9,"16":7,"17":42,"18":123,"19":46,"20":14,"21":11,"22":53,"23":10,"24":47,"25":11,"26":15,"27":27,"28":11,"29":40,"30":15,"31":12},"error_code_counts":{"consensus_reply:STATUS_CODE_TIMEOUT":644,"forward:STATUS_CODE_INTERNAL/grpc=CANCELLED":82,"forward:STATUS_CODE_TIMEOUT/grpc=DEADLINE_EXCEEDED":350,"forward:STATUS_CODE_UNAVAILABLE":5,"put_total:STATUS_CODE_INTERNAL/grpc=CANCELLED":82,"put_total:STATUS_CODE_TIMEOUT":644,"put_total:STATUS_CODE_TIMEOUT/grpc=DEADLINE_EXCEEDED":350,"put_total:STATUS_CODE_UNAVAILABLE":5}}`
+
+## Artifacts
+
+- JSON report: `reports/benchmarks/aws/e2e_http_incluster_k6_20260221T131638Z.json`
+- Run directory: `reports/benchmarks/aws/incluster_runs/notdynamo-bench-k6-20260221131638`
+- Job manifest: `reports/benchmarks/aws/incluster_runs/notdynamo-bench-k6-20260221131638/job.yaml`
+- Script configmap: `notdynamo-bench-k6-script-20260221131638`
+- Pod placement snapshot: `reports/benchmarks/aws/incluster_runs/notdynamo-bench-k6-20260221131638/pod_placement.txt`
+- Pods top snapshot: `reports/benchmarks/aws/incluster_runs/notdynamo-bench-k6-20260221131638/telemetry/pods_top_snapshot.txt`
+- Nodes top snapshot: `reports/benchmarks/aws/incluster_runs/notdynamo-bench-k6-20260221131638/telemetry/nodes_top_snapshot.txt`
+- Generator top summary: `reports/benchmarks/aws/incluster_runs/notdynamo-bench-k6-20260221131638/telemetry/bench_top_summary.txt`
+- Service top summary: `reports/benchmarks/aws/incluster_runs/notdynamo-bench-k6-20260221131638/telemetry/data_top_summary.txt`
+- Nodes top summary: `reports/benchmarks/aws/incluster_runs/notdynamo-bench-k6-20260221131638/telemetry/nodes_top_summary.txt`
+- Write-stage telemetry samples: `reports/benchmarks/aws/incluster_runs/notdynamo-bench-k6-20260221131638/telemetry/write_stage_telemetry_samples.txt`

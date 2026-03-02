@@ -1,0 +1,4 @@
+notdynamo-control-plane-58bfc58b4b-wxn8w   2m    85Mi     
+notdynamo-data-0                           7m    1081Mi   
+notdynamo-data-1                           7m    930Mi    
+notdynamo-data-2                           14m   1030Mi   

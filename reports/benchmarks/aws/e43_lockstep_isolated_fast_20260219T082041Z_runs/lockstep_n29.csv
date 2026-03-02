@@ -1,0 +1,2 @@
+run_index,node_count,data_replicas,status,matrix_exit_code,external_mode,external_tps,external_p99_ms,incluster_tps,incluster_p99_ms,incluster_error_rate,incluster_telem_hint,incluster_telem_cpu_ratio,report_json,report_md
+1,29,29,WARN,0,port-forward,,,9.96,1502.477,9.4000,service-pressure-dominant,0.206,reports/benchmarks/aws/e43_lockstep_isolated_fast_20260219T082041Z_runs/lockstep_n29_runs/run_1_nodes29_replicas29/benchmark_matrix.json,reports/benchmarks/aws/e43_lockstep_isolated_fast_20260219T082041Z_runs/lockstep_n29_runs/run_1_nodes29_replicas29/benchmark_matrix.md

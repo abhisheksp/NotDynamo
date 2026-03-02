@@ -1,0 +1,16 @@
+# benchmark_pods
+NAME                                        READY   STATUS      RESTARTS   AGE    IP               NODE                                           NOMINATED NODE   READINESS GATES
+notdynamo-bench-http-20260219172452-7xc2s   0/1     Completed   0          100s   192.168.77.0     ip-192-168-74-164.us-west-2.compute.internal   <none>           <none>
+notdynamo-bench-http-20260219172452-f5pvr   0/1     Completed   0          100s   192.168.6.80     ip-192-168-17-185.us-west-2.compute.internal   <none>           <none>
+notdynamo-bench-http-20260219172452-hdpkj   0/1     Completed   0          100s   192.168.21.48    ip-192-168-17-185.us-west-2.compute.internal   <none>           <none>
+notdynamo-bench-http-20260219172452-jk8vz   0/1     Completed   0          100s   192.168.64.22    ip-192-168-74-164.us-west-2.compute.internal   <none>           <none>
+notdynamo-bench-http-20260219172452-jpf9f   0/1     Completed   0          100s   192.168.90.160   ip-192-168-74-164.us-west-2.compute.internal   <none>           <none>
+notdynamo-bench-http-20260219172452-kpcrx   0/1     Completed   0          100s   192.168.30.128   ip-192-168-17-185.us-west-2.compute.internal   <none>           <none>
+notdynamo-bench-http-20260219172452-r4z8c   0/1     Completed   0          100s   192.168.66.48    ip-192-168-74-164.us-west-2.compute.internal   <none>           <none>
+notdynamo-bench-http-20260219172452-zf6v7   0/1     Completed   0          100s   192.168.29.16    ip-192-168-17-185.us-west-2.compute.internal   <none>           <none>
+
+# data_pods
+NAME               READY   STATUS    RESTARTS   AGE    IP              NODE                                           NOMINATED NODE   READINESS GATES
+notdynamo-data-0   1/1     Running   0          145m   192.168.88.76   ip-192-168-70-170.us-west-2.compute.internal   <none>           <none>
+notdynamo-data-1   1/1     Running   0          145m   192.168.45.20   ip-192-168-43-228.us-west-2.compute.internal   <none>           <none>
+notdynamo-data-2   1/1     Running   0          146m   192.168.4.113   ip-192-168-30-7.us-west-2.compute.internal     <none>           <none>

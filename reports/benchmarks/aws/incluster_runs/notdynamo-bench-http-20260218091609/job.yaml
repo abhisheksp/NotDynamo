@@ -1,0 +1,49 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: notdynamo-bench-http-20260218091609
+  namespace: notdynamo
+  labels:
+    app: notdynamo-bench
+    benchmark-category: in-cluster
+spec:
+  ttlSecondsAfterFinished: 900
+  backoffLimit: 0
+  parallelism: 1
+  completions: 1
+  template:
+    metadata:
+      labels:
+        app: notdynamo-bench
+        benchmark-category: in-cluster
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: bench
+          image: 139643733075.dkr.ecr.us-west-2.amazonaws.com/notdynamo/notdynamo-bench:bench-20260218T091601Z
+          imagePullPolicy: IfNotPresent
+          args:
+            - --scenario
+            - e2e-http
+            - --baseUrl
+            - http://notdynamo-data.notdynamo.svc.cluster.local:8080
+            - --operations
+            - "2000"
+            - --keyspace
+            - "1000"
+            - --threads
+            - "8"
+            - --readRatio
+            - "0.90"
+            - --distribution
+            - "uniform"
+            - --zipfTheta
+            - "0.90"
+            - --valueBytes
+            - "256"
+            - --preload
+            - "true"
+            - --connectTimeoutMs
+            - "3000"
+            - --requestTimeoutMs
+            - "5000"

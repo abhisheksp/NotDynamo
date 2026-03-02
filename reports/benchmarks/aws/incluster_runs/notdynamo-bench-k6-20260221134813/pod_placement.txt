@@ -1,0 +1,39 @@
+# benchmark_pods
+NAME                                      READY   STATUS    RESTARTS   AGE   IP               NODE                                           NOMINATED NODE   READINESS GATES
+notdynamo-bench-k6-20260221134813-6hx5v   1/1     Running   0          77s   192.168.83.60    ip-192-168-65-98.us-west-2.compute.internal    <none>           <none>
+notdynamo-bench-k6-20260221134813-8k9f2   1/1     Running   0          77s   192.168.87.113   ip-192-168-95-200.us-west-2.compute.internal   <none>           <none>
+notdynamo-bench-k6-20260221134813-b5lk6   1/1     Running   0          77s   192.168.83.248   ip-192-168-69-94.us-west-2.compute.internal    <none>           <none>
+notdynamo-bench-k6-20260221134813-b7lgr   1/1     Running   0          77s   192.168.59.240   ip-192-168-52-84.us-west-2.compute.internal    <none>           <none>
+notdynamo-bench-k6-20260221134813-cbblc   1/1     Running   0          77s   192.168.55.113   ip-192-168-57-144.us-west-2.compute.internal   <none>           <none>
+notdynamo-bench-k6-20260221134813-d7lkc   1/1     Running   0          77s   192.168.93.145   ip-192-168-88-211.us-west-2.compute.internal   <none>           <none>
+notdynamo-bench-k6-20260221134813-fngds   1/1     Running   0          77s   192.168.63.182   ip-192-168-35-251.us-west-2.compute.internal   <none>           <none>
+notdynamo-bench-k6-20260221134813-h6mk7   1/1     Running   0          77s   192.168.14.156   ip-192-168-1-133.us-west-2.compute.internal    <none>           <none>
+notdynamo-bench-k6-20260221134813-ngl9h   1/1     Running   0          77s   192.168.8.159    ip-192-168-11-199.us-west-2.compute.internal   <none>           <none>
+notdynamo-bench-k6-20260221134813-p7bg7   1/1     Running   0          77s   192.168.41.31    ip-192-168-42-157.us-west-2.compute.internal   <none>           <none>
+notdynamo-bench-k6-20260221134813-ttw6s   1/1     Running   0          77s   192.168.16.228   ip-192-168-15-52.us-west-2.compute.internal    <none>           <none>
+notdynamo-bench-k6-20260221134813-tw4f6   1/1     Running   0          77s   192.168.2.233    ip-192-168-6-26.us-west-2.compute.internal     <none>           <none>
+notdynamo-bench-k6-20260221134813-v2rnq   1/1     Running   0          77s   192.168.3.131    ip-192-168-1-133.us-west-2.compute.internal    <none>           <none>
+notdynamo-bench-k6-20260221134813-wxpd6   1/1     Running   0          77s   192.168.56.154   ip-192-168-42-157.us-west-2.compute.internal   <none>           <none>
+notdynamo-bench-k6-20260221134813-xwqsg   1/1     Running   0          77s   192.168.37.232   ip-192-168-38-155.us-west-2.compute.internal   <none>           <none>
+notdynamo-bench-k6-20260221134813-z86bl   1/1     Running   0          77s   192.168.12.121   ip-192-168-1-48.us-west-2.compute.internal     <none>           <none>
+notdynamo-bench-k6-20260221134813-zh446   1/1     Running   0          77s   192.168.72.6     ip-192-168-69-94.us-west-2.compute.internal    <none>           <none>
+
+# data_pods
+NAME                READY   STATUS    RESTARTS   AGE     IP               NODE                                           NOMINATED NODE   READINESS GATES
+notdynamo-data-0    1/1     Running   0          2m3s    192.168.11.61    ip-192-168-2-208.us-west-2.compute.internal    <none>           <none>
+notdynamo-data-1    1/1     Running   0          2m32s   192.168.87.248   ip-192-168-65-98.us-west-2.compute.internal    <none>           <none>
+notdynamo-data-10   1/1     Running   0          6m31s   192.168.52.235   ip-192-168-35-251.us-west-2.compute.internal   <none>           <none>
+notdynamo-data-11   1/1     Running   0          6m33s   192.168.4.179    ip-192-168-11-199.us-west-2.compute.internal   <none>           <none>
+notdynamo-data-12   1/1     Running   0          6m33s   192.168.22.200   ip-192-168-6-26.us-west-2.compute.internal     <none>           <none>
+notdynamo-data-13   1/1     Running   0          6m33s   192.168.47.55    ip-192-168-42-157.us-west-2.compute.internal   <none>           <none>
+notdynamo-data-14   1/1     Running   0          6m33s   192.168.34.128   ip-192-168-52-84.us-west-2.compute.internal    <none>           <none>
+notdynamo-data-15   1/1     Running   0          6m33s   192.168.75.47    ip-192-168-69-94.us-west-2.compute.internal    <none>           <none>
+notdynamo-data-16   1/1     Running   0          6m33s   192.168.11.152   ip-192-168-1-48.us-west-2.compute.internal     <none>           <none>
+notdynamo-data-2    1/1     Running   0          2m53s   192.168.61.41    ip-192-168-57-144.us-west-2.compute.internal   <none>           <none>
+notdynamo-data-3    1/1     Running   0          3m30s   192.168.45.215   ip-192-168-38-155.us-west-2.compute.internal   <none>           <none>
+notdynamo-data-4    1/1     Running   0          4m5s    192.168.90.172   ip-192-168-88-211.us-west-2.compute.internal   <none>           <none>
+notdynamo-data-5    1/1     Running   0          4m26s   192.168.4.90     ip-192-168-1-133.us-west-2.compute.internal    <none>           <none>
+notdynamo-data-6    1/1     Running   0          4m55s   192.168.95.108   ip-192-168-71-164.us-west-2.compute.internal   <none>           <none>
+notdynamo-data-7    1/1     Running   0          5m16s   192.168.12.44    ip-192-168-15-52.us-west-2.compute.internal    <none>           <none>
+notdynamo-data-8    1/1     Running   0          5m31s   192.168.76.248   ip-192-168-95-200.us-west-2.compute.internal   <none>           <none>
+notdynamo-data-9    1/1     Running   0          5m56s   192.168.55.221   ip-192-168-51-91.us-west-2.compute.internal    <none>           <none>

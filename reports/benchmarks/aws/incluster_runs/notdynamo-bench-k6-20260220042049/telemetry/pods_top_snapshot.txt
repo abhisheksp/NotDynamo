@@ -1,0 +1,12 @@
+notdynamo-control-plane-5dbd9bc95f-q54ff   2m     89Mi     
+notdynamo-data-0                           724m   1342Mi   
+notdynamo-data-1                           497m   1065Mi   
+notdynamo-data-10                          326m   1293Mi   
+notdynamo-data-2                           765m   1502Mi   
+notdynamo-data-3                           288m   1264Mi   
+notdynamo-data-4                           342m   1308Mi   
+notdynamo-data-5                           123m   579Mi    
+notdynamo-data-6                           234m   757Mi    
+notdynamo-data-7                           105m   581Mi    
+notdynamo-data-8                           317m   622Mi    
+notdynamo-data-9                           339m   1253Mi   

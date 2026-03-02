@@ -1,0 +1,5 @@
+node_count=14
+cpu_mcores_sum=1474.000
+cpu_percent_max=25.000
+memory_mib_sum=11934.000
+memory_percent_max=57.000

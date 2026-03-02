@@ -1,0 +1,5 @@
+notdynamo-bench-http-20260219081914-8st7w   158m   46Mi    
+notdynamo-control-plane-58bfc58b4b-88qzz    2m     26Mi    
+notdynamo-data-0                            188m   477Mi   
+notdynamo-data-1                            94m    545Mi   
+notdynamo-data-2                            115m   510Mi   

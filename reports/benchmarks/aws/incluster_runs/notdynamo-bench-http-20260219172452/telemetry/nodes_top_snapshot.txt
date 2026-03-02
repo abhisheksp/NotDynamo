@@ -1,0 +1,5 @@
+ip-192-168-17-185.us-west-2.compute.internal   1286m   66%   983Mi    29%   
+ip-192-168-30-7.us-west-2.compute.internal     160m    8%    1325Mi   40%   
+ip-192-168-43-228.us-west-2.compute.internal   71m     3%    1323Mi   40%   
+ip-192-168-70-170.us-west-2.compute.internal   123m    6%    1344Mi   40%   
+ip-192-168-74-164.us-west-2.compute.internal   1499m   77%   818Mi    24%   

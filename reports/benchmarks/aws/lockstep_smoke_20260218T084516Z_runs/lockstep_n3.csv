@@ -1,0 +1,2 @@
+run_index,node_count,data_replicas,status,matrix_exit_code,external_mode,external_tps,external_p99_ms,incluster_tps,incluster_p99_ms,incluster_error_rate,report_json,report_md
+1,3,3,PASS,0,port-forward,,,134.97,78.182,0.0500,reports/benchmarks/aws/lockstep_smoke_20260218T084516Z_runs/lockstep_n3_runs/run_1_nodes3_replicas3/benchmark_matrix.json,reports/benchmarks/aws/lockstep_smoke_20260218T084516Z_runs/lockstep_n3_runs/run_1_nodes3_replicas3/benchmark_matrix.md

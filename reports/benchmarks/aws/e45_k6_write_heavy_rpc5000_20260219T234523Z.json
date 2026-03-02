@@ -1,0 +1,110 @@
+{
+  "benchmark": "e2e_http_incluster_k6",
+  "category": "in-cluster-job",
+  "status": "WARN",
+  "timestamp_utc": "2026-02-19T23:47:14Z",
+  "cluster_name": "notdynamo-eks",
+  "region": "us-west-2",
+  "namespace": "notdynamo",
+  "base_url": "http://notdynamo-data.notdynamo.svc.cluster.local:8080",
+  "job": {
+    "name": "notdynamo-bench-k6-20260219234526",
+    "parallelism": "4",
+    "completions": "4",
+    "bench_node_label": "",
+    "bench_taint_effect": "NoSchedule",
+    "job_completed": "true",
+    "pod_count": "4",
+    "pod_metric_failures": "0",
+    "ttl_seconds_after_finished": "900"
+  },
+  "config": {
+    "driver": "k6",
+    "keyspace": "20000",
+    "value_bytes": "256",
+    "read_ratio": "0.10",
+    "distribution": "uniform",
+    "preload": "false",
+    "skip_main": "false",
+    "vus_per_pod": "32",
+    "duration": "90s",
+    "setup_timeout": "10m",
+    "request_timeout_ms": "5000",
+    "preload_retries": "3",
+    "preload_retry_sleep_ms": "5",
+    "data_pod_selector": "app=notdynamo-data",
+    "telemetry_sample_attempts": "15",
+    "telemetry_sample_interval_sec": "2",
+    "image": "grafana/k6:0.49.0"
+  },
+  "results": {
+    "operations_effective": "3102",
+    "throughput_rps_aggregate": "32.98",
+    "success_throughput_rps_aggregate": "2.31",
+    "latency_ms_p50_max_pod": "440.278",
+    "latency_ms_p95_max_pod": "5002.227",
+    "latency_ms_p99_max_pod": "5023.955",
+    "success_count": "217",
+    "error_count": "2885",
+    "error_rate_percent": "93.0045",
+    "read_count": "285",
+    "write_count": "2817",
+    "read_not_found_count": "0",
+    "preload_attempted": "0",
+    "preload_success": "0",
+    "preload_failed": "0"
+  },
+  "telemetry": {
+    "collection": {
+      "sample_attempts_configured": "15",
+      "sample_attempts_used": "15",
+      "sample_interval_sec": "2",
+      "pods_top_available": "true",
+      "nodes_top_available": "true"
+    },
+    "signals": {
+      "generator_pod_count": "4",
+      "generator_cpu_mcores_sum": "37.000",
+      "generator_cpu_mcores_avg": "9.250",
+      "generator_memory_mib_sum": "249.000",
+      "generator_memory_mib_avg": "62.250",
+      "service_pod_count": "0",
+      "service_cpu_mcores_sum": "0.000",
+      "service_cpu_mcores_avg": "0.000",
+      "service_memory_mib_sum": "0.000",
+      "service_memory_mib_avg": "0.000",
+      "cluster_node_count": "14",
+      "cluster_cpu_mcores_sum": "4153.000",
+      "cluster_cpu_percent_max": "98.000",
+      "cluster_memory_mib_sum": "12004.000",
+      "cluster_memory_percent_max": "79.000",
+      "generator_to_service_cpu_ratio": "0.000",
+      "attribution_hint": "inconclusive",
+      "attribution_reason": "insufficient pod-level telemetry"
+    },
+    "write_stage_telemetry": {
+      "sample_count": "1",
+      "samples_file": "reports/benchmarks/aws/incluster_runs/notdynamo-bench-k6-20260219234526/telemetry/write_stage_telemetry_samples.txt",
+      "samples": [{"pod":"notdynamo-data-2","sample":"{\"node\":\"notdynamo-data-2\",\"forward_to_leader\":{\"success\":2,\"error\":383,\"timeout\":13,\"latency_ms_avg\":172.925,\"latency_ms_max\":5008.682},\"consensus_submit\":{\"success\":207,\"error\":0,\"timeout\":0,\"latency_ms_avg\":0.000,\"latency_ms_max\":0.000},\"consensus_reply\":{\"success\":207,\"error\":0,\"timeout\":0,\"latency_ms_avg\":50.706,\"latency_ms_max\":649.622},\"put_total\":{\"success\":209,\"error\":383,\"timeout\":13,\"latency_ms_avg\":131.854,\"latency_ms_max\":5008.695},\"delete_total\":{\"success\":0,\"error\":0,\"timeout\":0,\"latency_ms_avg\":0.000,\"latency_ms_max\":0.000},\"forward_error_by_shard\":{\"0\":2,\"1\":5,\"3\":5,\"4\":3,\"6\":2,\"7\":5,\"9\":4,\"10\":2,\"12\":5,\"13\":6,\"15\":3,\"16\":6,\"18\":7,\"19\":4,\"21\":1,\"22\":2,\"24\":2,\"25\":7,\"27\":2,\"28\":5,\"30\":1,\"31\":6,\"33\":4,\"34\":3,\"36\":4,\"37\":6,\"39\":4,\"40\":6,\"43\":6,\"45\":5,\"46\":2,\"48\":5,\"49\":7,\"51\":4,\"52\":3,\"54\":2,\"55\":2,\"57\":4,\"58\":6,\"60\":4,\"61\":1,\"63\":8,\"64\":4,\"66\":6,\"67\":7,\"69\":6,\"72\":3,\"73\":6,\"75\":8,\"76\":7,\"78\":5,\"79\":8,\"81\":6,\"82\":6,\"84\":4,\"85\":9,\"87\":7,\"88\":3,\"90\":6,\"91\":3,\"93\":6,\"94\":3,\"96\":4,\"97\":5,\"99\":4,\"100\":3,\"102\":3,\"103\":6,\"105\":2,\"106\":5,\"108\":9,\"109\":7,\"111\":2,\"112\":7,\"114\":4,\"115\":5,\"117\":2,\"118\":4,\"120\":5,\"121\":4,\"123\":3,\"124\":3,\"126\":5,\"127\":7},\"consensus_reply_error_by_shard\":{},\"error_code_counts\":{\"forward:STATUS_CODE_TIMEOUT\":13,\"forward:STATUS_CODE_UNAVAILABLE\":370,\"put_total:STATUS_CODE_TIMEOUT\":13,\"put_total:STATUS_CODE_UNAVAILABLE\":370}}"}]
+    },
+    "artifacts": {
+      "pod_placement": "reports/benchmarks/aws/incluster_runs/notdynamo-bench-k6-20260219234526/pod_placement.txt",
+      "pods_top_snapshot": "reports/benchmarks/aws/incluster_runs/notdynamo-bench-k6-20260219234526/telemetry/pods_top_snapshot.txt",
+      "pods_top_error": "reports/benchmarks/aws/incluster_runs/notdynamo-bench-k6-20260219234526/telemetry/pods_top_snapshot.err",
+      "nodes_top_snapshot": "reports/benchmarks/aws/incluster_runs/notdynamo-bench-k6-20260219234526/telemetry/nodes_top_snapshot.txt",
+      "nodes_top_error": "reports/benchmarks/aws/incluster_runs/notdynamo-bench-k6-20260219234526/telemetry/nodes_top_snapshot.err",
+      "generator_top_summary": "reports/benchmarks/aws/incluster_runs/notdynamo-bench-k6-20260219234526/telemetry/bench_top_summary.txt",
+      "service_top_summary": "reports/benchmarks/aws/incluster_runs/notdynamo-bench-k6-20260219234526/telemetry/data_top_summary.txt",
+      "nodes_top_summary": "reports/benchmarks/aws/incluster_runs/notdynamo-bench-k6-20260219234526/telemetry/nodes_top_summary.txt",
+      "write_stage_telemetry_samples": "reports/benchmarks/aws/incluster_runs/notdynamo-bench-k6-20260219234526/telemetry/write_stage_telemetry_samples.txt"
+    }
+  },
+  "error_samples": [],
+  "artifacts": {
+    "run_dir": "reports/benchmarks/aws/incluster_runs/notdynamo-bench-k6-20260219234526",
+    "job_manifest": "reports/benchmarks/aws/incluster_runs/notdynamo-bench-k6-20260219234526/job.yaml",
+    "script_configmap": "notdynamo-bench-k6-script-20260219234526",
+    "pod_logs_glob": "reports/benchmarks/aws/incluster_runs/notdynamo-bench-k6-20260219234526/*.log",
+    "telemetry_dir": "reports/benchmarks/aws/incluster_runs/notdynamo-bench-k6-20260219234526/telemetry"
+  }
+}

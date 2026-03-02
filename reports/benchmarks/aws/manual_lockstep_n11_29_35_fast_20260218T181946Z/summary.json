@@ -1,0 +1,40 @@
+{
+  "benchmark": "manual_lockstep_n11_29_35_fast",
+  "timestamp_utc": "2026-02-18T18:29:00Z",
+  "output_dir": "reports/benchmarks/aws/manual_lockstep_n11_29_35_fast_20260218T181946Z",
+  "points": [
+    {
+      "count": 11,
+      "status": "PASS",
+      "throughput_rps": "140.35",
+      "p99_ms": "199.724",
+      "error_rate_percent": "0.0000",
+      "report_json": "reports/benchmarks/aws/manual_lockstep_n11_29_35_fast_20260218T181946Z/point_n11.json",
+      "report_md": "reports/benchmarks/aws/manual_lockstep_n11_29_35_fast_20260218T181946Z/point_n11.md",
+      "shard_replicas_per_node": "34.91",
+      "estimated_cost_usd_per_hour": "0.684175"
+    },
+    {
+      "count": 29,
+      "status": "PASS",
+      "throughput_rps": "144.81",
+      "p99_ms": "141.468",
+      "error_rate_percent": "0.0000",
+      "report_json": "reports/benchmarks/aws/manual_lockstep_n11_29_35_fast_20260218T181946Z/point_n29.json",
+      "report_md": "reports/benchmarks/aws/manual_lockstep_n11_29_35_fast_20260218T181946Z/point_n29.md",
+      "shard_replicas_per_node": "13.24",
+      "estimated_cost_usd_per_hour": "1.640099"
+    },
+    {
+      "count": 35,
+      "status": "PASS",
+      "throughput_rps": "148.63",
+      "p99_ms": "104.805",
+      "error_rate_percent": "0.0000",
+      "report_json": "reports/benchmarks/aws/manual_lockstep_n11_29_35_fast_20260218T181946Z/point_n35.json",
+      "report_md": "reports/benchmarks/aws/manual_lockstep_n11_29_35_fast_20260218T181946Z/point_n35.md",
+      "shard_replicas_per_node": "10.97",
+      "estimated_cost_usd_per_hour": "1.958740"
+    }
+  ]
+}

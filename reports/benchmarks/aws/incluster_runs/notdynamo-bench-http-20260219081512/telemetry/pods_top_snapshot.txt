@@ -1,0 +1,14 @@
+notdynamo-bench-http-20260219081512-mswc2   126m    48Mi    
+notdynamo-bench-http-20260219081512-z8shd   148m    47Mi    
+notdynamo-control-plane-786676cc59-k5kr8    2m      30Mi    
+notdynamo-data-0                            532m    499Mi   
+notdynamo-data-1                            331m    513Mi   
+notdynamo-data-10                           142m    185Mi   
+notdynamo-data-2                            1519m   564Mi   
+notdynamo-data-3                            501m    187Mi   
+notdynamo-data-4                            436m    192Mi   
+notdynamo-data-5                            194m    189Mi   
+notdynamo-data-6                            244m    189Mi   
+notdynamo-data-7                            60m     172Mi   
+notdynamo-data-8                            394m    194Mi   
+notdynamo-data-9                            451m    194Mi   

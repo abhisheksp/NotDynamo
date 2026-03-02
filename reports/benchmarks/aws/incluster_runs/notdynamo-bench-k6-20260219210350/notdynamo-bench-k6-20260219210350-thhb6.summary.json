@@ -1,0 +1,50 @@
+{
+    "root_group": {
+        "name": "",
+        "path": "",
+        "id": "d41d8cd98f00b204e9800998ecf8427e",
+        "groups": {
+            "setup": {
+                "id": "5c0f8025f7e0b6654089e5b00e950f1a",
+                "groups": {},
+                "checks": {},
+                "name": "setup",
+                "path": "::setup"
+            }
+        },
+        "checks": {}
+    },
+    "metrics": {
+        "vus_max": {
+            "min": 1,
+            "max": 1,
+            "value": 1
+        },
+        "data_sent": {
+            "count": 0,
+            "rate": 0
+        },
+        "data_received": {
+            "count": 0,
+            "rate": 0
+        },
+        "iteration_duration": {
+            "p(95)": 50.7210764,
+            "avg": 50.39569337531482,
+            "min": 0.00259,
+            "med": 50.515569,
+            "max": 51.122709,
+            "p(90)": 50.6598654
+        },
+        "iterations": {
+            "count": 396,
+            "rate": 19.779455888148725
+        },
+        "vus": {
+            "value": 1,
+            "min": 1,
+            "max": 1
+        }
+    },
+    "setup_data": null
+}__K6_SUMMARY_END__

@@ -1,0 +1,5 @@
+pod_count=11
+cpu_mcores_sum=10144.000
+cpu_mcores_avg=922.182
+memory_mib_sum=10680.000
+memory_mib_avg=970.909

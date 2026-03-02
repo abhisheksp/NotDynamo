@@ -1,0 +1,99 @@
+# NotDynamo E2E HTTP In-Cluster Benchmark Report (k6)
+
+- Status: **WARN**
+- Timestamp (UTC): 2026-02-20T12:13:33Z
+- Category: `in-cluster-job`
+- Driver: `k6`
+- Cluster: `notdynamo-eks`
+- Region: `us-west-2`
+- Namespace: `notdynamo`
+- Base URL: `http://notdynamo-data.notdynamo.svc.cluster.local:8080`
+- Job: `notdynamo-bench-k6-20260220121136`
+
+## Configuration
+
+| Field | Value |
+|---|---|
+| Parallelism | 11 |
+| Completions | 11 |
+| Benchmark node label | notdynamo.io/workload=benchmark |
+| Benchmark taint effect | NoSchedule |
+| k6 VUs per pod | 32 |
+| k6 Duration | 90s |
+| k6 Setup timeout | 10m |
+| Keyspace | 20000 |
+| Read ratio | 0.10 |
+| Distribution | uniform |
+| Value bytes | 256 |
+| Preload | false |
+| Skip main | false |
+| Request timeout ms | 5000 |
+
+## Results
+
+| Metric | Value |
+|---|---|
+| Effective operations | 6784 |
+| Aggregate throughput (rps) | 71.83 |
+| Aggregate success throughput (rps) | 1.65 |
+| Max pod p50 latency (ms) | 4999.729 |
+| Max pod p95 latency (ms) | 5001.097 |
+| Max pod p99 latency (ms) | 5010.831 |
+| Success count | 156 |
+| Error count | 6628 |
+| Error rate (%) | 97.7005 |
+| Read count | 725 |
+| Write count | 6059 |
+| Read not found count | 16 |
+| Preload attempted | 0 |
+| Preload success | 0 |
+| Preload failed | 0 |
+| Job completed | true |
+| Pod count | 11 |
+| Pod metric failures | 0 |
+
+## Telemetry Summary
+
+| Signal | Value |
+|---|---|
+| Sample attempts (used/configured) | 15 / 15 |
+| Pods top available | true |
+| Nodes top available | true |
+| Generator pod count (sampled) | 11 |
+| Generator CPU mcores sum | 100.000 |
+| Generator CPU mcores avg | 9.091 |
+| Service pod count (sampled) | 4 |
+| Service CPU mcores sum | 4364.000 |
+| Service CPU mcores avg | 1091.000 |
+| Generator/Service CPU ratio | 0.023 |
+| Attribution hint | service-pressure-dominant |
+| Attribution reason | data pod CPU sum is >= 1.5x benchmark pod CPU sum during sample window |
+| Cluster node count (sampled) | 14 |
+| Cluster CPU percent max | 67.000 |
+| Cluster memory percent max | 71.000 |
+| Write-stage telemetry samples | 8 |
+
+## Write-Stage Telemetry Samples
+
+- `notdynamo-data-10`: `{"node":"notdynamo-data-10","forward_to_leader":{"success":27,"error":32,"timeout":1,"latency_ms_avg":270.338,"latency_ms_max":5002.566},"consensus_submit":{"success":33,"error":0,"timeout":0,"latency_ms_avg":0.000,"latency_ms_max":0.000},"consensus_reply":{"success":0,"error":25,"timeout":25,"latency_ms_avg":5046.611,"latency_ms_max":5609.218},"put_total":{"success":27,"error":57,"timeout":26,"latency_ms_avg":1711.357,"latency_ms_max":6042.262},"delete_total":{"success":0,"error":0,"timeout":0,"latency_ms_avg":0.000,"latency_ms_max":0.000},"forward_error_by_shard":{"1":1,"2":1,"9":1,"18":1,"24":1,"29":2,"31":1,"33":1,"34":3,"35":2,"44":1,"51":1,"55":1,"62":3,"68":1,"75":2,"77":2,"90":1,"94":1,"95":2,"111":3},"consensus_reply_error_by_shard":{"10":1,"21":2,"43":3,"54":4,"65":2,"76":2,"87":2,"98":3,"109":3,"120":3},"error_code_counts":{"consensus_reply:STATUS_CODE_TIMEOUT":25,"forward:STATUS_CODE_TIMEOUT":1,"forward:STATUS_CODE_UNAVAILABLE":31,"put_total:STATUS_CODE_TIMEOUT":26,"put_total:STATUS_CODE_UNAVAILABLE":31}}`
+- `notdynamo-data-3`: `{"node":"notdynamo-data-3","forward_to_leader":{"success":4,"error":4,"timeout":2,"latency_ms_avg":1505.497,"latency_ms_max":5200.829},"consensus_submit":{"success":29,"error":0,"timeout":0,"latency_ms_avg":0.000,"latency_ms_max":0.000},"consensus_reply":{"success":29,"error":0,"timeout":0,"latency_ms_avg":190.805,"latency_ms_max":1109.482},"put_total":{"success":33,"error":4,"timeout":2,"latency_ms_avg":496.754,"latency_ms_max":5200.887},"delete_total":{"success":0,"error":0,"timeout":0,"latency_ms_avg":0.000,"latency_ms_max":0.000},"forward_error_by_shard":{"67":1,"87":1,"98":1,"100":1},"consensus_reply_error_by_shard":{},"error_code_counts":{"forward:STATUS_CODE_TIMEOUT":2,"forward:STATUS_CODE_UNAVAILABLE":2,"put_total:STATUS_CODE_TIMEOUT":2,"put_total:STATUS_CODE_UNAVAILABLE":2}}`
+- `notdynamo-data-4`: `{"node":"notdynamo-data-4","forward_to_leader":{"success":0,"error":0,"timeout":0,"latency_ms_avg":0.000,"latency_ms_max":0.000},"consensus_submit":{"success":36,"error":0,"timeout":0,"latency_ms_avg":0.000,"latency_ms_max":0.000},"consensus_reply":{"success":36,"error":0,"timeout":0,"latency_ms_avg":43.411,"latency_ms_max":289.091},"put_total":{"success":36,"error":0,"timeout":0,"latency_ms_avg":73.942,"latency_ms_max":763.040},"delete_total":{"success":0,"error":0,"timeout":0,"latency_ms_avg":0.000,"latency_ms_max":0.000},"forward_error_by_shard":{},"consensus_reply_error_by_shard":{},"error_code_counts":{}}`
+- `notdynamo-data-5`: `{"node":"notdynamo-data-5","forward_to_leader":{"success":30,"error":74,"timeout":19,"latency_ms_avg":1049.570,"latency_ms_max":5010.020},"consensus_submit":{"success":73,"error":0,"timeout":0,"latency_ms_avg":0.000,"latency_ms_max":0.000},"consensus_reply":{"success":72,"error":1,"timeout":1,"latency_ms_avg":109.202,"latency_ms_max":5117.437},"put_total":{"success":102,"error":75,"timeout":20,"latency_ms_avg":662.483,"latency_ms_max":5117.850},"delete_total":{"success":0,"error":0,"timeout":0,"latency_ms_avg":0.000,"latency_ms_max":0.000},"forward_error_by_shard":{"0":1,"2":1,"4":1,"7":2,"9":1,"11":1,"15":1,"18":1,"23":2,"24":2,"25":2,"26":1,"32":2,"33":2,"36":1,"40":2,"42":2,"44":2,"46":1,"54":4,"56":1,"57":1,"59":2,"64":2,"65":3,"67":2,"68":1,"70":1,"72":1,"75":2,"76":2,"77":1,"79":1,"84":1,"86":2,"87":1,"88":1,"97":1,"98":1,"99":1,"101":1,"102":1,"106":2,"109":2,"110":2,"111":1,"113":1,"120":2,"123":2},"consensus_reply_error_by_shard":{"82":1},"error_code_counts":{"consensus_reply:STATUS_CODE_TIMEOUT":1,"forward:STATUS_CODE_TIMEOUT":19,"forward:STATUS_CODE_UNAVAILABLE":55,"put_total:STATUS_CODE_TIMEOUT":20,"put_total:STATUS_CODE_UNAVAILABLE":55}}`
+- `notdynamo-data-6`: `{"node":"notdynamo-data-6","forward_to_leader":{"success":49,"error":110,"timeout":17,"latency_ms_avg":632.707,"latency_ms_max":5096.427},"consensus_submit":{"success":49,"error":0,"timeout":0,"latency_ms_avg":0.000,"latency_ms_max":0.000},"consensus_reply":{"success":41,"error":8,"timeout":8,"latency_ms_avg":988.659,"latency_ms_max":5414.030},"put_total":{"success":90,"error":118,"timeout":25,"latency_ms_avg":719.024,"latency_ms_max":5414.078},"delete_total":{"success":0,"error":0,"timeout":0,"latency_ms_avg":0.000,"latency_ms_max":0.000},"forward_error_by_shard":{"2":3,"3":1,"4":2,"7":2,"9":1,"11":3,"13":2,"15":2,"18":1,"21":2,"22":2,"23":1,"26":1,"27":1,"29":2,"31":2,"32":1,"33":2,"34":2,"35":1,"36":1,"40":2,"42":1,"43":2,"44":1,"46":3,"48":1,"51":1,"54":1,"55":1,"56":3,"57":1,"59":2,"60":1,"62":1,"67":1,"73":1,"75":1,"76":2,"78":1,"81":2,"84":1,"88":3,"90":1,"91":1,"92":2,"95":3,"96":1,"99":1,"100":1,"101":2,"103":2,"104":1,"106":3,"108":1,"109":3,"111":2,"112":1,"113":1,"114":1,"117":1,"119":2,"120":3,"121":2,"122":3,"123":1,"124":1,"125":2},"consensus_reply_error_by_shard":{"61":1,"72":1,"94":6},"error_code_counts":{"consensus_reply:STATUS_CODE_TIMEOUT":8,"forward:STATUS_CODE_TIMEOUT":17,"forward:STATUS_CODE_UNAVAILABLE":93,"put_total:STATUS_CODE_TIMEOUT":25,"put_total:STATUS_CODE_UNAVAILABLE":93}}`
+- `notdynamo-data-7`: `{"node":"notdynamo-data-7","forward_to_leader":{"success":0,"error":0,"timeout":0,"latency_ms_avg":0.000,"latency_ms_max":0.000},"consensus_submit":{"success":8,"error":0,"timeout":0,"latency_ms_avg":0.000,"latency_ms_max":0.000},"consensus_reply":{"success":8,"error":0,"timeout":0,"latency_ms_avg":268.710,"latency_ms_max":1764.546},"put_total":{"success":8,"error":0,"timeout":0,"latency_ms_avg":290.320,"latency_ms_max":1764.602},"delete_total":{"success":0,"error":0,"timeout":0,"latency_ms_avg":0.000,"latency_ms_max":0.000},"forward_error_by_shard":{},"consensus_reply_error_by_shard":{},"error_code_counts":{}}`
+- `notdynamo-data-8`: `{"node":"notdynamo-data-8","forward_to_leader":{"success":44,"error":93,"timeout":19,"latency_ms_avg":726.599,"latency_ms_max":5215.252},"consensus_submit":{"success":60,"error":0,"timeout":0,"latency_ms_avg":0.000,"latency_ms_max":0.000},"consensus_reply":{"success":57,"error":3,"timeout":3,"latency_ms_avg":713.263,"latency_ms_max":5281.498},"put_total":{"success":101,"error":96,"timeout":22,"latency_ms_avg":723.208,"latency_ms_max":5393.704},"delete_total":{"success":0,"error":0,"timeout":0,"latency_ms_avg":0.000,"latency_ms_max":0.000},"forward_error_by_shard":{"0":2,"1":3,"3":1,"7":2,"10":2,"11":3,"12":2,"13":3,"14":2,"18":2,"20":2,"21":1,"22":1,"23":2,"24":3,"31":1,"33":1,"34":1,"35":1,"40":1,"42":1,"43":2,"44":2,"45":1,"46":2,"47":1,"51":2,"54":2,"56":3,"57":1,"64":2,"66":1,"67":2,"68":1,"69":3,"73":2,"76":1,"77":1,"78":3,"79":1,"82":1,"88":1,"89":2,"90":1,"94":2,"95":1,"100":2,"101":2,"103":1,"106":1,"109":1,"111":2,"113":1,"114":1,"117":1,"119":2,"121":1},"consensus_reply_error_by_shard":{"8":1,"96":1,"107":1},"error_code_counts":{"consensus_reply:STATUS_CODE_TIMEOUT":3,"forward:STATUS_CODE_TIMEOUT":19,"forward:STATUS_CODE_UNAVAILABLE":74,"put_total:STATUS_CODE_TIMEOUT":22,"put_total:STATUS_CODE_UNAVAILABLE":74}}`
+- `notdynamo-data-9`: `{"node":"notdynamo-data-9","forward_to_leader":{"success":0,"error":0,"timeout":0,"latency_ms_avg":0.000,"latency_ms_max":0.000},"consensus_submit":{"success":6,"error":0,"timeout":0,"latency_ms_avg":0.000,"latency_ms_max":0.000},"consensus_reply":{"success":0,"error":3,"timeout":3,"latency_ms_avg":5503.893,"latency_ms_max":5657.507},"put_total":{"success":0,"error":3,"timeout":3,"latency_ms_avg":6101.225,"latency_ms_max":6542.773},"delete_total":{"success":0,"error":0,"timeout":0,"latency_ms_avg":0.000,"latency_ms_max":0.000},"forward_error_by_shard":{},"consensus_reply_error_by_shard":{"31":1,"42":1,"86":1},"error_code_counts":{"consensus_reply:STATUS_CODE_TIMEOUT":3,"put_total:STATUS_CODE_TIMEOUT":3}}`
+
+## Artifacts
+
+- JSON report: `reports/benchmarks/aws/e45_k6_write_heavy_dnsfix_20260220T121134Z.json`
+- Run directory: `reports/benchmarks/aws/incluster_runs/notdynamo-bench-k6-20260220121136`
+- Job manifest: `reports/benchmarks/aws/incluster_runs/notdynamo-bench-k6-20260220121136/job.yaml`
+- Script configmap: `notdynamo-bench-k6-script-20260220121136`
+- Pod placement snapshot: `reports/benchmarks/aws/incluster_runs/notdynamo-bench-k6-20260220121136/pod_placement.txt`
+- Pods top snapshot: `reports/benchmarks/aws/incluster_runs/notdynamo-bench-k6-20260220121136/telemetry/pods_top_snapshot.txt`
+- Nodes top snapshot: `reports/benchmarks/aws/incluster_runs/notdynamo-bench-k6-20260220121136/telemetry/nodes_top_snapshot.txt`
+- Generator top summary: `reports/benchmarks/aws/incluster_runs/notdynamo-bench-k6-20260220121136/telemetry/bench_top_summary.txt`
+- Service top summary: `reports/benchmarks/aws/incluster_runs/notdynamo-bench-k6-20260220121136/telemetry/data_top_summary.txt`
+- Nodes top summary: `reports/benchmarks/aws/incluster_runs/notdynamo-bench-k6-20260220121136/telemetry/nodes_top_summary.txt`
+- Write-stage telemetry samples: `reports/benchmarks/aws/incluster_runs/notdynamo-bench-k6-20260220121136/telemetry/write_stage_telemetry_samples.txt`

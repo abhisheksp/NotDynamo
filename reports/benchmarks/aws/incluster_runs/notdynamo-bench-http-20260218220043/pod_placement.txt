@@ -1,0 +1,5 @@
+NAME                                        READY   STATUS      RESTARTS   AGE     IP               NODE                                           NOMINATED NODE   READINESS GATES
+notdynamo-bench-http-20260218220043-fmshl   0/1     Completed   0          3m38s   192.168.6.80     ip-192-168-17-185.us-west-2.compute.internal   <none>           <none>
+notdynamo-bench-http-20260218220043-krzl2   0/1     Completed   0          3m38s   192.168.81.203   ip-192-168-74-164.us-west-2.compute.internal   <none>           <none>
+notdynamo-bench-http-20260218220043-mbq98   0/1     Completed   0          3m38s   192.168.90.160   ip-192-168-74-164.us-west-2.compute.internal   <none>           <none>
+notdynamo-bench-http-20260218220043-p6zjm   0/1     Completed   0          3m38s   192.168.29.16    ip-192-168-17-185.us-west-2.compute.internal   <none>           <none>

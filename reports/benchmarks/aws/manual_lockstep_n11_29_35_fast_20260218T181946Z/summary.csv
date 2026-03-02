@@ -1,0 +1,4 @@
+count,status,throughput_rps,p99_ms,error_rate_percent,report_json,report_md,shard_replicas_per_node,estimated_cost_usd_per_hour
+11,PASS,140.35,199.724,0.0000,reports/benchmarks/aws/manual_lockstep_n11_29_35_fast_20260218T181946Z/point_n11.json,reports/benchmarks/aws/manual_lockstep_n11_29_35_fast_20260218T181946Z/point_n11.md,34.91,0.684175
+29,PASS,144.81,141.468,0.0000,reports/benchmarks/aws/manual_lockstep_n11_29_35_fast_20260218T181946Z/point_n29.json,reports/benchmarks/aws/manual_lockstep_n11_29_35_fast_20260218T181946Z/point_n29.md,13.24,1.640099
+35,PASS,148.63,104.805,0.0000,reports/benchmarks/aws/manual_lockstep_n11_29_35_fast_20260218T181946Z/point_n35.json,reports/benchmarks/aws/manual_lockstep_n11_29_35_fast_20260218T181946Z/point_n35.md,10.97,1.958740

@@ -1,0 +1,94 @@
+# NotDynamo E2E HTTP In-Cluster Benchmark Report (k6)
+
+- Status: **WARN**
+- Timestamp (UTC): 2026-02-21T13:00:38Z
+- Category: `in-cluster-job`
+- Driver: `k6`
+- Cluster: `notdynamo-eks`
+- Region: `us-west-2`
+- Namespace: `notdynamo`
+- Base URL: `http://notdynamo-data.notdynamo.svc.cluster.local:8080`
+- Job: `notdynamo-bench-k6-20260221125856`
+
+## Configuration
+
+| Field | Value |
+|---|---|
+| Parallelism | 3 |
+| Completions | 3 |
+| Benchmark node label | none |
+| Benchmark taint effect | NoSchedule |
+| k6 VUs per pod | 32 |
+| k6 Duration | 90s |
+| k6 Setup timeout | 10m |
+| Keyspace | 20000 |
+| Read ratio | 0.10 |
+| Distribution | uniform |
+| Value bytes | 256 |
+| Preload | false |
+| Skip main | false |
+| Request timeout ms | 5000 |
+
+## Results
+
+| Metric | Value |
+|---|---|
+| Effective operations | 36545 |
+| Aggregate throughput (rps) | 404.43 |
+| Aggregate success throughput (rps) | 393.01 |
+| Max pod p50 latency (ms) | 72.660 |
+| Max pod p95 latency (ms) | 1039.948 |
+| Max pod p99 latency (ms) | 3879.698 |
+| Success count | 35513 |
+| Error count | 1032 |
+| Error rate (%) | 2.8239 |
+| Read count | 3665 |
+| Write count | 32880 |
+| Read not found count | 8 |
+| Preload attempted | 0 |
+| Preload success | 0 |
+| Preload failed | 0 |
+| Job completed | true |
+| Pod count | 3 |
+| Pod metric failures | 0 |
+
+## Telemetry Summary
+
+| Signal | Value |
+|---|---|
+| Sample attempts (used/configured) | 15 / 15 |
+| Pods top available | true |
+| Nodes top available | true |
+| Generator pod count (sampled) | 3 |
+| Generator CPU mcores sum | 341.000 |
+| Generator CPU mcores avg | 113.667 |
+| Service pod count (sampled) | 3 |
+| Service CPU mcores sum | 2963.000 |
+| Service CPU mcores avg | 987.667 |
+| Generator/Service CPU ratio | 0.115 |
+| Attribution hint | service-pressure-dominant |
+| Attribution reason | data pod CPU sum is >= 1.5x benchmark pod CPU sum during sample window |
+| Cluster node count (sampled) | 4 |
+| Cluster CPU percent max | 61.000 |
+| Cluster memory percent max | 26.000 |
+| Write-stage telemetry samples | 3 |
+
+## Write-Stage Telemetry Samples
+
+- `notdynamo-data-0`: `{"node":"notdynamo-data-0","observed_leader_override_writes":13716,"observed_leader_lookup_failures":0,"observed_leader_lookup_skipped_non_replica":0,"observed_leader_override_retry_attempts":0,"observed_leader_override_retry_success":0,"observed_leader_snapshot_refresh_failures":0,"write_backpressure_rejections":755,"write_backpressure_rejections_by_shard":{"0":41,"1":119,"3":84,"5":89,"8":87,"12":112,"17":114,"22":55,"29":54},"write_admission_wait_exhausted_count":760,"write_inflight_limit":256,"write_shard_inflight_min":8,"write_shard_inflight_limit":15,"write_inflight_current":44,"consensus_reject_due_to_inflight_limit":5,"consensus_reject_due_to_inflight_limit_by_shard":{"1":1,"3":3,"22":1},"consensus_inflight_by_shard":{"0":3,"1":3,"3":3,"5":3,"8":11,"12":3,"22":7,"29":11},"write_total_requests":22635,"write_forwarded_requests":3820,"forward_hop_ratio":0.168765,"forward_to_leader":{"success":3773,"error":47,"timeout":28,"latency_ms_avg":116.532,"latency_ms_max":5013.862},"consensus_submit":{"success":18055,"error":0,"timeout":0,"latency_ms_avg":0.000,"latency_ms_max":0.000},"consensus_reply":{"success":17947,"error":825,"timeout":65,"latency_ms_avg":263.599,"latency_ms_max":5016.821},"put_total":{"success":21720,"error":872,"timeout":93,"latency_ms_avg":238.863,"latency_ms_max":5016.889},"delete_total":{"success":0,"error":0,"timeout":0,"latency_ms_avg":0.000,"latency_ms_max":0.000},"forward_error_by_shard":{"6":1,"14":12,"19":20,"26":14},"consensus_reply_error_by_shard":{"0":41,"1":120,"2":1,"3":87,"4":6,"5":111,"7":1,"8":89,"12":127,"17":131,"22":57,"29":54},"put_total_by_shard":{"0":873,"1":1033,"2":479,"3":1018,"4":543,"5":810,"6":420,"7":424,"8":977,"9":1002,"10":748,"11":836,"12":923,"13":1013,"14":461,"15":390,"16":952,"17":947,"18":460,"19":400,"20":881,"21":412,"22":932,"23":519,"24":507,"25":1053,"26":465,"27":418,"28":910,"29":882,"30":424,"31":480},"put_timeout_by_shard":{"2":1,"4":6,"5":22,"6":1,"7":1,"8":2,"12":15,"14":10,"17":17,"19":6,"22":1,"26":11},"error_code_counts":{"consensus_reply:STATUS_CODE_TIMEOUT":65,"consensus_reply:STATUS_CODE_UNAVAILABLE/cause=BACKPRESSURE":755,"consensus_reply:STATUS_CODE_UNAVAILABLE/cause=CONSENSUS_INFLIGHT_LIMIT":5,"forward:STATUS_CODE_TIMEOUT/grpc=DEADLINE_EXCEEDED":28,"forward:STATUS_CODE_UNAVAILABLE":19,"put_total:STATUS_CODE_TIMEOUT":65,"put_total:STATUS_CODE_TIMEOUT/grpc=DEADLINE_EXCEEDED":28,"put_total:STATUS_CODE_UNAVAILABLE":19,"put_total:STATUS_CODE_UNAVAILABLE/cause=BACKPRESSURE":755,"put_total:STATUS_CODE_UNAVAILABLE/cause=CONSENSUS_INFLIGHT_LIMIT":5}}`
+- `notdynamo-data-1`: `{"node":"notdynamo-data-1","observed_leader_override_writes":12131,"observed_leader_lookup_failures":0,"observed_leader_lookup_skipped_non_replica":0,"observed_leader_override_retry_attempts":0,"observed_leader_override_retry_success":0,"observed_leader_snapshot_refresh_failures":0,"write_backpressure_rejections":0,"write_backpressure_rejections_by_shard":{},"write_admission_wait_exhausted_count":0,"write_inflight_limit":256,"write_shard_inflight_min":8,"write_shard_inflight_limit":-1,"write_inflight_current":0,"consensus_reject_due_to_inflight_limit":0,"consensus_reject_due_to_inflight_limit_by_shard":{},"consensus_inflight_by_shard":{},"write_total_requests":15485,"write_forwarded_requests":15485,"forward_hop_ratio":1.000000,"forward_to_leader":{"success":15001,"error":464,"timeout":53,"latency_ms_avg":191.651,"latency_ms_max":5058.866},"consensus_submit":{"success":0,"error":0,"timeout":0,"latency_ms_avg":0.000,"latency_ms_max":0.000},"consensus_reply":{"success":0,"error":0,"timeout":0,"latency_ms_avg":0.000,"latency_ms_max":0.000},"put_total":{"success":15001,"error":464,"timeout":53,"latency_ms_avg":191.705,"latency_ms_max":5099.393},"delete_total":{"success":0,"error":0,"timeout":0,"latency_ms_avg":0.000,"latency_ms_max":0.000},"forward_error_by_shard":{"0":16,"1":65,"3":31,"5":60,"8":44,"12":57,"14":9,"17":70,"19":48,"22":34,"26":4,"29":26},"consensus_reply_error_by_shard":{},"put_total_by_shard":{"0":436,"1":483,"2":468,"3":472,"4":534,"5":421,"6":454,"7":436,"8":499,"9":496,"10":386,"11":412,"12":407,"13":515,"14":507,"15":415,"16":534,"17":488,"18":469,"19":707,"20":433,"21":406,"22":487,"23":475,"24":537,"25":556,"26":407,"27":423,"28":482,"29":458,"30":428,"31":834},"put_timeout_by_shard":{"5":12,"12":7,"14":5,"17":8,"19":16,"22":1,"26":3,"29":1},"error_code_counts":{"forward:STATUS_CODE_INTERNAL/grpc=CANCELLED":3,"forward:STATUS_CODE_TIMEOUT/grpc=DEADLINE_EXCEEDED":53,"forward:STATUS_CODE_UNAVAILABLE":408,"put_total:STATUS_CODE_INTERNAL/grpc=CANCELLED":3,"put_total:STATUS_CODE_TIMEOUT/grpc=DEADLINE_EXCEEDED":53,"put_total:STATUS_CODE_UNAVAILABLE":408}}`
+- `notdynamo-data-2`: `{"node":"notdynamo-data-2","observed_leader_override_writes":38779,"observed_leader_lookup_failures":0,"observed_leader_lookup_skipped_non_replica":0,"observed_leader_override_retry_attempts":0,"observed_leader_override_retry_success":0,"observed_leader_snapshot_refresh_failures":0,"write_backpressure_rejections":39,"write_backpressure_rejections_by_shard":{"14":6,"19":30,"26":3},"write_admission_wait_exhausted_count":62,"write_inflight_limit":256,"write_shard_inflight_min":8,"write_shard_inflight_limit":17,"write_inflight_current":6,"consensus_reject_due_to_inflight_limit":23,"consensus_reject_due_to_inflight_limit_by_shard":{"2":19,"14":1,"19":2,"26":1},"consensus_inflight_by_shard":{"1":1,"6":1,"17":2,"21":1,"26":1},"write_total_requests":62792,"write_forwarded_requests":40518,"forward_hop_ratio":0.645273,"forward_to_leader":{"success":38140,"error":2378,"timeout":92,"latency_ms_avg":188.538,"latency_ms_max":5020.647},"consensus_submit":{"success":22212,"error":0,"timeout":0,"latency_ms_avg":0.000,"latency_ms_max":0.000},"consensus_reply":{"success":22138,"error":131,"timeout":69,"latency_ms_avg":94.819,"latency_ms_max":5029.348},"put_total":{"success":60278,"error":2509,"timeout":161,"latency_ms_avg":155.353,"latency_ms_max":5029.412},"delete_total":{"success":0,"error":0,"timeout":0,"latency_ms_avg":0.000,"latency_ms_max":0.000},"forward_error_by_shard":{"0":13,"1":216,"3":261,"4":4,"5":1,"7":75,"8":69,"9":11,"10":24,"11":26,"12":73,"13":56,"14":354,"16":211,"17":381,"18":2,"19":4,"20":160,"21":185,"22":20,"23":34,"25":5,"26":17,"27":34,"28":54,"29":82,"31":6},"consensus_reply_error_by_shard":{"0":1,"2":20,"6":1,"8":3,"10":1,"11":1,"13":1,"14":24,"17":1,"19":54,"20":1,"23":2,"26":20,"29":1},"put_total_by_shard":{"0":1323,"1":1559,"2":3473,"3":1523,"4":3435,"5":1623,"6":1971,"7":2003,"8":1598,"9":1511,"10":1179,"11":1408,"12":1408,"13":1473,"14":2697,"15":3833,"16":1474,"17":1675,"18":1906,"19":2120,"20":1555,"21":1796,"22":1482,"23":2931,"24":2294,"25":1457,"26":2496,"27":1824,"28":1320,"29":1506,"30":2527,"31":2407},"put_timeout_by_shard":{"0":10,"1":10,"2":1,"3":5,"5":1,"6":1,"8":6,"9":5,"10":3,"11":4,"12":6,"13":2,"14":18,"16":8,"17":3,"19":24,"20":17,"22":6,"23":2,"25":4,"26":20,"28":3,"29":2},"error_code_counts":{"consensus_reply:STATUS_CODE_TIMEOUT":69,"consensus_reply:STATUS_CODE_UNAVAILABLE/cause=BACKPRESSURE":39,"consensus_reply:STATUS_CODE_UNAVAILABLE/cause=CONSENSUS_INFLIGHT_LIMIT":23,"forward:STATUS_CODE_INTERNAL/grpc=CANCELLED":2,"forward:STATUS_CODE_TIMEOUT/grpc=DEADLINE_EXCEEDED":92,"forward:STATUS_CODE_UNAVAILABLE":2272,"forward:STATUS_CODE_UNAVAILABLE/grpc=UNAVAILABLE":12,"put_total:STATUS_CODE_INTERNAL/grpc=CANCELLED":2,"put_total:STATUS_CODE_TIMEOUT":69,"put_total:STATUS_CODE_TIMEOUT/grpc=DEADLINE_EXCEEDED":92,"put_total:STATUS_CODE_UNAVAILABLE":2272,"put_total:STATUS_CODE_UNAVAILABLE/cause=BACKPRESSURE":39,"put_total:STATUS_CODE_UNAVAILABLE/cause=CONSENSUS_INFLIGHT_LIMIT":23,"put_total:STATUS_CODE_UNAVAILABLE/grpc=UNAVAILABLE":12}}`
+
+## Artifacts
+
+- JSON report: `reports/benchmarks/aws/e2e_http_incluster_k6_20260221T125856Z.json`
+- Run directory: `reports/benchmarks/aws/incluster_runs/notdynamo-bench-k6-20260221125856`
+- Job manifest: `reports/benchmarks/aws/incluster_runs/notdynamo-bench-k6-20260221125856/job.yaml`
+- Script configmap: `notdynamo-bench-k6-script-20260221125856`
+- Pod placement snapshot: `reports/benchmarks/aws/incluster_runs/notdynamo-bench-k6-20260221125856/pod_placement.txt`
+- Pods top snapshot: `reports/benchmarks/aws/incluster_runs/notdynamo-bench-k6-20260221125856/telemetry/pods_top_snapshot.txt`
+- Nodes top snapshot: `reports/benchmarks/aws/incluster_runs/notdynamo-bench-k6-20260221125856/telemetry/nodes_top_snapshot.txt`
+- Generator top summary: `reports/benchmarks/aws/incluster_runs/notdynamo-bench-k6-20260221125856/telemetry/bench_top_summary.txt`
+- Service top summary: `reports/benchmarks/aws/incluster_runs/notdynamo-bench-k6-20260221125856/telemetry/data_top_summary.txt`
+- Nodes top summary: `reports/benchmarks/aws/incluster_runs/notdynamo-bench-k6-20260221125856/telemetry/nodes_top_summary.txt`
+- Write-stage telemetry samples: `reports/benchmarks/aws/incluster_runs/notdynamo-bench-k6-20260221125856/telemetry/write_stage_telemetry_samples.txt`

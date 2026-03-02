@@ -1,0 +1,16 @@
+# benchmark_pods
+NAME                                      READY   STATUS      RESTARTS   AGE     IP               NODE                                           NOMINATED NODE   READINESS GATES
+notdynamo-bench-k6-20260219223502-29nvc   0/1     Completed   0          2m25s   192.168.71.90    ip-192-168-82-231.us-west-2.compute.internal   <none>           <none>
+notdynamo-bench-k6-20260219223502-4wr45   0/1     Completed   0          2m25s   192.168.56.98    ip-192-168-40-245.us-west-2.compute.internal   <none>           <none>
+notdynamo-bench-k6-20260219223502-j6d7p   0/1     Completed   0          2m25s   192.168.30.71    ip-192-168-8-94.us-west-2.compute.internal     <none>           <none>
+notdynamo-bench-k6-20260219223502-pnczp   0/1     Completed   0          2m25s   192.168.38.100   ip-192-168-33-17.us-west-2.compute.internal    <none>           <none>
+notdynamo-bench-k6-20260219223502-vn8bc   0/1     Completed   0          2m25s   192.168.39.170   ip-192-168-55-196.us-west-2.compute.internal   <none>           <none>
+notdynamo-bench-k6-20260219223502-wh7mt   0/1     Completed   0          2m25s   192.168.29.16    ip-192-168-17-185.us-west-2.compute.internal   <none>           <none>
+notdynamo-bench-k6-20260219223502-wlnk4   0/1     Completed   0          2m25s   192.168.60.109   ip-192-168-38-136.us-west-2.compute.internal   <none>           <none>
+notdynamo-bench-k6-20260219223502-xgplt   0/1     Completed   0          2m25s   192.168.88.251   ip-192-168-75-99.us-west-2.compute.internal    <none>           <none>
+
+# data_pods
+NAME               READY   STATUS    RESTARTS   AGE     IP              NODE                                           NOMINATED NODE   READINESS GATES
+notdynamo-data-0   1/1     Running   0          7h37m   192.168.88.76   ip-192-168-70-170.us-west-2.compute.internal   <none>           <none>
+notdynamo-data-1   1/1     Running   0          7h37m   192.168.45.20   ip-192-168-43-228.us-west-2.compute.internal   <none>           <none>
+notdynamo-data-2   1/1     Running   0          7h37m   192.168.4.113   ip-192-168-30-7.us-west-2.compute.internal     <none>           <none>

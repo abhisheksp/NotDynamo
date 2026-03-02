@@ -1,0 +1,5 @@
+notdynamo-bench-http-20260219181137-mgmcd   143m   51Mi    
+notdynamo-control-plane-58bfc58b4b-wxn8w    2m     74Mi    
+notdynamo-data-0                            112m   609Mi   
+notdynamo-data-1                            21m    606Mi   
+notdynamo-data-2                            143m   604Mi   

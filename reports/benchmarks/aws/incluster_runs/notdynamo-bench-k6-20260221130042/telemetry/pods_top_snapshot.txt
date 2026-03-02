@@ -1,0 +1,7 @@
+notdynamo-bench-k6-20260221130042-ccj6x    120m   140Mi    
+notdynamo-bench-k6-20260221130042-f4jrz    112m   130Mi    
+notdynamo-bench-k6-20260221130042-hlpvs    122m   135Mi    
+notdynamo-control-plane-566cdf67ff-gkv8w   3m     136Mi    
+notdynamo-data-0                           636m   1261Mi   
+notdynamo-data-1                           668m   741Mi    
+notdynamo-data-2                           649m   1034Mi   

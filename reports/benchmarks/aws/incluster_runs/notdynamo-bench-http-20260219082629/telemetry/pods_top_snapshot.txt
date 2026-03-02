@@ -1,0 +1,13 @@
+notdynamo-bench-http-20260219082629-pjdvd   136m   44Mi    
+notdynamo-control-plane-786676cc59-kv7zb    2m     30Mi    
+notdynamo-data-0                            392m   580Mi   
+notdynamo-data-1                            743m   809Mi   
+notdynamo-data-10                           30m    164Mi   
+notdynamo-data-2                            134m   510Mi   
+notdynamo-data-3                            4m     149Mi   
+notdynamo-data-4                            133m   181Mi   
+notdynamo-data-5                            4m     158Mi   
+notdynamo-data-6                            3m     164Mi   
+notdynamo-data-7                            3m     157Mi   
+notdynamo-data-8                            5m     159Mi   
+notdynamo-data-9                            3m     158Mi   

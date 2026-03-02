@@ -1,0 +1,5 @@
+pod_count=0
+cpu_mcores_sum=0.000
+cpu_mcores_avg=0.000
+memory_mib_sum=0.000
+memory_mib_avg=0.000

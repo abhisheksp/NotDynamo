@@ -1,0 +1,57 @@
+{
+  "benchmark": "eks_horizontal_scaling_sweep",
+  "status": "WARN",
+  "timestamp_utc": "2026-02-19T14:23:47Z",
+  "cluster_name": "notdynamo-eks",
+  "region": "us-west-2",
+  "namespace": "notdynamo",
+  "nodegroup_name": "notdynamo-bench-ng",
+  "sweep": {
+    "node_counts": "29",
+    "data_replicas": "29"
+  },
+  "restore_on_exit": false,
+  "benchmark_categories": {
+    "external_enabled": false,
+    "external_mode": "disabled",
+    "incluster_enabled": true,
+    "incluster_skip_build": true,
+    "incluster_image": "139643733075.dkr.ecr.us-west-2.amazonaws.com/notdynamo/notdynamo-bench:bench-20260218T220656Z",
+    "incluster_bench_node_label": "notdynamo.io/workload=benchmark",
+    "incluster_bench_taint_effect": "NoSchedule"
+  },
+  "original_scale": {
+    "nodegroup_desired": 11,
+    "nodegroup_min": 11,
+    "nodegroup_max": 11,
+    "data_replicas": 11
+  },
+  "run_count": 1,
+  "best_run": {
+    "run_index": 1,
+    "node_count": 29,
+    "data_replicas": 29,
+    "throughput_rps": 1.78
+  },
+  "summary_csv": "reports/benchmarks/aws/e44_lockstep_timeout5x_20260219T141250Z_runs/lockstep_n29.csv",
+  "run_reports_root": "reports/benchmarks/aws/e44_lockstep_timeout5x_20260219T141250Z_runs/lockstep_n29_runs",
+  "runs": [
+    {
+      "run_index": 1,
+      "node_count": 29,
+      "data_replicas": 29,
+      "status": "WARN",
+      "matrix_exit_code": 0,
+      "external_mode": "port-forward",
+      "external_tps": null,
+      "external_p99_ms": null,
+      "incluster_tps": 1.78,
+      "incluster_p99_ms": 7502.726,
+      "incluster_error_rate_percent": 13.2000,
+      "incluster_telemetry_attribution_hint": "service-pressure-dominant",
+      "incluster_telemetry_generator_to_service_cpu_ratio": 0.007,
+      "report_json": "reports/benchmarks/aws/e44_lockstep_timeout5x_20260219T141250Z_runs/lockstep_n29_runs/run_1_nodes29_replicas29/benchmark_matrix.json",
+      "report_md": "reports/benchmarks/aws/e44_lockstep_timeout5x_20260219T141250Z_runs/lockstep_n29_runs/run_1_nodes29_replicas29/benchmark_matrix.md"
+    }
+  ]
+}

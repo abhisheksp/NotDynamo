@@ -1,0 +1,51 @@
+{
+  "benchmark": "eks_horizontal_scaling_sweep",
+  "status": "PASS",
+  "timestamp_utc": "2026-02-18T09:15:21Z",
+  "cluster_name": "notdynamo-eks",
+  "region": "us-west-2",
+  "namespace": "notdynamo",
+  "nodegroup_name": "notdynamo-ng",
+  "sweep": {
+    "node_counts": "5",
+    "data_replicas": "5"
+  },
+  "restore_on_exit": false,
+  "benchmark_categories": {
+    "external_enabled": false,
+    "external_mode": "disabled",
+    "incluster_enabled": true
+  },
+  "original_scale": {
+    "nodegroup_desired": 5,
+    "nodegroup_min": 5,
+    "nodegroup_max": 5,
+    "data_replicas": 5
+  },
+  "run_count": 1,
+  "best_run": {
+    "run_index": 1,
+    "node_count": 5,
+    "data_replicas": 5,
+    "throughput_rps": 154.88
+  },
+  "summary_csv": "reports/benchmarks/aws/lockstep_qmax8_points_20260218T091507Z/point_n5_runs/lockstep_n5.csv",
+  "run_reports_root": "reports/benchmarks/aws/lockstep_qmax8_points_20260218T091507Z/point_n5_runs/lockstep_n5_runs",
+  "runs": [
+    {
+      "run_index": 1,
+      "node_count": 5,
+      "data_replicas": 5,
+      "status": "PASS",
+      "matrix_exit_code": 0,
+      "external_mode": "port-forward",
+      "external_tps": null,
+      "external_p99_ms": null,
+      "incluster_tps": 154.88,
+      "incluster_p99_ms": 66.336,
+      "incluster_error_rate_percent": 0.0000,
+      "report_json": "reports/benchmarks/aws/lockstep_qmax8_points_20260218T091507Z/point_n5_runs/lockstep_n5_runs/run_1_nodes5_replicas5/benchmark_matrix.json",
+      "report_md": "reports/benchmarks/aws/lockstep_qmax8_points_20260218T091507Z/point_n5_runs/lockstep_n5_runs/run_1_nodes5_replicas5/benchmark_matrix.md"
+    }
+  ]
+}

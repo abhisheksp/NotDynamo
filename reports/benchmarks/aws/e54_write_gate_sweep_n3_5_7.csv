@@ -1,0 +1,4 @@
+point_index,node_count,data_replicas,trial,status,success_tps,error_rate_percent,timeout_fraction,forward_error_fraction,consensus_error_fraction,forward_hop_ratio,generator_to_service_cpu_ratio,benchmark_json,scorecard_json
+1,3,3,1,PASS,531.87,2.2559,0.019533369506239826,0.4040513655272201,0.5959486344727799,0.46287433333333333,0.137,reports/benchmarks/aws/e2e_http_incluster_k6_latest.json,reports/benchmarks/aws/e54_write_gate_sweep_n3_5_7_runs/point_1_n3_r3/trial_1/write_gate_scorecard.json
+1,3,3,2,PASS,443.64,5.2438,0.011826685302655628,0.4086657348672186,0.5913342651327814,0.467566,0.134,reports/benchmarks/aws/e2e_http_incluster_k6_latest.json,reports/benchmarks/aws/e54_write_gate_sweep_n3_5_7_runs/point_1_n3_r3/trial_2/write_gate_scorecard.json
+1,3,3,median,PASS,487.755,3.7498500000000003,0.015680027404447728,0.40635855019721934,0.5936414498027807,0.46522016666666666,0.1355,,

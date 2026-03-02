@@ -1,0 +1,2 @@
+node_count,data_replicas,replication_factor,total_shards,shard_replicas_per_node,estimated_cost_usd_per_hour,status,matrix_exit_code,external_mode,external_tps,external_p99_ms,external_error_rate_percent,incluster_tps,incluster_p95_ms,incluster_p99_ms,incluster_error_rate_percent,report_json,report_md
+6,6,3,128,64.00,0.418641,PASS,0,port-forward,,,,151.80,,69.705,0.0000,reports/benchmarks/aws/lockstep_qmax8_points_20260218T091507Z/point_n6_runs/lockstep_n6.json,reports/benchmarks/aws/lockstep_qmax8_points_20260218T091507Z/point_n6_runs/lockstep_n6.md

@@ -1,0 +1,16 @@
+notdynamo-bench-k6-20260220121136-9kq64    7m      61Mi     
+notdynamo-bench-k6-20260220121136-b4gcd    8m      67Mi     
+notdynamo-bench-k6-20260220121136-gc79s    11m     63Mi     
+notdynamo-bench-k6-20260220121136-jzbww    9m      68Mi     
+notdynamo-bench-k6-20260220121136-m8rln    13m     65Mi     
+notdynamo-bench-k6-20260220121136-njkw8    7m      63Mi     
+notdynamo-bench-k6-20260220121136-nsq9n    9m      71Mi     
+notdynamo-bench-k6-20260220121136-qtcm4    12m     65Mi     
+notdynamo-bench-k6-20260220121136-s4r5v    8m      69Mi     
+notdynamo-bench-k6-20260220121136-wjb6h    8m      67Mi     
+notdynamo-bench-k6-20260220121136-wn5z2    8m      63Mi     
+notdynamo-control-plane-74b4b776c7-cm7l6   3m      45Mi     
+notdynamo-data-0                           1477m   1271Mi   
+notdynamo-data-2                           1058m   1770Mi   
+notdynamo-data-6                           1448m   323Mi    
+notdynamo-data-7                           381m    463Mi    

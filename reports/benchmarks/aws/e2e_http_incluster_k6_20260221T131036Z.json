@@ -1,0 +1,110 @@
+{
+  "benchmark": "e2e_http_incluster_k6",
+  "category": "in-cluster-job",
+  "status": "WARN",
+  "timestamp_utc": "2026-02-21T13:12:24Z",
+  "cluster_name": "notdynamo-eks",
+  "region": "us-west-2",
+  "namespace": "notdynamo",
+  "base_url": "http://notdynamo-data.notdynamo.svc.cluster.local:8080",
+  "job": {
+    "name": "notdynamo-bench-k6-20260221131036",
+    "parallelism": "3",
+    "completions": "3",
+    "bench_node_label": "",
+    "bench_taint_effect": "NoSchedule",
+    "job_completed": "true",
+    "pod_count": "3",
+    "pod_metric_failures": "0",
+    "ttl_seconds_after_finished": "900"
+  },
+  "config": {
+    "driver": "k6",
+    "keyspace": "20000",
+    "value_bytes": "256",
+    "read_ratio": "0.10",
+    "distribution": "uniform",
+    "preload": "false",
+    "skip_main": "false",
+    "vus_per_pod": "32",
+    "duration": "90s",
+    "setup_timeout": "10m",
+    "request_timeout_ms": "5000",
+    "preload_retries": "3",
+    "preload_retry_sleep_ms": "5",
+    "data_pod_selector": "app=notdynamo-data",
+    "telemetry_sample_attempts": "15",
+    "telemetry_sample_interval_sec": "2",
+    "image": "grafana/k6:0.49.0"
+  },
+  "results": {
+    "operations_effective": "7354",
+    "throughput_rps_aggregate": "77.53",
+    "success_throughput_rps_aggregate": "64.31",
+    "latency_ms_p50_max_pod": "179.922",
+    "latency_ms_p95_max_pod": "5000.865",
+    "latency_ms_p99_max_pod": "5001.237",
+    "success_count": "6100",
+    "error_count": "1254",
+    "error_rate_percent": "17.0519",
+    "read_count": "727",
+    "write_count": "6627",
+    "read_not_found_count": "0",
+    "preload_attempted": "0",
+    "preload_success": "0",
+    "preload_failed": "0"
+  },
+  "telemetry": {
+    "collection": {
+      "sample_attempts_configured": "15",
+      "sample_attempts_used": "15",
+      "sample_interval_sec": "2",
+      "pods_top_available": "true",
+      "nodes_top_available": "true"
+    },
+    "signals": {
+      "generator_pod_count": "3",
+      "generator_cpu_mcores_sum": "51.000",
+      "generator_cpu_mcores_avg": "17.000",
+      "generator_memory_mib_sum": "212.000",
+      "generator_memory_mib_avg": "70.667",
+      "service_pod_count": "3",
+      "service_cpu_mcores_sum": "2297.000",
+      "service_cpu_mcores_avg": "765.667",
+      "service_memory_mib_sum": "3416.000",
+      "service_memory_mib_avg": "1138.667",
+      "cluster_node_count": "4",
+      "cluster_cpu_mcores_sum": "2468.000",
+      "cluster_cpu_percent_max": "56.000",
+      "cluster_memory_mib_sum": "6241.000",
+      "cluster_memory_percent_max": "28.000",
+      "generator_to_service_cpu_ratio": "0.022",
+      "attribution_hint": "service-pressure-dominant",
+      "attribution_reason": "data pod CPU sum is >= 1.5x benchmark pod CPU sum during sample window"
+    },
+    "write_stage_telemetry": {
+      "sample_count": "3",
+      "samples_file": "reports/benchmarks/aws/incluster_runs/notdynamo-bench-k6-20260221131036/telemetry/write_stage_telemetry_samples.txt",
+      "samples": [{"pod":"notdynamo-data-0","sample":"{\"node\":\"notdynamo-data-0\",\"observed_leader_override_writes\":29447,\"observed_leader_lookup_failures\":0,\"observed_leader_lookup_skipped_non_replica\":0,\"observed_leader_override_retry_attempts\":0,\"observed_leader_override_retry_success\":0,\"observed_leader_snapshot_refresh_failures\":0,\"write_backpressure_rejections\":984,\"write_backpressure_rejections_by_shard\":{\"0\":43,\"1\":130,\"2\":1,\"3\":158,\"5\":97,\"8\":88,\"12\":160,\"17\":114,\"22\":121,\"24\":2,\"27\":4,\"29\":66},\"write_admission_wait_exhausted_count\":989,\"write_inflight_limit\":256,\"write_shard_inflight_min\":8,\"write_shard_inflight_limit\":51,\"write_inflight_current\":1,\"consensus_reject_due_to_inflight_limit\":5,\"consensus_reject_due_to_inflight_limit_by_shard\":{\"1\":1,\"3\":3,\"22\":1},\"consensus_inflight_by_shard\":{\"18\":1},\"write_total_requests\":48627,\"write_forwarded_requests\":9698,\"forward_hop_ratio\":0.199437,\"forward_to_leader\":{\"success\":7324,\"error\":2373,\"timeout\":906,\"latency_ms_avg\":1373.941,\"latency_ms_max\":5051.691},\"consensus_submit\":{\"success\":37940,\"error\":0,\"timeout\":0,\"latency_ms_avg\":0.000,\"latency_ms_max\":0.000},\"consensus_reply\":{\"success\":37634,\"error\":1294,\"timeout\":305,\"latency_ms_avg\":275.789,\"latency_ms_max\":5016.821},\"put_total\":{\"success\":44958,\"error\":3667,\"timeout\":1211,\"latency_ms_avg\":494.870,\"latency_ms_max\":5051.767},\"delete_total\":{\"success\":0,\"error\":0,\"timeout\":0,\"latency_ms_avg\":0.000,\"latency_ms_max\":0.000},\"forward_error_by_shard\":{\"0\":163,\"1\":20,\"2\":114,\"3\":15,\"4\":10,\"5\":183,\"6\":133,\"7\":10,\"8\":193,\"9\":7,\"10\":143,\"11\":6,\"12\":30,\"13\":254,\"14\":142,\"15\":15,\"16\":21,\"17\":116,\"18\":8,\"19\":36,\"20\":15,\"21\":14,\"22\":266,\"23\":24,\"24\":20,\"25\":17,\"26\":25,\"27\":221,\"28\":17,\"29\":2,\"30\":92,\"31\":41},\"consensus_reply_error_by_shard\":{\"0\":43,\"1\":132,\"2\":7,\"3\":190,\"4\":26,\"5\":120,\"6\":8,\"7\":5,\"8\":94,\"9\":5,\"10\":1,\"12\":192,\"13\":1,\"14\":4,\"15\":19,\"16\":3,\"17\":132,\"18\":23,\"19\":1,\"20\":2,\"21\":31,\"22\":125,\"23\":3,\"24\":26,\"26\":1,\"27\":21,\"29\":70,\"30\":9},\"put_total_by_shard\":{\"0\":1919,\"1\":1946,\"2\":973,\"3\":2396,\"4\":1064,\"5\":1879,\"6\":928,\"7\":866,\"8\":2080,\"9\":2290,\"10\":1625,\"11\":1622,\"12\":2131,\"13\":2114,\"14\":1221,\"15\":826,\"16\":2295,\"17\":2065,\"18\":841,\"19\":715,\"20\":1741,\"21\":794,\"22\":2489,\"23\":978,\"24\":1000,\"25\":2263,\"26\":864,\"27\":979,\"28\":2117,\"29\":1793,\"30\":978,\"31\":833},\"put_timeout_by_shard\":{\"0\":50,\"1\":21,\"2\":36,\"3\":41,\"4\":34,\"5\":70,\"6\":67,\"7\":14,\"8\":33,\"9\":12,\"10\":39,\"11\":6,\"12\":54,\"13\":79,\"14\":101,\"15\":31,\"16\":22,\"17\":33,\"18\":28,\"19\":23,\"20\":16,\"21\":41,\"22\":72,\"23\":24,\"24\":41,\"25\":16,\"26\":21,\"27\":93,\"28\":16,\"29\":6,\"30\":48,\"31\":23},\"error_code_counts\":{\"consensus_reply:STATUS_CODE_TIMEOUT\":305,\"consensus_reply:STATUS_CODE_UNAVAILABLE/cause=BACKPRESSURE\":984,\"consensus_reply:STATUS_CODE_UNAVAILABLE/cause=CONSENSUS_INFLIGHT_LIMIT\":5,\"forward:STATUS_CODE_INTERNAL/grpc=CANCELLED\":1429,\"forward:STATUS_CODE_TIMEOUT\":1,\"forward:STATUS_CODE_TIMEOUT/grpc=DEADLINE_EXCEEDED\":905,\"forward:STATUS_CODE_UNAVAILABLE\":23,\"forward:STATUS_CODE_UNAVAILABLE/grpc=UNAVAILABLE\":15,\"put_total:STATUS_CODE_INTERNAL/grpc=CANCELLED\":1429,\"put_total:STATUS_CODE_TIMEOUT\":306,\"put_total:STATUS_CODE_TIMEOUT/grpc=DEADLINE_EXCEEDED\":905,\"put_total:STATUS_CODE_UNAVAILABLE\":23,\"put_total:STATUS_CODE_UNAVAILABLE/cause=BACKPRESSURE\":984,\"put_total:STATUS_CODE_UNAVAILABLE/cause=CONSENSUS_INFLIGHT_LIMIT\":5,\"put_total:STATUS_CODE_UNAVAILABLE/grpc=UNAVAILABLE\":15}}"}, {"pod":"notdynamo-data-1","sample":"{\"node\":\"notdynamo-data-1\",\"observed_leader_override_writes\":2920,\"observed_leader_lookup_failures\":0,\"observed_leader_lookup_skipped_non_replica\":0,\"observed_leader_override_retry_attempts\":0,\"observed_leader_override_retry_success\":0,\"observed_leader_snapshot_refresh_failures\":0,\"write_backpressure_rejections\":0,\"write_backpressure_rejections_by_shard\":{},\"write_admission_wait_exhausted_count\":1,\"write_inflight_limit\":256,\"write_shard_inflight_min\":8,\"write_shard_inflight_limit\":25,\"write_inflight_current\":32,\"consensus_reject_due_to_inflight_limit\":1,\"consensus_reject_due_to_inflight_limit_by_shard\":{\"25\":1},\"consensus_inflight_by_shard\":{\"0\":8,\"6\":6,\"12\":5,\"16\":4,\"25\":2,\"28\":3,\"31\":4},\"write_total_requests\":5792,\"write_forwarded_requests\":4096,\"forward_hop_ratio\":0.707182,\"forward_to_leader\":{\"success\":2349,\"error\":1740,\"timeout\":571,\"latency_ms_avg\":2465.176,\"latency_ms_max\":5048.048},\"consensus_submit\":{\"success\":1695,\"error\":0,\"timeout\":0,\"latency_ms_avg\":0.000,\"latency_ms_max\":0.000},\"consensus_reply\":{\"success\":1355,\"error\":309,\"timeout\":308,\"latency_ms_avg\":1270.245,\"latency_ms_max\":5071.196},\"put_total\":{\"success\":3704,\"error\":2049,\"timeout\":879,\"latency_ms_avg\":2119.703,\"latency_ms_max\":5071.282},\"delete_total\":{\"success\":0,\"error\":0,\"timeout\":0,\"latency_ms_avg\":0.000,\"latency_ms_max\":0.000},\"forward_error_by_shard\":{\"0\":130,\"1\":49,\"2\":107,\"3\":19,\"4\":18,\"5\":4,\"6\":95,\"7\":2,\"8\":28,\"9\":4,\"10\":6,\"11\":81,\"12\":27,\"13\":9,\"14\":125,\"15\":22,\"16\":2,\"17\":37,\"18\":12,\"19\":38,\"20\":5,\"21\":9,\"22\":259,\"23\":64,\"24\":18,\"25\":135,\"26\":236,\"27\":10,\"28\":98,\"29\":5,\"30\":68,\"31\":18},\"consensus_reply_error_by_shard\":{\"0\":12,\"1\":24,\"2\":3,\"3\":1,\"4\":2,\"6\":31,\"9\":10,\"10\":2,\"12\":15,\"13\":7,\"15\":3,\"16\":29,\"17\":4,\"18\":6,\"19\":21,\"20\":6,\"22\":19,\"23\":1,\"24\":1,\"25\":45,\"28\":29,\"29\":1,\"31\":37},\"put_total_by_shard\":{\"0\":236,\"1\":188,\"2\":221,\"3\":160,\"4\":140,\"5\":115,\"6\":256,\"7\":188,\"8\":101,\"9\":119,\"10\":127,\"11\":165,\"12\":148,\"13\":133,\"14\":235,\"15\":100,\"16\":197,\"17\":198,\"18\":115,\"19\":145,\"20\":201,\"21\":110,\"22\":402,\"23\":186,\"24\":126,\"25\":328,\"26\":374,\"27\":96,\"28\":204,\"29\":117,\"30\":169,\"31\":153},\"put_timeout_by_shard\":{\"0\":44,\"1\":34,\"2\":26,\"3\":20,\"4\":14,\"5\":4,\"6\":60,\"7\":1,\"8\":27,\"9\":14,\"10\":8,\"11\":15,\"12\":38,\"13\":16,\"14\":17,\"15\":23,\"16\":31,\"17\":16,\"18\":16,\"19\":31,\"20\":11,\"21\":9,\"22\":85,\"23\":23,\"24\":15,\"25\":105,\"26\":16,\"27\":5,\"28\":94,\"29\":2,\"30\":21,\"31\":38},\"error_code_counts\":{\"consensus_reply:STATUS_CODE_TIMEOUT\":308,\"consensus_reply:STATUS_CODE_UNAVAILABLE/cause=CONSENSUS_INFLIGHT_LIMIT\":1,\"forward:STATUS_CODE_INTERNAL/grpc=CANCELLED\":1138,\"forward:STATUS_CODE_TIMEOUT\":1,\"forward:STATUS_CODE_TIMEOUT/grpc=DEADLINE_EXCEEDED\":570,\"forward:STATUS_CODE_UNAVAILABLE\":31,\"put_total:STATUS_CODE_INTERNAL/grpc=CANCELLED\":1138,\"put_total:STATUS_CODE_TIMEOUT\":309,\"put_total:STATUS_CODE_TIMEOUT/grpc=DEADLINE_EXCEEDED\":570,\"put_total:STATUS_CODE_UNAVAILABLE\":31,\"put_total:STATUS_CODE_UNAVAILABLE/cause=CONSENSUS_INFLIGHT_LIMIT\":1}}"}, {"pod":"notdynamo-data-2","sample":"{\"node\":\"notdynamo-data-2\",\"observed_leader_override_writes\":3890,\"observed_leader_lookup_failures\":0,\"observed_leader_lookup_skipped_non_replica\":0,\"observed_leader_override_retry_attempts\":0,\"observed_leader_override_retry_success\":0,\"observed_leader_snapshot_refresh_failures\":0,\"write_backpressure_rejections\":56,\"write_backpressure_rejections_by_shard\":{\"1\":4,\"2\":4,\"4\":11,\"7\":1,\"8\":2,\"11\":3,\"12\":8,\"15\":4,\"18\":3,\"24\":3,\"26\":1,\"27\":3,\"29\":9},\"write_admission_wait_exhausted_count\":56,\"write_inflight_limit\":256,\"write_shard_inflight_min\":8,\"write_shard_inflight_limit\":21,\"write_inflight_current\":11,\"consensus_reject_due_to_inflight_limit\":0,\"consensus_reject_due_to_inflight_limit_by_shard\":{},\"consensus_inflight_by_shard\":{\"7\":1,\"8\":3,\"10\":1,\"13\":4,\"22\":1,\"27\":1},\"write_total_requests\":6911,\"write_forwarded_requests\":3326,\"forward_hop_ratio\":0.481262,\"forward_to_leader\":{\"success\":1086,\"error\":2225,\"timeout\":718,\"latency_ms_avg\":3682.123,\"latency_ms_max\":5276.897},\"consensus_submit\":{\"success\":3529,\"error\":0,\"timeout\":0,\"latency_ms_avg\":0.000,\"latency_ms_max\":0.000},\"consensus_reply\":{\"success\":3149,\"error\":425,\"timeout\":369,\"latency_ms_avg\":906.855,\"latency_ms_max\":5034.789},\"put_total\":{\"success\":4235,\"error\":2650,\"timeout\":1087,\"latency_ms_avg\":2241.691,\"latency_ms_max\":5338.122},\"delete_total\":{\"success\":0,\"error\":0,\"timeout\":0,\"latency_ms_avg\":0.000,\"latency_ms_max\":0.000},\"forward_error_by_shard\":{\"0\":26,\"1\":47,\"2\":2,\"3\":15,\"4\":9,\"5\":175,\"6\":20,\"7\":10,\"8\":177,\"9\":4,\"10\":132,\"11\":76,\"12\":11,\"13\":234,\"14\":228,\"15\":8,\"16\":8,\"17\":141,\"18\":19,\"19\":44,\"21\":21,\"22\":6,\"23\":52,\"24\":17,\"25\":147,\"26\":224,\"27\":227,\"28\":108,\"30\":27,\"31\":10},\"consensus_reply_error_by_shard\":{\"0\":10,\"1\":18,\"2\":10,\"3\":1,\"4\":14,\"5\":9,\"6\":17,\"7\":3,\"8\":56,\"9\":3,\"10\":11,\"11\":15,\"12\":16,\"13\":24,\"14\":44,\"15\":7,\"16\":5,\"17\":22,\"18\":7,\"19\":4,\"20\":17,\"22\":5,\"23\":35,\"24\":23,\"25\":2,\"26\":18,\"27\":8,\"28\":2,\"29\":13,\"30\":5,\"31\":1},\"put_total_by_shard\":{\"0\":201,\"1\":197,\"2\":166,\"3\":85,\"4\":193,\"5\":366,\"6\":88,\"7\":167,\"8\":369,\"9\":131,\"10\":244,\"11\":225,\"12\":152,\"13\":422,\"14\":494,\"15\":145,\"16\":77,\"17\":356,\"18\":156,\"19\":167,\"20\":154,\"21\":127,\"22\":145,\"23\":244,\"24\":160,\"25\":220,\"26\":431,\"27\":379,\"28\":223,\"29\":169,\"30\":106,\"31\":126},\"put_timeout_by_shard\":{\"0\":25,\"1\":22,\"2\":7,\"3\":16,\"4\":12,\"5\":45,\"6\":35,\"7\":12,\"8\":65,\"9\":7,\"10\":42,\"11\":23,\"12\":19,\"13\":89,\"14\":126,\"15\":11,\"16\":13,\"17\":38,\"18\":23,\"19\":18,\"20\":17,\"21\":21,\"22\":11,\"23\":44,\"24\":37,\"25\":75,\"26\":22,\"27\":90,\"28\":77,\"29\":4,\"30\":30,\"31\":11},\"error_code_counts\":{\"consensus_reply:STATUS_CODE_TIMEOUT\":369,\"consensus_reply:STATUS_CODE_UNAVAILABLE/cause=BACKPRESSURE\":56,\"forward:STATUS_CODE_INTERNAL/grpc=CANCELLED\":1502,\"forward:STATUS_CODE_TIMEOUT/grpc=DEADLINE_EXCEEDED\":718,\"forward:STATUS_CODE_UNAVAILABLE\":3,\"forward:STATUS_CODE_UNAVAILABLE/grpc=UNAVAILABLE\":2,\"put_total:STATUS_CODE_INTERNAL/grpc=CANCELLED\":1502,\"put_total:STATUS_CODE_TIMEOUT\":369,\"put_total:STATUS_CODE_TIMEOUT/grpc=DEADLINE_EXCEEDED\":718,\"put_total:STATUS_CODE_UNAVAILABLE\":3,\"put_total:STATUS_CODE_UNAVAILABLE/cause=BACKPRESSURE\":56,\"put_total:STATUS_CODE_UNAVAILABLE/grpc=UNAVAILABLE\":2}}"}]
+    },
+    "artifacts": {
+      "pod_placement": "reports/benchmarks/aws/incluster_runs/notdynamo-bench-k6-20260221131036/pod_placement.txt",
+      "pods_top_snapshot": "reports/benchmarks/aws/incluster_runs/notdynamo-bench-k6-20260221131036/telemetry/pods_top_snapshot.txt",
+      "pods_top_error": "reports/benchmarks/aws/incluster_runs/notdynamo-bench-k6-20260221131036/telemetry/pods_top_snapshot.err",
+      "nodes_top_snapshot": "reports/benchmarks/aws/incluster_runs/notdynamo-bench-k6-20260221131036/telemetry/nodes_top_snapshot.txt",
+      "nodes_top_error": "reports/benchmarks/aws/incluster_runs/notdynamo-bench-k6-20260221131036/telemetry/nodes_top_snapshot.err",
+      "generator_top_summary": "reports/benchmarks/aws/incluster_runs/notdynamo-bench-k6-20260221131036/telemetry/bench_top_summary.txt",
+      "service_top_summary": "reports/benchmarks/aws/incluster_runs/notdynamo-bench-k6-20260221131036/telemetry/data_top_summary.txt",
+      "nodes_top_summary": "reports/benchmarks/aws/incluster_runs/notdynamo-bench-k6-20260221131036/telemetry/nodes_top_summary.txt",
+      "write_stage_telemetry_samples": "reports/benchmarks/aws/incluster_runs/notdynamo-bench-k6-20260221131036/telemetry/write_stage_telemetry_samples.txt"
+    }
+  },
+  "error_samples": [],
+  "artifacts": {
+    "run_dir": "reports/benchmarks/aws/incluster_runs/notdynamo-bench-k6-20260221131036",
+    "job_manifest": "reports/benchmarks/aws/incluster_runs/notdynamo-bench-k6-20260221131036/job.yaml",
+    "script_configmap": "notdynamo-bench-k6-script-20260221131036",
+    "pod_logs_glob": "reports/benchmarks/aws/incluster_runs/notdynamo-bench-k6-20260221131036/*.log",
+    "telemetry_dir": "reports/benchmarks/aws/incluster_runs/notdynamo-bench-k6-20260221131036/telemetry"
+  }
+}

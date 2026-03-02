@@ -1,0 +1,12 @@
+notdynamo-bench-http-20260219172452-7xc2s   486m   118Mi   
+notdynamo-bench-http-20260219172452-f5pvr   480m   118Mi   
+notdynamo-bench-http-20260219172452-hdpkj   476m   102Mi   
+notdynamo-bench-http-20260219172452-jk8vz   480m   127Mi   
+notdynamo-bench-http-20260219172452-jpf9f   493m   129Mi   
+notdynamo-bench-http-20260219172452-kpcrx   491m   102Mi   
+notdynamo-bench-http-20260219172452-r4z8c   472m   131Mi   
+notdynamo-bench-http-20260219172452-zf6v7   487m   121Mi   
+notdynamo-control-plane-58bfc58b4b-wxn8w    2m     74Mi    
+notdynamo-data-0                            81m    627Mi   
+notdynamo-data-1                            7m     604Mi   
+notdynamo-data-2                            134m   607Mi   

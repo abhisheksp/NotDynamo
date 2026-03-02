@@ -1,0 +1,11 @@
+# benchmark_pods
+NAME                                      READY   STATUS    RESTARTS   AGE   IP               NODE                                           NOMINATED NODE   READINESS GATES
+notdynamo-bench-k6-20260221131036-5kkml   1/1     Running   0          75s   192.168.54.97    ip-192-168-44-201.us-west-2.compute.internal   <none>           <none>
+notdynamo-bench-k6-20260221131036-fclvv   1/1     Running   0          75s   192.168.66.202   ip-192-168-87-58.us-west-2.compute.internal    <none>           <none>
+notdynamo-bench-k6-20260221131036-vdpft   1/1     Running   0          75s   192.168.21.29    ip-192-168-2-187.us-west-2.compute.internal    <none>           <none>
+
+# data_pods
+NAME               READY   STATUS    RESTARTS   AGE     IP               NODE                                           NOMINATED NODE   READINESS GATES
+notdynamo-data-0   1/1     Running   0          14m     192.168.31.73    ip-192-168-2-187.us-west-2.compute.internal    <none>           <none>
+notdynamo-data-1   1/1     Running   0          2m45s   192.168.65.255   ip-192-168-87-58.us-west-2.compute.internal    <none>           <none>
+notdynamo-data-2   1/1     Running   0          3m47s   192.168.51.45    ip-192-168-44-201.us-west-2.compute.internal   <none>           <none>

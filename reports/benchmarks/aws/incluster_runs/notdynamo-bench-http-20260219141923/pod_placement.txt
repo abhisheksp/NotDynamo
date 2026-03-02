@@ -1,0 +1,17 @@
+# benchmark_pods
+NAME                                        READY   STATUS      RESTARTS   AGE     IP               NODE                                           NOMINATED NODE   READINESS GATES
+notdynamo-bench-http-20260219141923-jt7f6   0/1     Completed   0          4m16s   192.168.76.228   ip-192-168-74-164.us-west-2.compute.internal   <none>           <none>
+
+# data_pods
+NAME                READY   STATUS    RESTARTS   AGE     IP               NODE                                           NOMINATED NODE   READINESS GATES
+notdynamo-data-0    1/1     Running   0          5m4s    192.168.75.119   ip-192-168-91-49.us-west-2.compute.internal    <none>           <none>
+notdynamo-data-1    1/1     Running   0          5m35s   192.168.54.219   ip-192-168-51-76.us-west-2.compute.internal    <none>           <none>
+notdynamo-data-10   1/1     Running   0          9m48s   192.168.88.167   ip-192-168-64-153.us-west-2.compute.internal   <none>           <none>
+notdynamo-data-2    1/1     Running   0          5m53s   192.168.5.216    ip-192-168-18-44.us-west-2.compute.internal    <none>           <none>
+notdynamo-data-3    1/1     Running   0          6m22s   192.168.24.75    ip-192-168-24-112.us-west-2.compute.internal   <none>           <none>
+notdynamo-data-4    1/1     Running   0          7m1s    192.168.25.12    ip-192-168-9-11.us-west-2.compute.internal     <none>           <none>
+notdynamo-data-5    1/1     Running   0          7m21s   192.168.73.206   ip-192-168-91-49.us-west-2.compute.internal    <none>           <none>
+notdynamo-data-6    1/1     Running   0          7m56s   192.168.53.232   ip-192-168-51-76.us-west-2.compute.internal    <none>           <none>
+notdynamo-data-7    1/1     Running   0          8m35s   192.168.90.23    ip-192-168-64-153.us-west-2.compute.internal   <none>           <none>
+notdynamo-data-8    1/1     Running   0          8m51s   192.168.47.195   ip-192-168-50-120.us-west-2.compute.internal   <none>           <none>
+notdynamo-data-9    1/1     Running   0          9m20s   192.168.17.121   ip-192-168-9-11.us-west-2.compute.internal     <none>           <none>

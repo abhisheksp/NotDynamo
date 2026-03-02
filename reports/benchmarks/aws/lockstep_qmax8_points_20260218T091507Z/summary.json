@@ -1,0 +1,7 @@
+{
+  "benchmark": "eks_lockstep_points_qmax8",
+  "timestamp_utc": "2026-02-18T09:43:32Z",
+  "output_dir": "reports/benchmarks/aws/lockstep_qmax8_points_20260218T091507Z",
+  "points_csv": "reports/benchmarks/aws/lockstep_qmax8_points_20260218T091507Z/points.csv",
+  "note": "Counts 7 and 8 remain pending due long-running benchmark jobs and quota-limited operational churn."
+}

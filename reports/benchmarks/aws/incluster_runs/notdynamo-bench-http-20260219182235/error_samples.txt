@@ -1,0 +1,2 @@
+HttpConnectTimeoutException:HTTP_connect_timed_out
+IOException:HTTP/1.1_header_parser_received_no_bytes

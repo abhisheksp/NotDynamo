@@ -1,0 +1,13 @@
+notdynamo-bench-http-20260219141923-jt7f6   87m    43Mi    
+notdynamo-control-plane-786676cc59-cstjb    2m     29Mi    
+notdynamo-data-0                            181m   502Mi   
+notdynamo-data-1                            98m    507Mi   
+notdynamo-data-10                           186m   188Mi   
+notdynamo-data-2                            590m   520Mi   
+notdynamo-data-3                            4m     150Mi   
+notdynamo-data-4                            10m    159Mi   
+notdynamo-data-5                            50m    168Mi   
+notdynamo-data-6                            3m     157Mi   
+notdynamo-data-7                            343m   193Mi   
+notdynamo-data-8                            3m     158Mi   
+notdynamo-data-9                            3m     169Mi   

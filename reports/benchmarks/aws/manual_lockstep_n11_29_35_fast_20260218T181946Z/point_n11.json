@@ -1,0 +1,52 @@
+{
+  "benchmark": "e2e_http_incluster",
+  "category": "in-cluster-job",
+  "status": "PASS",
+  "timestamp_utc": "2026-02-18T18:22:53Z",
+  "cluster_name": "notdynamo-eks",
+  "region": "us-west-2",
+  "namespace": "notdynamo",
+  "base_url": "http://notdynamo-data.notdynamo.svc.cluster.local:8080",
+  "job": {
+    "name": "notdynamo-bench-http-20260218182151",
+    "parallelism": "1",
+    "completions": "1",
+    "job_completed": "true",
+    "pod_count": "1",
+    "pod_metric_failures": "0",
+    "ttl_seconds_after_finished": "900"
+  },
+  "config": {
+    "operations_total_requested": "1000",
+    "operations_per_pod": "1000",
+    "keyspace": "1000",
+    "threads_per_pod": "8",
+    "read_ratio": "0.90",
+    "distribution": "uniform",
+    "zipf_theta": "0.90",
+    "value_bytes": "256",
+    "preload": "false",
+    "connect_timeout_ms": "1000",
+    "request_timeout_ms": "1000"
+  },
+  "results": {
+    "operations_effective": "1000",
+    "throughput_rps_aggregate": "140.35",
+    "success_throughput_rps_aggregate": "140.35",
+    "latency_ms_p50_max_pod": "50.054",
+    "latency_ms_p95_max_pod": "62.191",
+    "latency_ms_p99_max_pod": "199.724",
+    "success_count": "1000",
+    "error_count": "0",
+    "error_rate_percent": "0.0000",
+    "read_count": "900",
+    "write_count": "100",
+    "read_not_found_count": "892"
+  },
+  "error_samples": [],
+  "artifacts": {
+    "run_dir": "reports/benchmarks/aws/incluster_runs/notdynamo-bench-http-20260218182151",
+    "job_manifest": "reports/benchmarks/aws/incluster_runs/notdynamo-bench-http-20260218182151/job.yaml",
+    "pod_logs_glob": "reports/benchmarks/aws/incluster_runs/notdynamo-bench-http-20260218182151/*.log"
+  }
+}

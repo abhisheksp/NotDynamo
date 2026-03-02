@@ -1,0 +1,45 @@
+{
+  "benchmark": "eks_benchmark_matrix",
+  "status": "WARN",
+  "timestamp_utc": "2026-02-19T14:23:41Z",
+  "cluster_name": "notdynamo-eks",
+  "region": "us-west-2",
+  "namespace": "notdynamo",
+  "external_mode": "port-forward",
+  "incluster_skip_build": "1",
+  "incluster_image": "139643733075.dkr.ecr.us-west-2.amazonaws.com/notdynamo/notdynamo-bench:bench-20260218T220656Z",
+  "incluster_bench_node_label": "notdynamo.io/workload=benchmark",
+  "incluster_bench_taint_effect": "NoSchedule",
+  "categories": {
+    "external_client_port_forward": {
+      "enabled": "0",
+      "status": "SKIPPED",
+      "exit_code": "0",
+      "report_json": "",
+      "report_md": "",
+      "throughput_rps": "",
+      "latency_ms_p99": "",
+      "error_rate_percent": "",
+      "endpoint_mode": "port-forward",
+      "lb_scheme": "internet-facing",
+      "lb_type": "nlb",
+      "lb_manage_service": "1"
+    },
+    "in_cluster_job": {
+      "enabled": "1",
+      "status": "WARN",
+      "exit_code": "0",
+      "skip_build": "1",
+      "image": "139643733075.dkr.ecr.us-west-2.amazonaws.com/notdynamo/notdynamo-bench:bench-20260218T220656Z",
+      "bench_node_label": "notdynamo.io/workload=benchmark",
+      "bench_taint_effect": "NoSchedule",
+      "report_json": "reports/benchmarks/aws/e2e_http_incluster_20260219T141920Z.json",
+      "report_md": "reports/benchmarks/aws/e2e_http_incluster_20260219T141920Z.md",
+      "throughput_rps_aggregate": "1.99",
+      "latency_ms_p99_max_pod": "7503.154",
+      "error_rate_percent": "11.6000",
+      "telemetry_attribution_hint": "service-pressure-dominant",
+      "telemetry_generator_to_service_cpu_ratio": "0.059"
+    }
+  }
+}
