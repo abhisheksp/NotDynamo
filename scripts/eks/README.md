@@ -52,11 +52,23 @@ You can override API endpoint mode:
 ## Cost guardrails
 
 - `eks_up.sh` enforces a budget guard by default: `--max-daily-usd 20`.
-- Estimated max cost is calculated using:
+- Estimated max cost is calculated using only:
   - EKS control-plane hourly cost
   - `nodes-max` x node hourly estimate
   - gp3 EBS estimate for node root volumes
 - If estimated cost exceeds the cap, cluster creation is blocked unless you pass `--allow-over-budget`.
+
+Excluded from that estimate:
+- inter-AZ / regional data transfer (`EC2 - Other`, including `InterZone-In` / `InterZone-Out`)
+- NAT data processing
+- T-family CPU credits
+- support plan and tax
+
+Postmortem learning from NotDynamo EKS benchmark runs:
+- The large bill spike was dominated by inter-AZ transfer during high-throughput multi-node runs.
+- Treat `--max-daily-usd` as a preflight compute estimate only, not a full spend ceiling.
+- For stricter spend control, prefer single-AZ benchmarking and keep cluster lifetime short.
+- See `/docs/benchmark/AWS_COST_POSTMORTEM_2026-02.md`.
 
 Example:
 

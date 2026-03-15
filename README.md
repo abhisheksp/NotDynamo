@@ -128,6 +128,13 @@ Use kind + docker/finch for iterative development and smoke tests.
 
 Use scripted lifecycle for cost-controlled create/deploy/bench/teardown.
 
+Important cost caveat:
+
+- `--max-daily-usd` is a compute-side estimate guard, not a hard AWS invoice cap.
+- The estimate does not include inter-AZ transfer (`EC2 - Other: InterZone-*`), NAT data processing, T3 CPU credits, support plan, or tax.
+- In multi-AZ high-throughput runs, inter-AZ transfer can dominate total cost.
+- See `/docs/benchmark/AWS_COST_POSTMORTEM_2026-02.md` for the NotDynamo billing postmortem and controls.
+
 ```bash
 ./scripts/eks/eks_up.sh --name notdynamo-eks --region us-west-2
 ./scripts/eks/eks_deploy.sh --name notdynamo-eks --region us-west-2 --provider nerdctl
@@ -249,6 +256,7 @@ When AWS budget allows, run the planned read-hit upper-bound `N` sweep:
 - `run_gated_e2e_http_profile.sh` runs `G18` automatically before benchmark execution.
 - Local failure drills now include pod restart and node drain recovery paths.
 - EKS provisioning now enforces a default `$20/day` budget cap unless explicitly overridden.
+- The `$20/day` guard in `eks_up.sh` is a compute-only estimate guard, not a full-billing cap.
 - Automated setup/teardown scripts include cost-control safeguards.
 - Benchmark harness and human-readable reports are source-controlled.
 

@@ -253,6 +253,11 @@ Use the runbook automation for deterministic setup/deploy/bench/teardown:
   --preload false
 ```
 
+Important:
+- `--max-daily-usd` is a compute-side estimate guard, not a hard billing cap.
+- High-throughput multi-AZ runs can accumulate significant inter-AZ transfer charges.
+- See `/docs/benchmark/AWS_COST_POSTMORTEM_2026-02.md` before running large node-count sweeps.
+
 Artifacts:
 - `reports/benchmarks/aws/runbook_*.json|md`
 - `reports/benchmarks/aws/runbook_*_artifacts/benchmark_matrix.json|md`

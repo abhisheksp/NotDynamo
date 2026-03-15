@@ -47,3 +47,10 @@ This folder stores EKS benchmark artifacts for NotDynamo.
 - `scripts/eks/eks_scaling_sweep.sh`
 - `scripts/eks/eks_cleanup_audit.sh`
 - `scripts/eks/eks_runbook.sh`
+
+## Cost caveat
+
+- Benchmark scale reports include compute-oriented cost estimates for context.
+- Those estimates do not represent full AWS billing and do not include inter-AZ transfer.
+- During multi-AZ, high-throughput distributed runs, `EC2 - Other` (`InterZone-*`) can dominate spend.
+- See `/docs/benchmark/AWS_COST_POSTMORTEM_2026-02.md`.
